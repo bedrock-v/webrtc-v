@@ -24,3 +24,10 @@ vls.log
 
 # Generated API documentation (make docs)
 /_docs/
+
+# Coverage and profiling output
+*.gcov
+*.gcda
+*.gcno
+coverage/
+profile.txt
