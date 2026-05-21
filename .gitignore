@@ -1,0 +1,11 @@
+# V build artifacts
+*.exe
+*.exe~
+*.so
+*.dylib
+*.dll
+*.a
+*.o
+*_test
+vls.log
+.bin/
