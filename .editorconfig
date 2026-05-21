@@ -9,3 +9,10 @@ trim_trailing_whitespace = true
 [*.v]
 indent_style = tab
 indent_size = 4
+
+[*.{yml,yaml,json,md}]
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
