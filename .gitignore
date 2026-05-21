@@ -15,3 +15,12 @@ vls.log
 !/examples/*/*.v
 !/examples/*/*.md
 !/examples/*/*.html
+
+# Local tooling
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Generated API documentation (make docs)
+/_docs/
