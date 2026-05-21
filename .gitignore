@@ -1,0 +1,36 @@
+# V build artifacts
+*.exe
+*.exe~
+*.so
+*.dylib
+*.dll
+*.a
+*.o
+*_test
+vls.log
+.bin/
+
+# Compiled examples (name matches the example directory)
+/examples/*/[!.]*
+!/examples/*/*.v
+!/examples/*/*.md
+!/examples/*/*.html
+
+# Local tooling
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Generated API documentation (make docs)
+/_docs/
+
+# Coverage and profiling output
+*.gcov
+*.gcda
+*.gcno
+coverage/
+profile.txt
+
+# Reference material, not part of the module
+/inspirations/
