@@ -31,3 +31,6 @@ vls.log
 *.gcno
 coverage/
 profile.txt
+
+# Reference material, not part of the module
+/inspirations/
