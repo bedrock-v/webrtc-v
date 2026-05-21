@@ -9,3 +9,9 @@
 *_test
 vls.log
 .bin/
+
+# Compiled examples (name matches the example directory)
+/examples/*/[!.]*
+!/examples/*/*.v
+!/examples/*/*.md
+!/examples/*/*.html
