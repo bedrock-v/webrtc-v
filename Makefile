@@ -86,3 +86,28 @@ bench:
 	@# -prod matters here: the stack is CPU-bound on AES, and an unoptimised
 	@# build measures the C compiler rather than this code.
 	$(V) -prod run examples/throughput
+
+.PHONY: harden
+harden: harden-cstrict harden-gc-none harden-prod
+
+.PHONY: harden-cstrict
+harden-cstrict:
+	$(V) -cstrict test $(CODECS)
+
+.PHONY: harden-gc-none
+harden-gc-none:
+	$(V) -gc none test $(CODECS)
+
+.PHONY: harden-prod
+harden-prod:
+	$(V) -prod test $(CODECS)
+
+.PHONY: docs
+docs:
+	$(V) doc -f html -m -o _docs .
+
+.PHONY: clean
+clean:
+	@rm -rf _docs
+	@rm -f /tmp/webrtc-v-*
+	@find examples -maxdepth 1 -mindepth 1 -type f -perm -u+x -delete 2>/dev/null || true
