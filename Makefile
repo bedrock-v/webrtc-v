@@ -32,3 +32,10 @@ link:
 	@mkdir -p "$(HOME)/.vmodules"
 	@ln -sfn "$(CURDIR)" "$(HOME)/.vmodules/webrtc"
 	@echo "linked $(HOME)/.vmodules/webrtc -> $(CURDIR)"
+
+.PHONY: check
+check: fmt-check vet test
+
+.PHONY: test
+test:
+	$(V) test .
