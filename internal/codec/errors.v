@@ -33,3 +33,11 @@ pub:
 	value int
 	limit int
 }
+
+pub fn (e LimitExceededError) msg() string {
+	return 'value for ${e.field} exceeds limit: ${e.value} > ${e.limit}'
+}
+
+pub fn (e LimitExceededError) code() int {
+	return 2
+}
