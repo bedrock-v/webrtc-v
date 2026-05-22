@@ -72,3 +72,9 @@ examples:
 		echo "  build $$example"; \
 		$(V) -o "/tmp/webrtc-v-$$example" "examples/$$example"; \
 	done
+
+.PHONY: bench
+bench:
+	@# -prod matters here: the stack is CPU-bound on AES, and an unoptimised
+	@# build measures the C compiler rather than this code.
+	$(V) -prod run examples/throughput
