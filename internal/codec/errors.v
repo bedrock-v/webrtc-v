@@ -23,3 +23,21 @@ pub fn (e TruncatedError) msg() string {
 pub fn (e TruncatedError) code() int {
 	return 1
 }
+
+// LimitExceededError is returned when a length prefix declares more data than
+// the caller is willing to allocate. Decoders use it to bound memory taken from
+// untrusted length fields.
+pub struct LimitExceededError {
+pub:
+	field string
+	value int
+	limit int
+}
+
+pub fn (e LimitExceededError) msg() string {
+	return 'value for ${e.field} exceeds limit: ${e.value} > ${e.limit}'
+}
+
+pub fn (e LimitExceededError) code() int {
+	return 2
+}
