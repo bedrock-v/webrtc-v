@@ -84,3 +84,7 @@ harden:
 	$(V) -cstrict test $(CODECS)
 	$(V) -gc none test $(CODECS)
 	$(V) -prod test $(CODECS)
+
+.PHONY: docs
+docs:
+	$(V) doc -f html -m -o _docs .
