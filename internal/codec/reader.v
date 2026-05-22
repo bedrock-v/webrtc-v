@@ -61,3 +61,32 @@ pub fn (mut r Reader) u16(field string) !u16 {
 	r.pos += 2
 	return v
 }
+
+// u24 reads a big-endian 24-bit unsigned integer into a u32.
+pub fn (mut r Reader) u24(field string) !u32 {
+	r.require(3, field)!
+	v := (u32(r.data[r.pos]) << 16) | (u32(r.data[r.pos + 1]) << 8) | u32(r.data[r.pos + 2])
+	r.pos += 3
+	return v
+}
+
+// u32 reads a big-endian 32-bit unsigned integer.
+pub fn (mut r Reader) u32(field string) !u32 {
+	r.require(4, field)!
+	v := (u32(r.data[r.pos]) << 24) | (u32(r.data[r.pos + 1]) << 16) | (u32(r.data[r.pos + 2]) << 8) | u32(r.data[
+		r.pos + 3])
+	r.pos += 4
+	return v
+}
+
+// u48 reads a big-endian 48-bit unsigned integer into a u64. DTLS sequence
+// numbers use this width.
+pub fn (mut r Reader) u48(field string) !u64 {
+	r.require(6, field)!
+	mut v := u64(0)
+	for i in 0 .. 6 {
+		v = (v << 8) | u64(r.data[r.pos + i])
+	}
+	r.pos += 6
+	return v
+}
