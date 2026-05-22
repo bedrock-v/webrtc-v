@@ -51,3 +51,10 @@ fmt-check:
 .PHONY: vet
 vet:
 	$(V) vet .
+
+.PHONY: build
+build:
+	@set -e; for module in $(MODULES); do \
+		echo "  check $$module"; \
+		$(V) -shared -check "$$module"; \
+	done
