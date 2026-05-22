@@ -9,3 +9,20 @@ CODECS  := internal/codec internal/aes netaddr stun sdp rtp rtcp srtp sctp turn 
 EXAMPLES := $(notdir $(patsubst %/,%,$(wildcard examples/*/)))
 
 .DEFAULT_GOAL := check
+
+.PHONY: help
+help:
+	@printf '  %-12s %s\n' \
+		link       'Link this checkout into V so `import webrtc.x` resolves' \
+		check      'fmt-check, vet and test - what CI runs on a pull request' \
+		test       'Run the test suite' \
+		fmt        'Format in place' \
+		fmt-check  'Fail if anything is unformatted' \
+		vet        "Run V's vet" \
+		build      'Type-check every module' \
+		build-prod 'Type-check every module with optimisation on' \
+		examples   'Build every example' \
+		harden     'Run the decoder tests through three backend code paths' \
+		bench      'Measure data channel throughput (optimised build)' \
+		docs       'Generate the API documentation into _docs/' \
+		clean      'Remove build output'
