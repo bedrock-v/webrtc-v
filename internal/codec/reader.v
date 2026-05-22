@@ -34,3 +34,30 @@ pub fn (r &Reader) remaining() int {
 pub fn (r &Reader) empty() bool {
 	return r.pos >= r.data.len
 }
+
+@[inline]
+fn (r &Reader) require(n int, field string) ! {
+	if n < 0 || r.remaining() < n {
+		return TruncatedError{
+			field: field
+			need:  n
+			have:  r.remaining()
+		}
+	}
+}
+
+// u8 reads a single byte.
+pub fn (mut r Reader) u8(field string) !u8 {
+	r.require(1, field)!
+	v := r.data[r.pos]
+	r.pos++
+	return v
+}
+
+// u16 reads a big-endian 16-bit unsigned integer.
+pub fn (mut r Reader) u16(field string) !u16 {
+	r.require(2, field)!
+	v := (u16(r.data[r.pos]) << 8) | u16(r.data[r.pos + 1])
+	r.pos += 2
+	return v
+}
