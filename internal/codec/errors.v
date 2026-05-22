@@ -12,3 +12,10 @@ pub:
 	// have is the number of bytes that were actually available.
 	have int
 }
+
+pub fn (e TruncatedError) msg() string {
+	if e.field.len > 0 {
+		return 'truncated input reading ${e.field}: need ${e.need} bytes, have ${e.have}'
+	}
+	return 'truncated input: need ${e.need} bytes, have ${e.have}'
+}
