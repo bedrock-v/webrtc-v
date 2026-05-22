@@ -19,3 +19,7 @@ pub fn (e TruncatedError) msg() string {
 	}
 	return 'truncated input: need ${e.need} bytes, have ${e.have}'
 }
+
+pub fn (e TruncatedError) code() int {
+	return 1
+}
