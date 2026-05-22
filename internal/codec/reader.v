@@ -110,3 +110,33 @@ pub fn (mut r Reader) bytes(n int, field string) ![]u8 {
 	r.pos += n
 	return out
 }
+
+// view reads n bytes and returns a slice that aliases the underlying buffer.
+// Cheaper than bytes, but the caller must not retain it past the lifetime of
+// the source buffer, and must not mutate it.
+pub fn (mut r Reader) view(n int, field string) ![]u8 {
+	r.require(n, field)!
+	out := unsafe { r.data[r.pos..r.pos + n] }
+	r.pos += n
+	return out
+}
+
+// rest returns a copy of everything left in the buffer and moves to the end.
+pub fn (mut r Reader) rest() []u8 {
+	out := r.data[r.pos..].clone()
+	r.pos = r.data.len
+	return out
+}
+
+// rest_view returns the remainder as an aliasing slice and moves to the end.
+pub fn (mut r Reader) rest_view() []u8 {
+	out := unsafe { r.data[r.pos..] }
+	r.pos = r.data.len
+	return out
+}
+
+// skip advances the cursor by n bytes.
+pub fn (mut r Reader) skip(n int, field string) ! {
+	r.require(n, field)!
+	r.pos += n
+}
