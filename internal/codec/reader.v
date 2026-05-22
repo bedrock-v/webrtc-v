@@ -22,3 +22,9 @@ pub fn Reader.new(data []u8) Reader {
 		data: data
 	}
 }
+
+// remaining reports how many unread bytes are left.
+@[inline]
+pub fn (r &Reader) remaining() int {
+	return r.data.len - r.pos
+}
