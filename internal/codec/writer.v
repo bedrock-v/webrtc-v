@@ -31,3 +31,25 @@ pub fn Writer.with_capacity(n int) Writer {
 pub fn (w &Writer) len() int {
 	return w.buf.len
 }
+
+pub fn (mut w Writer) u8(v u8) {
+	w.buf << v
+}
+
+pub fn (mut w Writer) u16(v u16) {
+	w.buf << u8(v >> 8)
+	w.buf << u8(v)
+}
+
+pub fn (mut w Writer) u24(v u32) {
+	w.buf << u8(v >> 16)
+	w.buf << u8(v >> 8)
+	w.buf << u8(v)
+}
+
+pub fn (mut w Writer) u32(v u32) {
+	w.buf << u8(v >> 24)
+	w.buf << u8(v >> 16)
+	w.buf << u8(v >> 8)
+	w.buf << u8(v)
+}
