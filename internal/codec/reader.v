@@ -15,3 +15,10 @@ pub:
 pub mut:
 	pos int
 }
+
+// Reader.new returns a Reader positioned at the start of data.
+pub fn Reader.new(data []u8) Reader {
+	return Reader{
+		data: data
+	}
+}
