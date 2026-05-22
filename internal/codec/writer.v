@@ -53,3 +53,30 @@ pub fn (mut w Writer) u32(v u32) {
 	w.buf << u8(v >> 8)
 	w.buf << u8(v)
 }
+
+pub fn (mut w Writer) u48(v u64) {
+	for shift := 40; shift >= 0; shift -= 8 {
+		w.buf << u8(v >> shift)
+	}
+}
+
+pub fn (mut w Writer) u64(v u64) {
+	for shift := 56; shift >= 0; shift -= 8 {
+		w.buf << u8(v >> shift)
+	}
+}
+
+pub fn (mut w Writer) bytes(b []u8) {
+	w.buf << b
+}
+
+pub fn (mut w Writer) string(s string) {
+	w.buf << s.bytes()
+}
+
+// zeros appends n zero bytes.
+pub fn (mut w Writer) zeros(n int) {
+	for _ in 0 .. n {
+		w.buf << 0
+	}
+}
