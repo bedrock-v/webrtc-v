@@ -88,3 +88,9 @@ harden:
 .PHONY: docs
 docs:
 	$(V) doc -f html -m -o _docs .
+
+.PHONY: clean
+clean:
+	@rm -rf _docs
+	@rm -f /tmp/webrtc-v-*
+	@find examples -maxdepth 1 -mindepth 1 -type f -perm -u+x -delete 2>/dev/null || true
