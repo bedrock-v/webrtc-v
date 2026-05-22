@@ -65,3 +65,10 @@ build-prod:
 		echo "  check $$module (prod)"; \
 		$(V) -prod -shared -check "$$module"; \
 	done
+
+.PHONY: examples
+examples:
+	@set -e; for example in $(EXAMPLES); do \
+		echo "  build $$example"; \
+		$(V) -o "/tmp/webrtc-v-$$example" "examples/$$example"; \
+	done
