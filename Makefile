@@ -47,3 +47,7 @@ fmt:
 .PHONY: fmt-check
 fmt-check:
 	$(V) fmt -verify .
+
+.PHONY: vet
+vet:
+	$(V) vet .
