@@ -26,3 +26,9 @@ help:
 		bench      'Measure data channel throughput (optimised build)' \
 		docs       'Generate the API documentation into _docs/' \
 		clean      'Remove build output'
+
+.PHONY: link
+link:
+	@mkdir -p "$(HOME)/.vmodules"
+	@ln -sfn "$(CURDIR)" "$(HOME)/.vmodules/webrtc"
+	@echo "linked $(HOME)/.vmodules/webrtc -> $(CURDIR)"
