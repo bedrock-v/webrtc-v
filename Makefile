@@ -58,3 +58,10 @@ build:
 		echo "  check $$module"; \
 		$(V) -shared -check "$$module"; \
 	done
+
+.PHONY: build-prod
+build-prod:
+	@set -e; for module in $(MODULES); do \
+		echo "  check $$module (prod)"; \
+		$(V) -prod -shared -check "$$module"; \
+	done
