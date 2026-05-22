@@ -108,3 +108,26 @@ pub fn (mut w Writer) patch_u16(mark int) {
 	w.buf[mark] = u8(length >> 8)
 	w.buf[mark + 1] = u8(length)
 }
+
+// mark_u24 reserves three bytes for a length. DTLS handshake bodies use a
+// 24-bit length.
+pub fn (mut w Writer) mark_u24() int {
+	pos := w.buf.len
+	w.u24(0)
+	return pos
+}
+
+// patch_u24 writes the number of bytes appended since mark_u24.
+pub fn (mut w Writer) patch_u24(mark int) {
+	length := w.buf.len - mark - 3
+	w.buf[mark] = u8(length >> 16)
+	w.buf[mark + 1] = u8(length >> 8)
+	w.buf[mark + 2] = u8(length)
+}
+
+// take returns the accumulated bytes and resets the Writer for reuse.
+pub fn (mut w Writer) take() []u8 {
+	out := w.buf
+	w.buf = []u8{}
+	return out
+}
