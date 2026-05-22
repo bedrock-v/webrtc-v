@@ -7,3 +7,5 @@ MODULES := netaddr logging transport internal/codec internal/aes internal/randut
 # The modules that decode input from the network, and so get the extra passes.
 CODECS  := internal/codec internal/aes netaddr stun sdp rtp rtcp srtp sctp turn mdns
 EXAMPLES := $(notdir $(patsubst %/,%,$(wildcard examples/*/)))
+
+.DEFAULT_GOAL := check
