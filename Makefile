@@ -39,3 +39,11 @@ check: fmt-check vet test
 .PHONY: test
 test:
 	$(V) test .
+
+.PHONY: fmt
+fmt:
+	$(V) fmt -w .
+
+.PHONY: fmt-check
+fmt-check:
+	$(V) fmt -verify .
