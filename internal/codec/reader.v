@@ -53,3 +53,11 @@ pub fn (mut r Reader) u8(field string) !u8 {
 	r.pos++
 	return v
 }
+
+// u16 reads a big-endian 16-bit unsigned integer.
+pub fn (mut r Reader) u16(field string) !u16 {
+	r.require(2, field)!
+	v := (u16(r.data[r.pos]) << 8) | u16(r.data[r.pos + 1])
+	r.pos += 2
+	return v
+}
