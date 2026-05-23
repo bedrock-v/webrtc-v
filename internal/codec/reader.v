@@ -110,3 +110,13 @@ pub fn (mut r Reader) bytes(n int, field string) ![]u8 {
 	r.pos += n
 	return out
 }
+
+// view reads n bytes and returns a slice that aliases the underlying buffer.
+// Cheaper than bytes, but the caller must not retain it past the lifetime of
+// the source buffer, and must not mutate it.
+pub fn (mut r Reader) view(n int, field string) ![]u8 {
+	r.require(n, field)!
+	out := unsafe { r.data[r.pos..r.pos + n] }
+	r.pos += n
+	return out
+}
