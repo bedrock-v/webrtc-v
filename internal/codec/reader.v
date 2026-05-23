@@ -101,3 +101,12 @@ pub fn (mut r Reader) u64(field string) !u64 {
 	r.pos += 8
 	return v
 }
+
+// bytes reads n bytes and returns a copy. Use this whenever the result outlives
+// the buffer being decoded, which is the common case for parsed structures.
+pub fn (mut r Reader) bytes(n int, field string) ![]u8 {
+	r.require(n, field)!
+	out := r.data[r.pos..r.pos + n].clone()
+	r.pos += n
+	return out
+}
