@@ -36,3 +36,25 @@ fn test_reader_returns_truncated_error_not_panic() {
 	// A failed read must not move the cursor.
 	assert r.pos == 0
 }
+
+fn test_reader_empty_buffer_is_safe() {
+	mut r := Reader.new([]u8{})
+	assert r.remaining() == 0
+	assert r.empty()
+	r.u8('nothing') or { assert err is TruncatedError }
+	assert r.rest().len == 0
+}
+
+fn test_reader_bytes_copies_and_view_aliases() {
+	mut src := [u8(1), 2, 3, 4]
+	mut r := Reader.new(src)
+	copied := r.bytes(2, 'copy')!
+	assert copied == [u8(1), 2]
+
+	mut r2 := Reader.new(src)
+	viewed := r2.view(2, 'view')!
+	assert viewed == [u8(1), 2]
+	src[0] = 9
+	// The copy is unaffected by later mutation of the source buffer.
+	assert copied[0] == 1
+}
