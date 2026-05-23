@@ -45,3 +45,11 @@ fn (r &Reader) require(n int, field string) ! {
 		}
 	}
 }
+
+// u8 reads a single byte.
+pub fn (mut r Reader) u8(field string) !u8 {
+	r.require(1, field)!
+	v := r.data[r.pos]
+	r.pos++
+	return v
+}
