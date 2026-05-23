@@ -90,3 +90,14 @@ pub fn (mut r Reader) u48(field string) !u64 {
 	r.pos += 6
 	return v
 }
+
+// u64 reads a big-endian 64-bit unsigned integer.
+pub fn (mut r Reader) u64(field string) !u64 {
+	r.require(8, field)!
+	mut v := u64(0)
+	for i in 0 .. 8 {
+		v = (v << 8) | u64(r.data[r.pos + i])
+	}
+	r.pos += 8
+	return v
+}
