@@ -34,3 +34,14 @@ pub fn (r &Reader) remaining() int {
 pub fn (r &Reader) empty() bool {
 	return r.pos >= r.data.len
 }
+
+@[inline]
+fn (r &Reader) require(n int, field string) ! {
+	if n < 0 || r.remaining() < n {
+		return TruncatedError{
+			field: field
+			need:  n
+			have:  r.remaining()
+		}
+	}
+}
