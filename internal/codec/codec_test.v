@@ -58,3 +58,29 @@ fn test_reader_bytes_copies_and_view_aliases() {
 	// The copy is unaffected by later mutation of the source buffer.
 	assert copied[0] == 1
 }
+
+fn test_reader_sub_bounds_nested_decoding() {
+	mut r := Reader.new([u8(0x00), 0x02, 0xaa, 0xbb, 0xcc])
+	length := r.u16('len')!
+	mut nested := r.sub(int(length), 'body')!
+	assert nested.u8('n1')! == 0xaa
+	assert nested.u8('n2')! == 0xbb
+	// The nested reader cannot reach past its declared length.
+	nested.u8('overflow') or { assert err is TruncatedError }
+	assert r.u8('after')! == 0xcc
+}
+
+fn test_reader_skip_and_peek() {
+	mut r := Reader.new([u8(1), 2, 3, 4])
+	assert r.peek_u8(2)! == 3
+	assert r.pos == 0
+	r.skip(3, 'skip')!
+	assert r.u8('last')! == 4
+	r.peek_u8(0) or { assert err is TruncatedError }
+}
+
+fn test_reader_rejects_negative_length() {
+	mut r := Reader.new([u8(1), 2, 3, 4])
+	r.bytes(-1, 'neg') or { assert err is TruncatedError }
+	r.skip(-5, 'neg') or { assert err is TruncatedError }
+}
