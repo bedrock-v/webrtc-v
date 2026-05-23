@@ -28,3 +28,9 @@ pub fn Reader.new(data []u8) Reader {
 pub fn (r &Reader) remaining() int {
 	return r.data.len - r.pos
 }
+
+// empty reports whether the cursor has consumed the whole buffer.
+@[inline]
+pub fn (r &Reader) empty() bool {
+	return r.pos >= r.data.len
+}
