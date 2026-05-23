@@ -78,3 +78,15 @@ pub fn (mut r Reader) u32(field string) !u32 {
 	r.pos += 4
 	return v
 }
+
+// u48 reads a big-endian 48-bit unsigned integer into a u64. DTLS sequence
+// numbers use this width.
+pub fn (mut r Reader) u48(field string) !u64 {
+	r.require(6, field)!
+	mut v := u64(0)
+	for i in 0 .. 6 {
+		v = (v << 8) | u64(r.data[r.pos + i])
+	}
+	r.pos += 6
+	return v
+}
