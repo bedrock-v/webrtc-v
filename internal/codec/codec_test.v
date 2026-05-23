@@ -116,3 +116,25 @@ fn test_writer_pad_to_boundary() {
 	aligned.pad(4)
 	assert aligned.len() == 4
 }
+
+fn test_writer_length_marks() {
+	mut w := Writer.new()
+	mark := w.mark_u16()
+	w.bytes([u8(0xaa), 0xbb, 0xcc])
+	w.patch_u16(mark)
+	assert w.buf == [u8(0x00), 0x03, 0xaa, 0xbb, 0xcc]
+
+	mut w24 := Writer.new()
+	m24 := w24.mark_u24()
+	w24.zeros(300)
+	w24.patch_u24(m24)
+	assert w24.buf[0..3] == [u8(0x00), 0x01, 0x2c]
+}
+
+fn test_writer_take_resets() {
+	mut w := Writer.new()
+	w.u16(0x1234)
+	out := w.take()
+	assert out == [u8(0x12), 0x34]
+	assert w.len() == 0
+}
