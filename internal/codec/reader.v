@@ -127,3 +127,10 @@ pub fn (mut r Reader) rest() []u8 {
 	r.pos = r.data.len
 	return out
 }
+
+// rest_view returns the remainder as an aliasing slice and moves to the end.
+pub fn (mut r Reader) rest_view() []u8 {
+	out := unsafe { r.data[r.pos..] }
+	r.pos = r.data.len
+	return out
+}
