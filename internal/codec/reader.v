@@ -152,3 +152,11 @@ pub fn (r &Reader) peek_u8(offset int) !u8 {
 	}
 	return r.data[r.pos + offset]
 }
+
+// sub returns an independent Reader over the next n bytes and advances past
+// them. Use it to decode a length-delimited substructure without letting the
+// nested decoder read beyond its own bounds.
+pub fn (mut r Reader) sub(n int, field string) !Reader {
+	view := r.view(n, field)!
+	return Reader.new(view)
+}
