@@ -10,3 +10,10 @@ pub struct Writer {
 pub mut:
 	buf []u8
 }
+
+// Writer.new returns an empty Writer.
+pub fn Writer.new() Writer {
+	return Writer{
+		buf: []u8{}
+	}
+}
