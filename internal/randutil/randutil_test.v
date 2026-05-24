@@ -16,3 +16,28 @@ fn test_string_uses_only_alphabet() {
 		assert c in alphabet
 	}
 }
+
+fn test_string_rejects_bad_alphabet() {
+	chars(4, []u8{}) or {
+		chars(-1, 'ab'.bytes()) or { assert false }
+		return
+	}
+	assert false, 'empty alphabet must be rejected'
+}
+
+fn test_string_zero_length() {
+	assert chars(0, 'ab'.bytes())! == ''
+}
+
+fn test_ice_credentials_meet_rfc8445_minimums() {
+	ufrag := ice_ufrag()!
+	pwd := ice_pwd()!
+	assert ufrag.len >= 4
+	assert pwd.len >= 22
+	for c in ufrag.bytes() {
+		assert c in ice_chars
+	}
+	for c in pwd.bytes() {
+		assert c in ice_chars
+	}
+}
