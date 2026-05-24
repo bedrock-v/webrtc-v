@@ -65,3 +65,27 @@ pub fn chars(n int, alphabet []u8) !string {
 	}
 	return out.bytestr()
 }
+
+// alphanumeric_string returns a random string of ASCII letters and digits.
+pub fn alphanumeric_string(n int) !string {
+	return chars(n, alphanumeric)
+}
+
+// ice_ufrag returns an ICE username fragment. RFC 8445 section 5.2.1 requires
+// at least 24 bits of randomness; 4 ice-chars is the minimum length and 8 is
+// what browsers emit, which keeps interop paths well trodden.
+pub fn ice_ufrag() !string {
+	return chars(8, ice_chars)
+}
+
+// ice_pwd returns an ICE password. RFC 8445 requires at least 128 bits of
+// randomness; 24 ice-chars carries 144 bits.
+pub fn ice_pwd() !string {
+	return chars(24, ice_chars)
+}
+
+// next_u32 returns a uniformly random 32-bit unsigned integer.
+pub fn next_u32() !u32 {
+	b := rand.bytes(4)!
+	return (u32(b[0]) << 24) | (u32(b[1]) << 16) | (u32(b[2]) << 8) | u32(b[3])
+}
