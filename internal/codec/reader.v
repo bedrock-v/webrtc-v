@@ -120,3 +120,10 @@ pub fn (mut r Reader) view(n int, field string) ![]u8 {
 	r.pos += n
 	return out
 }
+
+// rest returns a copy of everything left in the buffer and moves to the end.
+pub fn (mut r Reader) rest() []u8 {
+	out := r.data[r.pos..].clone()
+	r.pos = r.data.len
+	return out
+}
