@@ -140,3 +140,15 @@ pub fn (mut r Reader) skip(n int, field string) ! {
 	r.require(n, field)!
 	r.pos += n
 }
+
+// peek_u8 reads the byte at the given offset from the cursor without advancing.
+pub fn (r &Reader) peek_u8(offset int) !u8 {
+	if offset < 0 || r.remaining() <= offset {
+		return TruncatedError{
+			field: 'peek'
+			need:  offset + 1
+			have:  r.remaining()
+		}
+	}
+	return r.data[r.pos + offset]
+}
