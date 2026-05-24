@@ -134,3 +134,9 @@ pub fn (mut r Reader) rest_view() []u8 {
 	r.pos = r.data.len
 	return out
 }
+
+// skip advances the cursor by n bytes.
+pub fn (mut r Reader) skip(n int, field string) ! {
+	r.require(n, field)!
+	r.pos += n
+}
