@@ -65,3 +65,11 @@ pub fn (mut w Writer) u64(v u64) {
 		w.buf << u8(v >> shift)
 	}
 }
+
+pub fn (mut w Writer) bytes(b []u8) {
+	w.buf << b
+}
+
+pub fn (mut w Writer) string(s string) {
+	w.buf << s.bytes()
+}
