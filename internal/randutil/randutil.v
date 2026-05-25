@@ -89,3 +89,15 @@ pub fn next_u32() !u32 {
 	b := rand.bytes(4)!
 	return (u32(b[0]) << 24) | (u32(b[1]) << 16) | (u32(b[2]) << 8) | u32(b[3])
 }
+
+// next_u32_nonzero returns a random 32-bit integer that is never zero. SSRC zero
+// is reserved by several RTP profiles, so senders must avoid it.
+pub fn next_u32_nonzero() !u32 {
+	for {
+		v := next_u32()!
+		if v != 0 {
+			return v
+		}
+	}
+	return 0
+}
