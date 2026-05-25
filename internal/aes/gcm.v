@@ -87,3 +87,33 @@ pub fn (mut g Gcm) seal(plaintext []u8, nonce []u8, additional_data []u8) ![]u8 
 	}
 	return out
 }
+
+// open authenticates and decrypts. The tag is expected at the end of the input.
+//
+// The tag is checked before anything is returned, and compared in constant
+// time: a comparison that stops at the first wrong byte tells an attacker how
+// much of a forged tag was right, which is enough to find the rest.
+pub fn (mut g Gcm) open(ciphertext []u8, nonce []u8, additional_data []u8) ![]u8 {
+	if ciphertext.len < gcm_tag_size {
+		return error('aes: ${ciphertext.len} bytes is too short to hold a GCM tag')
+	}
+	body_len := ciphertext.len - gcm_tag_size
+	body := ciphertext[..body_len]
+	expected := ciphertext[body_len..]
+
+	counter := g.initial_counter(nonce)!
+	mut tag_mask := []u8{len: block_size}
+	g.cipher.encrypt_block(mut tag_mask, counter)!
+
+	tag := g.tag(tag_mask, additional_data, body)!
+	if !constant_time_equal(tag, expected) {
+		return error('aes: the GCM authentication tag does not match')
+	}
+
+	mut stream_counter := counter.clone()
+	increment(mut stream_counter)
+	mut ctr := Ctr.new(g.cipher, stream_counter)!
+	mut out := []u8{len: body_len}
+	ctr.xor_key_stream(mut out, body)!
+	return out
+}
