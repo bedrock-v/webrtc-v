@@ -65,3 +65,8 @@ pub fn chars(n int, alphabet []u8) !string {
 	}
 	return out.bytestr()
 }
+
+// alphanumeric_string returns a random string of ASCII letters and digits.
+pub fn alphanumeric_string(n int) !string {
+	return chars(n, alphanumeric)
+}
