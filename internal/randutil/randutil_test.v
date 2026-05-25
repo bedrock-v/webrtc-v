@@ -41,3 +41,34 @@ fn test_ice_credentials_meet_rfc8445_minimums() {
 		assert c in ice_chars
 	}
 }
+
+fn test_ice_credentials_are_not_repeated() {
+	mut seen := map[string]bool{}
+	for _ in 0 .. 64 {
+		pwd := ice_pwd()!
+		assert pwd !in seen, 'ICE password repeated within 64 draws'
+		seen[pwd] = true
+	}
+}
+
+fn test_u32_nonzero_never_returns_zero() {
+	for _ in 0 .. 256 {
+		assert next_u32_nonzero()! != 0
+	}
+}
+
+fn test_distribution_is_not_obviously_biased() {
+	// A modulo-reduced generator over a 3-symbol alphabet would skew the first
+	// symbol measurably. This is a smoke test, not a statistical proof: it only
+	// catches a generator that is badly broken.
+	alphabet := 'abc'.bytes()
+	s := chars(30000, alphabet)!
+	mut counts := map[u8]int{}
+	for c in s.bytes() {
+		counts[c]++
+	}
+	assert counts.len == 3
+	for _, n in counts {
+		assert n > 8000 && n < 12000, 'symbol frequency ${n} outside expected range'
+	}
+}
