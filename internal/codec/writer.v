@@ -53,3 +53,9 @@ pub fn (mut w Writer) u32(v u32) {
 	w.buf << u8(v >> 8)
 	w.buf << u8(v)
 }
+
+pub fn (mut w Writer) u48(v u64) {
+	for shift := 40; shift >= 0; shift -= 8 {
+		w.buf << u8(v >> shift)
+	}
+}
