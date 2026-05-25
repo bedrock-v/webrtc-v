@@ -77,3 +77,9 @@ pub fn alphanumeric_string(n int) !string {
 pub fn ice_ufrag() !string {
 	return chars(8, ice_chars)
 }
+
+// ice_pwd returns an ICE password. RFC 8445 requires at least 128 bits of
+// randomness; 24 ice-chars carries 144 bits.
+pub fn ice_pwd() !string {
+	return chars(24, ice_chars)
+}
