@@ -108,3 +108,11 @@ pub fn (mut w Writer) patch_u16(mark int) {
 	w.buf[mark] = u8(length >> 8)
 	w.buf[mark + 1] = u8(length)
 }
+
+// mark_u24 reserves three bytes for a length. DTLS handshake bodies use a
+// 24-bit length.
+pub fn (mut w Writer) mark_u24() int {
+	pos := w.buf.len
+	w.u24(0)
+	return pos
+}
