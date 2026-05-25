@@ -25,3 +25,9 @@ pub fn Writer.with_capacity(n int) Writer {
 		buf: []u8{len: 0, cap: n}
 	}
 }
+
+// len reports how many bytes have been written.
+@[inline]
+pub fn (w &Writer) len() int {
+	return w.buf.len
+}
