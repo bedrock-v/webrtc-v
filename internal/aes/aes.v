@@ -127,3 +127,42 @@ fn expand_key(key []u8, rounds int) []u32 {
 	}
 	return rk
 }
+
+@[inline]
+fn rotate_word(w u32) u32 {
+	return (w << 8) | (w >> 24)
+}
+
+@[direct_array_access; inline]
+fn sub_word(w u32) u32 {
+	return (u32(sbox[(w >> 24) & 0xff]) << 24) | (u32(sbox[(w >> 16) & 0xff]) << 16) | (u32(sbox[(w >> 8) & 0xff]) << 8) | u32(sbox[w & 0xff])
+}
+
+@[direct_array_access; inline]
+fn load_u32(b []u8, offset int) u32 {
+	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
+		offset + 3])
+}
+
+@[direct_array_access; inline]
+fn store_u32(mut b []u8, offset int, v u32) {
+	b[offset] = u8(v >> 24)
+	b[offset + 1] = u8(v >> 16)
+	b[offset + 2] = u8(v >> 8)
+	b[offset + 3] = u8(v)
+}
+
+// rcon is the round constant, one per key schedule step.
+const rcon = [u8(0x00), 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
+	0xab, 0x4d]
+
+// The S-box and the four round tables are derived at startup rather than
+// written out as literals. It is a few microseconds once, it keeps 5 KB of
+// magic numbers out of the source, and the derivation is the definition from
+// FIPS-197 - which makes it checkable by reading rather than by trusting.
+const sbox = build_sbox()
+
+const te0 = build_table(0)
+const te1 = build_table(1)
+const te2 = build_table(2)
+const te3 = build_table(3)
