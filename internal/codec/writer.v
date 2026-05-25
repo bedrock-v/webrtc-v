@@ -124,3 +124,10 @@ pub fn (mut w Writer) patch_u24(mark int) {
 	w.buf[mark + 1] = u8(length >> 8)
 	w.buf[mark + 2] = u8(length)
 }
+
+// take returns the accumulated bytes and resets the Writer for reuse.
+pub fn (mut w Writer) take() []u8 {
+	out := w.buf
+	w.buf = []u8{}
+	return out
+}
