@@ -103,3 +103,16 @@ fn test_writer_widths_round_trip() {
 	assert r.u64('f')! == 0x1112131415161718
 	assert r.empty()
 }
+
+fn test_writer_pad_to_boundary() {
+	mut w := Writer.new()
+	w.bytes([u8(1), 2, 3, 4, 5])
+	w.pad(4)
+	assert w.len() == 8
+	assert w.buf[5..] == [u8(0), 0, 0]
+
+	mut aligned := Writer.new()
+	aligned.bytes([u8(1), 2, 3, 4])
+	aligned.pad(4)
+	assert aligned.len() == 4
+}
