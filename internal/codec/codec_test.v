@@ -20,3 +20,19 @@ fn test_reader_u32_u48_u64() {
 	mut r3 := Reader.new([u8(0xff), 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88])
 	assert r3.u64('y')! == 0xffeeddccbbaa9988
 }
+
+fn test_reader_returns_truncated_error_not_panic() {
+	mut r := Reader.new([u8(0x01)])
+	if _ := r.u32('missing') {
+		assert false, 'expected truncation error'
+	} else {
+		assert err is TruncatedError
+		if err is TruncatedError {
+			assert err.field == 'missing'
+			assert err.need == 4
+			assert err.have == 1
+		}
+	}
+	// A failed read must not move the cursor.
+	assert r.pos == 0
+}
