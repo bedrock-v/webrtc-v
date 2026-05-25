@@ -69,3 +69,12 @@ fn test_reader_sub_bounds_nested_decoding() {
 	nested.u8('overflow') or { assert err is TruncatedError }
 	assert r.u8('after')! == 0xcc
 }
+
+fn test_reader_skip_and_peek() {
+	mut r := Reader.new([u8(1), 2, 3, 4])
+	assert r.peek_u8(2)! == 3
+	assert r.pos == 0
+	r.skip(3, 'skip')!
+	assert r.u8('last')! == 4
+	r.peek_u8(0) or { assert err is TruncatedError }
+}
