@@ -11,3 +11,5 @@ import crypto.rand
 // Character sets from RFC 8839 section 5.4: ICE credentials are drawn from
 // ice-char, which is ALPHA / DIGIT / '+' / '/'.
 const ice_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.bytes()
+
+const alphanumeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.bytes()
