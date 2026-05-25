@@ -107,3 +107,13 @@ pub fn next_u16() !u16 {
 	b := rand.bytes(2)!
 	return (u16(b[0]) << 8) | u16(b[1])
 }
+
+// next_u64 returns a uniformly random 64-bit unsigned integer.
+pub fn next_u64() !u64 {
+	b := rand.bytes(8)!
+	mut v := u64(0)
+	for x in b {
+		v = (v << 8) | u64(x)
+	}
+	return v
+}
