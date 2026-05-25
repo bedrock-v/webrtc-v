@@ -78,3 +78,9 @@ fn test_reader_skip_and_peek() {
 	assert r.u8('last')! == 4
 	r.peek_u8(0) or { assert err is TruncatedError }
 }
+
+fn test_reader_rejects_negative_length() {
+	mut r := Reader.new([u8(1), 2, 3, 4])
+	r.bytes(-1, 'neg') or { assert err is TruncatedError }
+	r.skip(-5, 'neg') or { assert err is TruncatedError }
+}
