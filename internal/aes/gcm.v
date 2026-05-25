@@ -42,3 +42,25 @@ pub fn Gcm.new(key []u8) !&Gcm {
 	cipher := Cipher.new(key)!
 	return Gcm.with_cipher(cipher)
 }
+
+// Gcm.with_cipher reuses an already expanded key.
+pub fn Gcm.with_cipher(cipher &Cipher) !&Gcm {
+	mut g := &Gcm{
+		cipher: unsafe { cipher }
+	}
+
+	// The hash key is the cipher applied to a block of zeros.
+	mut hash_key := []u8{len: block_size}
+	g.cipher.encrypt_block(mut hash_key, []u8{len: block_size})!
+	key_element := FieldElement{
+		high: load_u64(hash_key, 0)
+		low:  load_u64(hash_key, 8)
+	}
+
+	g.products[reverse_nibble(1)] = key_element
+	for i := 2; i < 16; i += 2 {
+		g.products[reverse_nibble(i)] = double_element(g.products[reverse_nibble(i / 2)])
+		g.products[reverse_nibble(i + 1)] = add_elements(g.products[reverse_nibble(i)], key_element)
+	}
+	return g
+}
