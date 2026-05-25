@@ -67,3 +67,38 @@ pub fn (c &Cipher) encrypt_block(mut dst []u8, src []u8) ! {
 	store_u32(mut dst, 8, s2)
 	store_u32(mut dst, 12, s3)
 }
+
+// encrypt_words is the round function, on the four state words.
+//
+// Everything hot lives here: the loop is unrolled by column rather than by
+// round, each column is four table lookups and an exclusive-or, and the final
+// round is peeled out because it uses the S-box directly instead of the tables.
+@[direct_array_access]
+fn (c &Cipher) encrypt_words(in0 u32, in1 u32, in2 u32, in3 u32) (u32, u32, u32, u32) {
+	rk := c.round_keys
+	mut s0 := in0 ^ rk[0]
+	mut s1 := in1 ^ rk[1]
+	mut s2 := in2 ^ rk[2]
+	mut s3 := in3 ^ rk[3]
+
+	mut offset := 4
+	for _ in 1 .. c.rounds {
+		t0 := te0[s0 >> 24] ^ te1[(s1 >> 16) & 0xff] ^ te2[(s2 >> 8) & 0xff] ^ te3[s3 & 0xff] ^ rk[offset]
+		t1 := te0[s1 >> 24] ^ te1[(s2 >> 16) & 0xff] ^ te2[(s3 >> 8) & 0xff] ^ te3[s0 & 0xff] ^ rk[
+			offset + 1]
+		t2 := te0[s2 >> 24] ^ te1[(s3 >> 16) & 0xff] ^ te2[(s0 >> 8) & 0xff] ^ te3[s1 & 0xff] ^ rk[
+			offset + 2]
+		t3 := te0[s3 >> 24] ^ te1[(s0 >> 16) & 0xff] ^ te2[(s1 >> 8) & 0xff] ^ te3[s2 & 0xff] ^ rk[
+			offset + 3]
+		s0, s1, s2, s3 = t0, t1, t2, t3
+		offset += 4
+	}
+
+	// The last round has no MixColumns, so the tables - which fold MixColumns
+	// into the lookup - cannot be used.
+	f0 := (u32(sbox[s0 >> 24]) << 24) | (u32(sbox[(s1 >> 16) & 0xff]) << 16) | (u32(sbox[(s2 >> 8) & 0xff]) << 8) | u32(sbox[s3 & 0xff])
+	f1 := (u32(sbox[s1 >> 24]) << 24) | (u32(sbox[(s2 >> 16) & 0xff]) << 16) | (u32(sbox[(s3 >> 8) & 0xff]) << 8) | u32(sbox[s0 & 0xff])
+	f2 := (u32(sbox[s2 >> 24]) << 24) | (u32(sbox[(s3 >> 16) & 0xff]) << 16) | (u32(sbox[(s0 >> 8) & 0xff]) << 8) | u32(sbox[s1 & 0xff])
+	f3 := (u32(sbox[s3 >> 24]) << 24) | (u32(sbox[(s0 >> 16) & 0xff]) << 16) | (u32(sbox[(s1 >> 8) & 0xff]) << 8) | u32(sbox[s2 & 0xff])
+	return f0 ^ rk[offset], f1 ^ rk[offset + 1], f2 ^ rk[offset + 2], f3 ^ rk[offset + 3]
+}
