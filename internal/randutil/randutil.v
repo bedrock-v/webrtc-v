@@ -13,3 +13,14 @@ import crypto.rand
 const ice_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.bytes()
 
 const alphanumeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.bytes()
+
+// bytes returns n cryptographically secure random bytes.
+pub fn bytes(n int) ![]u8 {
+	if n < 0 {
+		return error('randutil: negative length ${n}')
+	}
+	if n == 0 {
+		return []u8{}
+	}
+	return rand.bytes(n)!
+}
