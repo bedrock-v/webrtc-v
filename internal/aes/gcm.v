@@ -17,3 +17,28 @@ module aes
 // tags; nothing in WebRTC uses them, and a short tag weakens forgery resistance
 // far more than its length suggests.
 pub const gcm_tag_size = 16
+
+// gcm_standard_nonce_size is the 96-bit nonce every protocol here uses.
+pub const gcm_standard_nonce_size = 12
+
+// FieldElement is a GF(2^128) value, most significant half first.
+struct FieldElement {
+mut:
+	high u64
+	low  u64
+}
+
+// Gcm is AES-GCM under one key.
+pub struct Gcm {
+mut:
+	cipher &Cipher = unsafe { nil }
+	// products[i] is the hash key multiplied by i, indexed by the bit-reversed
+	// nibble so that the multiplier can index it with the raw nibble.
+	products [16]FieldElement
+}
+
+// Gcm.new prepares GCM for a 16, 24 or 32 byte key.
+pub fn Gcm.new(key []u8) !&Gcm {
+	cipher := Cipher.new(key)!
+	return Gcm.with_cipher(cipher)
+}
