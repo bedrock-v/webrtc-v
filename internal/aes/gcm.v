@@ -190,3 +190,38 @@ fn (mut g Gcm) update(mut hash FieldElement, data []u8) {
 		g.multiply(mut hash)
 	}
 }
+
+// multiply replaces x with x multiplied by the hash key.
+//
+// Four bits of the operand are consumed per step: the accumulator is shifted
+// down by a nibble, reduced through the precomputed reduction table, and the
+// matching multiple of the key is added in.
+@[direct_array_access]
+fn (mut g Gcm) multiply(mut x FieldElement) {
+	mut z := FieldElement{}
+	// The operand's halves are consumed high-degree end first, because the
+	// accumulator is shifted up on every step: whatever is added last is
+	// shifted least. Taking them the other way round produces a plausible
+	// looking hash that matches nothing.
+	mut words := [2]u64{}
+	words[0] = x.low
+	words[1] = x.high
+
+	for i in 0 .. 2 {
+		mut word := words[i]
+		for _ in 0 .. 16 {
+			nibble := z.low & 0xf
+			z.low >>= 4
+			z.low |= z.high << 60
+			z.high >>= 4
+			z.high ^= u64(gcm_reduction[nibble]) << 48
+
+			product := g.products[word & 0xf]
+			z.high ^= product.high
+			z.low ^= product.low
+			word >>= 4
+		}
+	}
+	x.high = z.high
+	x.low = z.low
+}
