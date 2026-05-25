@@ -130,3 +130,11 @@ fn test_writer_length_marks() {
 	w24.patch_u24(m24)
 	assert w24.buf[0..3] == [u8(0x00), 0x01, 0x2c]
 }
+
+fn test_writer_take_resets() {
+	mut w := Writer.new()
+	w.u16(0x1234)
+	out := w.take()
+	assert out == [u8(0x12), 0x34]
+	assert w.len() == 0
+}
