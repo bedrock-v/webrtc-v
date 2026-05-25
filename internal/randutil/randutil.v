@@ -83,3 +83,9 @@ pub fn ice_ufrag() !string {
 pub fn ice_pwd() !string {
 	return chars(24, ice_chars)
 }
+
+// next_u32 returns a uniformly random 32-bit unsigned integer.
+pub fn next_u32() !u32 {
+	b := rand.bytes(4)!
+	return (u32(b[0]) << 24) | (u32(b[1]) << 16) | (u32(b[2]) << 8) | u32(b[3])
+}
