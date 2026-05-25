@@ -73,3 +73,10 @@ pub fn (mut w Writer) bytes(b []u8) {
 pub fn (mut w Writer) string(s string) {
 	w.buf << s.bytes()
 }
+
+// zeros appends n zero bytes.
+pub fn (mut w Writer) zeros(n int) {
+	for _ in 0 .. n {
+		w.buf << 0
+	}
+}
