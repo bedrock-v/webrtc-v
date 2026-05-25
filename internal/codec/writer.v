@@ -17,3 +17,11 @@ pub fn Writer.new() Writer {
 		buf: []u8{}
 	}
 }
+
+// Writer.with_capacity returns an empty Writer that has already reserved room
+// for n bytes, avoiding reallocation for encoders that know their output size.
+pub fn Writer.with_capacity(n int) Writer {
+	return Writer{
+		buf: []u8{len: 0, cap: n}
+	}
+}
