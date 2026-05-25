@@ -24,3 +24,44 @@ pub fn bytes(n int) ![]u8 {
 	}
 	return rand.bytes(n)!
 }
+
+// chars returns a random string of length n drawn uniformly from alphabet.
+//
+// Rejection sampling is used rather than a modulo reduction so that the
+// distribution stays uniform even when the alphabet length does not divide 256.
+// A biased ICE password would shrink the effective search space an off-path
+// attacker has to cover.
+pub fn chars(n int, alphabet []u8) !string {
+	if alphabet.len == 0 {
+		return error('randutil: empty alphabet')
+	}
+	if alphabet.len > 256 {
+		return error('randutil: alphabet longer than 256 symbols')
+	}
+	if n <= 0 {
+		return ''
+	}
+
+	// Largest multiple of alphabet.len that fits in a byte; values at or above
+	// this are rejected and redrawn.
+	limit := 256 - (256 % alphabet.len)
+
+	mut out := []u8{len: n}
+	mut filled := 0
+	for filled < n {
+		// Over-read slightly to keep the number of syscalls low even with
+		// rejections.
+		chunk := rand.bytes(n - filled + 8)!
+		for b in chunk {
+			if int(b) >= limit {
+				continue
+			}
+			out[filled] = alphabet[int(b) % alphabet.len]
+			filled++
+			if filled == n {
+				break
+			}
+		}
+	}
+	return out.bytestr()
+}
