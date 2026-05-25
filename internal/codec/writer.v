@@ -92,3 +92,11 @@ pub fn (mut w Writer) pad(boundary int) {
 		w.zeros(boundary - rem)
 	}
 }
+
+// mark_u16 reserves two bytes for a length that is not yet known and returns
+// the offset to hand back to patch_u16.
+pub fn (mut w Writer) mark_u16() int {
+	pos := w.buf.len
+	w.u16(0)
+	return pos
+}
