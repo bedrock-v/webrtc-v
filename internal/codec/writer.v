@@ -116,3 +116,11 @@ pub fn (mut w Writer) mark_u24() int {
 	w.u24(0)
 	return pos
 }
+
+// patch_u24 writes the number of bytes appended since mark_u24.
+pub fn (mut w Writer) patch_u24(mark int) {
+	length := w.buf.len - mark - 3
+	w.buf[mark] = u8(length >> 16)
+	w.buf[mark + 1] = u8(length >> 8)
+	w.buf[mark + 2] = u8(length)
+}
