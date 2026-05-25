@@ -101,3 +101,9 @@ pub fn next_u32_nonzero() !u32 {
 	}
 	return 0
 }
+
+// next_u16 returns a uniformly random 16-bit unsigned integer.
+pub fn next_u16() !u16 {
+	b := rand.bytes(2)!
+	return (u16(b[0]) << 8) | u16(b[1])
+}
