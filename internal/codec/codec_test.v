@@ -84,3 +84,22 @@ fn test_reader_rejects_negative_length() {
 	r.bytes(-1, 'neg') or { assert err is TruncatedError }
 	r.skip(-5, 'neg') or { assert err is TruncatedError }
 }
+
+fn test_writer_widths_round_trip() {
+	mut w := Writer.new()
+	w.u8(0x01)
+	w.u16(0x0203)
+	w.u24(0x040506)
+	w.u32(0x0708090a)
+	w.u48(0x0b0c0d0e0f10)
+	w.u64(0x1112131415161718)
+
+	mut r := Reader.new(w.buf)
+	assert r.u8('a')! == 0x01
+	assert r.u16('b')! == 0x0203
+	assert r.u24('c')! == 0x040506
+	assert r.u32('d')! == 0x0708090a
+	assert r.u48('e')! == 0x0b0c0d0e0f10
+	assert r.u64('f')! == 0x1112131415161718
+	assert r.empty()
+}
