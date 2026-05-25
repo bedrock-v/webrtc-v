@@ -225,3 +225,32 @@ fn (mut g Gcm) multiply(mut x FieldElement) {
 	x.high = z.high
 	x.low = z.low
 }
+
+// gcm_reduction[i] is the reduction of a four-bit overflow, so that the shift
+// in multiply can be corrected with one lookup instead of four conditional
+// exclusive-ors.
+const gcm_reduction = [u16(0x0000), 0x1c20, 0x3840, 0x2460, 0x7080, 0x6ca0, 0x48c0, 0x54e0, 0xe100,
+	0xfd20, 0xd940, 0xc560, 0x9180, 0x8da0, 0xa9c0, 0xb5e0]
+
+@[inline]
+fn add_elements(a FieldElement, b FieldElement) FieldElement {
+	return FieldElement{
+		high: a.high ^ b.high
+		low:  a.low ^ b.low
+	}
+}
+
+// double_element multiplies by x in the field. In the reversed bit order that
+// is a shift right, and the carry out of the bottom is reduced by the
+// polynomial's constant.
+fn double_element(a FieldElement) FieldElement {
+	carry := a.low & 1 == 1
+	mut out := FieldElement{
+		low:  (a.low >> 1) | (a.high << 63)
+		high: a.high >> 1
+	}
+	if carry {
+		out.high ^= 0xe100000000000000
+	}
+	return out
+}
