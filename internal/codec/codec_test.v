@@ -1,1 +1,11 @@
 module codec
+
+fn test_reader_reads_big_endian_widths() {
+	mut r := Reader.new([u8(0x01), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
+	assert r.u8('a')! == 0x01
+	assert r.u16('b')! == 0x0203
+	assert r.u24('c')! == 0x040506
+	assert r.remaining() == 2
+	assert r.u16('d')! == 0x0708
+	assert r.empty()
+}
