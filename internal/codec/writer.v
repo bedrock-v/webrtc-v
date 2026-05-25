@@ -80,3 +80,15 @@ pub fn (mut w Writer) zeros(n int) {
 		w.buf << 0
 	}
 }
+
+// pad appends zero bytes until the buffer length is a multiple of boundary.
+// STUN attributes and SCTP chunks are both padded to 4-byte boundaries.
+pub fn (mut w Writer) pad(boundary int) {
+	if boundary <= 1 {
+		return
+	}
+	rem := w.buf.len % boundary
+	if rem != 0 {
+		w.zeros(boundary - rem)
+	}
+}
