@@ -70,3 +70,10 @@ pub fn chars(n int, alphabet []u8) !string {
 pub fn alphanumeric_string(n int) !string {
 	return chars(n, alphanumeric)
 }
+
+// ice_ufrag returns an ICE username fragment. RFC 8445 section 5.2.1 requires
+// at least 24 bits of randomness; 4 ice-chars is the minimum length and 8 is
+// what browsers emit, which keeps interop paths well trodden.
+pub fn ice_ufrag() !string {
+	return chars(8, ice_chars)
+}
