@@ -73,3 +73,25 @@ fn test_encrypt_block_refuses_a_short_block() {
 		assert false, 'a short output block should be refused'
 	}
 }
+
+fn test_the_block_cipher_agrees_with_the_standard_library() {
+	// Neither implementation is checking the other's arithmetic here - they are
+	// independent, so agreeing on random keys and inputs is strong evidence
+	// both are right.
+	for key_length in [16, 24, 32] {
+		for _ in 0 .. 64 {
+			key := rand.bytes(key_length)!
+			block := rand.bytes(16)!
+
+			ours := Cipher.new(key)!
+			mut mine := []u8{len: 16}
+			ours.encrypt_block(mut mine, block)!
+
+			theirs := vlib_aes.new_cipher(key)
+			mut reference := []u8{len: 16}
+			theirs.encrypt(mut reference, block)
+
+			assert mine == reference, 'disagreed on key ${bytes_to_hex(key)} block ${bytes_to_hex(block)}'
+		}
+	}
+}
