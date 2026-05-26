@@ -395,3 +395,18 @@ fn test_counter_mode_can_be_fed_in_pieces() {
 	}
 	assert got == expected
 }
+
+fn test_the_counter_wraps() {
+	// The counter is a big-endian integer over the whole block, so a block of
+	// 0xff must roll over to zero rather than stopping or overflowing a byte.
+	mut counter := []u8{len: 16, init: u8(0xff)}
+	increment(mut counter)
+	assert counter == []u8{len: 16}
+}
+
+fn test_a_counter_of_the_wrong_length_is_refused() {
+	cipher_ := Cipher.new([]u8{len: 16})!
+	if _ := Ctr.new(cipher_, []u8{len: 8}) {
+		assert false, 'a short counter should be refused'
+	}
+}
