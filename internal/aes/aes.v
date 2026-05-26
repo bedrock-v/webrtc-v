@@ -127,3 +127,8 @@ fn expand_key(key []u8, rounds int) []u32 {
 	}
 	return rk
 }
+
+@[inline]
+fn rotate_word(w u32) u32 {
+	return (w << 8) | (w >> 24)
+}
