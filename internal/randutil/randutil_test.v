@@ -41,3 +41,12 @@ fn test_ice_credentials_meet_rfc8445_minimums() {
 		assert c in ice_chars
 	}
 }
+
+fn test_ice_credentials_are_not_repeated() {
+	mut seen := map[string]bool{}
+	for _ in 0 .. 64 {
+		pwd := ice_pwd()!
+		assert pwd !in seen, 'ICE password repeated within 64 draws'
+		seen[pwd] = true
+	}
+}
