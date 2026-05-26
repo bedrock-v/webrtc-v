@@ -34,3 +34,31 @@ pub fn (f Family) octet_len() int {
 		.ipv6 { 16 }
 	}
 }
+
+// IpAddr is an IPv4 or IPv6 address.
+//
+// The address is stored in network byte order. An IPv4 address is kept as four
+// octets rather than as an IPv4-mapped IPv6 address, because ICE treats the two
+// families as separate candidate pools and silently promoting one to the other
+// produces pairs that cannot connect.
+pub struct IpAddr {
+pub:
+	family Family = .ipv4
+	octets []u8
+	// zone is the scope identifier of a link-local IPv6 address, without the
+	// leading '%'. It is part of the address for routing purposes but is never
+	// put on the wire.
+	zone string
+}
+
+// ipv4_unspecified is 0.0.0.0.
+pub const ipv4_unspecified = IpAddr{
+	family: .ipv4
+	octets: [u8(0), 0, 0, 0]
+}
+
+// ipv6_unspecified is ::.
+pub const ipv6_unspecified = IpAddr{
+	family: .ipv6
+	octets: []u8{len: 16}
+}
