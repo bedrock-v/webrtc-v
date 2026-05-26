@@ -137,3 +137,9 @@ fn rotate_word(w u32) u32 {
 fn sub_word(w u32) u32 {
 	return (u32(sbox[(w >> 24) & 0xff]) << 24) | (u32(sbox[(w >> 16) & 0xff]) << 16) | (u32(sbox[(w >> 8) & 0xff]) << 8) | u32(sbox[w & 0xff])
 }
+
+@[direct_array_access; inline]
+fn load_u32(b []u8, offset int) u32 {
+	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
+		offset + 3])
+}
