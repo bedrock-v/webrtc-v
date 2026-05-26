@@ -145,3 +145,26 @@ fn (mut g Gcm) initial_counter(nonce []u8) ![]u8 {
 	store_u64(mut counter, 8, hash.low)
 	return counter
 }
+
+// tag computes the authentication tag over the additional data and ciphertext.
+fn (mut g Gcm) tag(mask []u8, additional_data []u8, ciphertext []u8) ![]u8 {
+	mut hash := FieldElement{}
+	g.update(mut hash, additional_data)
+	g.update(mut hash, ciphertext)
+
+	// The final block is the two lengths in bits. Including them is what stops
+	// an attacker from moving bytes between the authenticated data and the
+	// ciphertext without changing the tag.
+	mut lengths := []u8{len: block_size}
+	store_u64(mut lengths, 0, u64(additional_data.len) * 8)
+	store_u64(mut lengths, 8, u64(ciphertext.len) * 8)
+	g.update(mut hash, lengths)
+
+	mut out := []u8{len: gcm_tag_size}
+	store_u64(mut out, 0, hash.high)
+	store_u64(mut out, 8, hash.low)
+	for i in 0 .. gcm_tag_size {
+		out[i] ^= mask[i]
+	}
+	return out
+}
