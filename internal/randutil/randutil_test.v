@@ -50,3 +50,9 @@ fn test_ice_credentials_are_not_repeated() {
 		seen[pwd] = true
 	}
 }
+
+fn test_u32_nonzero_never_returns_zero() {
+	for _ in 0 .. 256 {
+		assert next_u32_nonzero()! != 0
+	}
+}
