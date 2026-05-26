@@ -56,3 +56,19 @@ fn test_u32_nonzero_never_returns_zero() {
 		assert next_u32_nonzero()! != 0
 	}
 }
+
+fn test_distribution_is_not_obviously_biased() {
+	// A modulo-reduced generator over a 3-symbol alphabet would skew the first
+	// symbol measurably. This is a smoke test, not a statistical proof: it only
+	// catches a generator that is badly broken.
+	alphabet := 'abc'.bytes()
+	s := chars(30000, alphabet)!
+	mut counts := map[u8]int{}
+	for c in s.bytes() {
+		counts[c]++
+	}
+	assert counts.len == 3
+	for _, n in counts {
+		assert n > 8000 && n < 12000, 'symbol frequency ${n} outside expected range'
+	}
+}
