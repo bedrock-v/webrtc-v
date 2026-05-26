@@ -102,3 +102,28 @@ fn (c &Cipher) encrypt_words(in0 u32, in1 u32, in2 u32, in3 u32) (u32, u32, u32,
 	f3 := (u32(sbox[s3 >> 24]) << 24) | (u32(sbox[(s0 >> 16) & 0xff]) << 16) | (u32(sbox[(s1 >> 8) & 0xff]) << 8) | u32(sbox[s2 & 0xff])
 	return f0 ^ rk[offset], f1 ^ rk[offset + 1], f2 ^ rk[offset + 2], f3 ^ rk[offset + 3]
 }
+
+// expand_key produces the round keys (FIPS-197 section 5.2).
+@[direct_array_access]
+fn expand_key(key []u8, rounds int) []u32 {
+	words := key.len / 4
+	total := 4 * (rounds + 1)
+	mut rk := []u32{len: total}
+
+	for i in 0 .. words {
+		rk[i] = load_u32(key, i * 4)
+	}
+	for i in words .. total {
+		mut temp := rk[i - 1]
+		if i % words == 0 {
+			temp = sub_word(rotate_word(temp)) ^ (u32(rcon[i / words]) << 24)
+		} else if words > 6 && i % words == 4 {
+			// AES-256 applies SubWord without the rotation on this step. Leaving
+			// it out is a classic way to produce a key schedule that encrypts
+			// fine and interoperates with nothing.
+			temp = sub_word(temp)
+		}
+		rk[i] = rk[i - words] ^ temp
+	}
+	return rk
+}
