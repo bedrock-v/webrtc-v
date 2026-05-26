@@ -17,3 +17,16 @@ mut:
 	block []u8
 	used  int
 }
+
+// Ctr.new starts a keystream at the given counter block.
+pub fn Ctr.new(cipher &Cipher, counter []u8) !&Ctr {
+	if counter.len != block_size {
+		return error('aes: a counter must be ${block_size} bytes, got ${counter.len}')
+	}
+	return &Ctr{
+		cipher:  unsafe { cipher }
+		counter: counter.clone()
+		block:   []u8{len: block_size}
+		used:    block_size
+	}
+}
