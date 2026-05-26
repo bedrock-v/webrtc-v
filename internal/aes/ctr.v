@@ -47,3 +47,14 @@ pub fn (mut c Ctr) xor_key_stream(mut dst []u8, src []u8) ! {
 		c.used++
 	}
 }
+
+// increment advances the counter as a big-endian integer, wrapping at the top.
+@[direct_array_access]
+fn increment(mut counter []u8) {
+	for i := counter.len - 1; i >= 0; i-- {
+		counter[i]++
+		if counter[i] != 0 {
+			return
+		}
+	}
+}
