@@ -17,3 +17,6 @@
 // standard library's version; this is not a regression, but it is also not
 // constant time. See SECURITY.md.
 module aes
+
+// block_size is the AES block size in bytes. It is 16 for every key length.
+pub const block_size = 16
