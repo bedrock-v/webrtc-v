@@ -132,3 +132,8 @@ fn expand_key(key []u8, rounds int) []u32 {
 fn rotate_word(w u32) u32 {
 	return (w << 8) | (w >> 24)
 }
+
+@[direct_array_access; inline]
+fn sub_word(w u32) u32 {
+	return (u32(sbox[(w >> 24) & 0xff]) << 24) | (u32(sbox[(w >> 16) & 0xff]) << 16) | (u32(sbox[(w >> 8) & 0xff]) << 8) | u32(sbox[w & 0xff])
+}
