@@ -227,3 +227,22 @@ fn rotate_right_bytes(w u32, count int) u32 {
 	}
 	return (w >> shift) | (w << (32 - shift))
 }
+
+// xtime_multiply multiplies in GF(2^8) modulo the AES polynomial.
+fn xtime_multiply(a u8, b u8) u8 {
+	mut result := u8(0)
+	mut x := a
+	mut y := b
+	for _ in 0 .. 8 {
+		if y & 1 != 0 {
+			result ^= x
+		}
+		high := x & 0x80 != 0
+		x <<= 1
+		if high {
+			x ^= 0x1b
+		}
+		y >>= 1
+	}
+	return result
+}
