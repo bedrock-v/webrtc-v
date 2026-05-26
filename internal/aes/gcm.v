@@ -17,3 +17,6 @@ module aes
 // tags; nothing in WebRTC uses them, and a short tag weakens forgery resistance
 // far more than its length suggests.
 pub const gcm_tag_size = 16
+
+// gcm_standard_nonce_size is the 96-bit nonce every protocol here uses.
+pub const gcm_standard_nonce_size = 12
