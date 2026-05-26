@@ -161,3 +161,8 @@ const rcon = [u8(0x00), 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x
 // magic numbers out of the source, and the derivation is the definition from
 // FIPS-197 - which makes it checkable by reading rather than by trusting.
 const sbox = build_sbox()
+
+const te0 = build_table(0)
+const te1 = build_table(1)
+const te2 = build_table(2)
+const te3 = build_table(3)
