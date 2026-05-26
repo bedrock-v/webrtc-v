@@ -27,3 +27,12 @@ mut:
 	high u64
 	low  u64
 }
+
+// Gcm is AES-GCM under one key.
+pub struct Gcm {
+mut:
+	cipher &Cipher = unsafe { nil }
+	// products[i] is the hash key multiplied by i, indexed by the bit-reversed
+	// nibble so that the multiplier can index it with the raw nibble.
+	products [16]FieldElement
+}
