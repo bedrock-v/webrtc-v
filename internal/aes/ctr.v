@@ -30,3 +30,20 @@ pub fn Ctr.new(cipher &Cipher, counter []u8) !&Ctr {
 		used:    block_size
 	}
 }
+
+// xor_key_stream encrypts src into dst, which may be the same slice.
+@[direct_array_access]
+pub fn (mut c Ctr) xor_key_stream(mut dst []u8, src []u8) ! {
+	if dst.len < src.len {
+		return error('aes: the destination is shorter than the source')
+	}
+	for i in 0 .. src.len {
+		if c.used == block_size {
+			c.cipher.encrypt_block(mut c.block, c.counter)!
+			increment(mut c.counter)
+			c.used = 0
+		}
+		dst[i] = src[i] ^ c.block[c.used]
+		c.used++
+	}
+}
