@@ -24,3 +24,7 @@ fn test_string_rejects_bad_alphabet() {
 	}
 	assert false, 'empty alphabet must be rejected'
 }
+
+fn test_string_zero_length() {
+	assert chars(0, 'ab'.bytes())! == ''
+}
