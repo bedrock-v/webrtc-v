@@ -270,3 +270,28 @@ fn load_u64(b []u8, offset int) u64 {
 		offset + 3]) << 32) | (u64(b[offset + 4]) << 24) | (u64(b[offset + 5]) << 16) | (u64(b[
 		offset + 6]) << 8) | u64(b[offset + 7])
 }
+
+@[direct_array_access; inline]
+fn store_u64(mut b []u8, offset int, v u64) {
+	b[offset] = u8(v >> 56)
+	b[offset + 1] = u8(v >> 48)
+	b[offset + 2] = u8(v >> 40)
+	b[offset + 3] = u8(v >> 32)
+	b[offset + 4] = u8(v >> 24)
+	b[offset + 5] = u8(v >> 16)
+	b[offset + 6] = u8(v >> 8)
+	b[offset + 7] = u8(v)
+}
+
+// constant_time_equal compares two byte slices without an early exit.
+@[direct_array_access]
+fn constant_time_equal(a []u8, b []u8) bool {
+	if a.len != b.len {
+		return false
+	}
+	mut difference := u8(0)
+	for i in 0 .. a.len {
+		difference |= a[i] ^ b[i]
+	}
+	return difference == 0
+}
