@@ -181,3 +181,26 @@ pub fn (a IpAddr) is_ipv4_mapped() bool {
 	}
 	return a.octets[10] == 0xff && a.octets[11] == 0xff
 }
+
+// unmap converts an IPv4-mapped IPv6 address to its IPv4 form, and returns any
+// other address unchanged. Sockets in dual-stack mode report IPv4 peers this
+// way, and ICE needs them back in their own family before pairing.
+pub fn (a IpAddr) unmap() IpAddr {
+	if !a.is_ipv4_mapped() {
+		return a
+	}
+	return IpAddr{
+		family: .ipv4
+		octets: [a.octets[12], a.octets[13], a.octets[14], a.octets[15]]
+	}
+}
+
+// equal compares two addresses, including the IPv6 scope identifier.
+pub fn (a IpAddr) equal(b IpAddr) bool {
+	return a.family == b.family && a.zone == b.zone && a.octets == b.octets
+}
+
+// == is defined so addresses can be used as map keys and compared directly.
+fn (a IpAddr) == (b IpAddr) bool {
+	return a.equal(b)
+}
