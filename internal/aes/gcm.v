@@ -36,3 +36,9 @@ mut:
 	// nibble so that the multiplier can index it with the raw nibble.
 	products [16]FieldElement
 }
+
+// Gcm.new prepares GCM for a 16, 24 or 32 byte key.
+pub fn Gcm.new(key []u8) !&Gcm {
+	cipher := Cipher.new(key)!
+	return Gcm.with_cipher(cipher)
+}
