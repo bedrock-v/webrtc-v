@@ -62,3 +62,23 @@ pub const ipv6_unspecified = IpAddr{
 	family: .ipv6
 	octets: []u8{len: 16}
 }
+
+// IpAddr.from_octets builds an address from raw bytes, validating the length
+// against the family.
+pub fn IpAddr.from_octets(family Family, octets []u8) !IpAddr {
+	if octets.len != family.octet_len() {
+		return error('netaddr: ${family} address needs ${family.octet_len()} octets, got ${octets.len}')
+	}
+	return IpAddr{
+		family: family
+		octets: octets.clone()
+	}
+}
+
+// IpAddr.v4 builds an IPv4 address from its four octets.
+pub fn IpAddr.v4(a u8, b u8, c u8, d u8) IpAddr {
+	return IpAddr{
+		family: .ipv4
+		octets: [a, b, c, d]
+	}
+}
