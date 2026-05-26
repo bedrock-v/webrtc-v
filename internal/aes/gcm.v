@@ -117,3 +117,31 @@ pub fn (mut g Gcm) open(ciphertext []u8, nonce []u8, additional_data []u8) ![]u8
 	ctr.xor_key_stream(mut out, body)!
 	return out
 }
+
+// initial_counter derives the first counter block from the nonce.
+//
+// A 96-bit nonce is used directly with a counter of one, which is the case
+// every protocol here hits. Any other length is folded through GHASH, which is
+// what makes GCM safe for nonces it cannot simply concatenate.
+fn (mut g Gcm) initial_counter(nonce []u8) ![]u8 {
+	if nonce.len == 0 {
+		return error('aes: a GCM nonce may not be empty')
+	}
+	mut counter := []u8{len: block_size}
+	if nonce.len == gcm_standard_nonce_size {
+		for i in 0 .. gcm_standard_nonce_size {
+			counter[i] = nonce[i]
+		}
+		counter[15] = 1
+		return counter
+	}
+
+	mut hash := FieldElement{}
+	g.update(mut hash, nonce)
+	mut length_block := []u8{len: block_size}
+	store_u64(mut length_block, 8, u64(nonce.len) * 8)
+	g.update(mut hash, length_block)
+	store_u64(mut counter, 0, hash.high)
+	store_u64(mut counter, 8, hash.low)
+	return counter
+}
