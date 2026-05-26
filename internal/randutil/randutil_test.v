@@ -7,3 +7,12 @@ fn test_bytes_length_and_edge_cases() {
 	bytes(-1) or { return }
 	assert false, 'negative length must be rejected'
 }
+
+fn test_string_uses_only_alphabet() {
+	alphabet := 'abc'.bytes()
+	s := chars(200, alphabet)!
+	assert s.len == 200
+	for c in s.bytes() {
+		assert c in alphabet
+	}
+}
