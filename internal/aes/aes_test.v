@@ -371,3 +371,27 @@ fn test_counter_mode_agrees_with_the_standard_library() {
 		assert mine == reference
 	}
 }
+
+fn test_counter_mode_can_be_fed_in_pieces() {
+	// SRTP encrypts a packet in one call, but the keystream has to survive being
+	// consumed unevenly or a caller that splits a write would get garbage.
+	key := rand.bytes(16)!
+	counter := rand.bytes(16)!
+	plaintext := rand.bytes(300)!
+
+	mut whole := Ctr.new(Cipher.new(key)!, counter)!
+	mut expected := []u8{len: plaintext.len}
+	whole.xor_key_stream(mut expected, plaintext)!
+
+	mut piecemeal := Ctr.new(Cipher.new(key)!, counter)!
+	mut got := []u8{}
+	mut offset := 0
+	for step in [1, 7, 16, 31, 100, 145] {
+		size := if offset + step > plaintext.len { plaintext.len - offset } else { step }
+		mut piece := []u8{len: size}
+		piecemeal.xor_key_stream(mut piece, plaintext[offset..offset + size])!
+		got << piece
+		offset += size
+	}
+	assert got == expected
+}
