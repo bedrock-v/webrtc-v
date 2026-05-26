@@ -336,3 +336,38 @@ fn reference_multiply(x []u8, y []u8) []u8 {
 	}
 	return z
 }
+
+fn reference_increment(mut counter []u8) {
+	for i := 15; i >= 0; i-- {
+		counter[i]++
+		if counter[i] != 0 {
+			return
+		}
+	}
+}
+
+fn test_gcm_refuses_an_empty_nonce() {
+	mut gcm := Gcm.new([]u8{len: 16})!
+	if _ := gcm.seal('x'.bytes(), []u8{}, []u8{}) {
+		assert false, 'an empty nonce should be refused'
+	}
+}
+
+fn test_counter_mode_agrees_with_the_standard_library() {
+	for _ in 0 .. 16 {
+		key := rand.bytes(16)!
+		counter := rand.bytes(16)!
+		plaintext := rand.bytes(500)!
+
+		mut ours := Ctr.new(Cipher.new(key)!, counter)!
+		mut mine := []u8{len: plaintext.len}
+		ours.xor_key_stream(mut mine, plaintext)!
+
+		block := vlib_aes.new_cipher(key)
+		mut stream := cipher.new_ctr(block, counter)
+		mut reference := []u8{len: plaintext.len}
+		stream.xor_key_stream(mut reference, plaintext)
+
+		assert mine == reference
+	}
+}
