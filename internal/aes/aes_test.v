@@ -95,3 +95,35 @@ fn test_the_block_cipher_agrees_with_the_standard_library() {
 		}
 	}
 }
+
+fn test_the_gcm_all_zero_vectors() {
+	// Test cases 1 and 2 from the GCM specification's own vectors: an empty
+	// message and a single zero block, both under a zero key and nonce.
+	mut gcm := Gcm.new([]u8{len: 16})!
+
+	empty := gcm.seal([]u8{}, []u8{len: 12}, []u8{})!
+	assert bytes_to_hex(empty) == '58e2fccefa7e3061367f1d57a4e7455a'
+
+	one_block := gcm.seal([]u8{len: 16}, []u8{len: 12}, []u8{})!
+	assert bytes_to_hex(one_block) == '0388dace60b6a392f328c2b971b2fe78' +
+		'ab6e47d42cec13bdf53a67b21257bddf'
+}
+
+fn test_gcm_agrees_with_the_standard_library() {
+	for key_length in [16, 32] {
+		for size in [0, 1, 15, 16, 17, 63, 64, 1163] {
+			key := rand.bytes(key_length)!
+			nonce := rand.bytes(12)!
+			plaintext := rand.bytes(size)!
+			additional := rand.bytes(size % 29)!
+
+			mut ours := Gcm.new(key)!
+			mine := ours.seal(plaintext, nonce, additional)!
+
+			theirs := vlib_aes.new_aes_gcm(key)!
+			reference := theirs.encrypt(plaintext, nonce, additional)!
+
+			assert mine == reference, 'disagreed at ${size} bytes with a ${key_length}-byte key'
+		}
+	}
+}
