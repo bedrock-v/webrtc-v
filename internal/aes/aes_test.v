@@ -227,3 +227,76 @@ fn test_gcm_matches_an_independent_reference() {
 		}
 	}
 }
+
+// reference_seal is GCM straight from SP 800-38D, with no attempt at speed.
+fn reference_seal(key []u8, nonce []u8, plaintext []u8, additional []u8) []u8 {
+	cipher_ := Cipher.new(key) or { panic(err) }
+	mut hash_key := []u8{len: 16}
+	cipher_.encrypt_block(mut hash_key, []u8{len: 16}) or { panic(err) }
+
+	mut j0 := []u8{len: 16}
+	if nonce.len == 12 {
+		for i in 0 .. 12 {
+			j0[i] = nonce[i]
+		}
+		j0[15] = 1
+	} else {
+		mut padded := nonce.clone()
+		for padded.len % 16 != 0 {
+			padded << 0
+		}
+		for _ in 0 .. 8 {
+			padded << 0
+		}
+		bits := u64(nonce.len) * 8
+		for i in 0 .. 8 {
+			padded << u8(bits >> (56 - 8 * i))
+		}
+		j0 = reference_ghash(padded, hash_key)
+	}
+
+	mut counter := j0.clone()
+	mut ciphertext := []u8{len: plaintext.len}
+	mut offset := 0
+	for offset < plaintext.len {
+		reference_increment(mut counter)
+		mut keystream := []u8{len: 16}
+		cipher_.encrypt_block(mut keystream, counter) or { panic(err) }
+		mut n := plaintext.len - offset
+		if n > 16 {
+			n = 16
+		}
+		for i in 0 .. n {
+			ciphertext[offset + i] = plaintext[offset + i] ^ keystream[i]
+		}
+		offset += n
+	}
+
+	mut hash_input := []u8{}
+	hash_input << additional
+	for hash_input.len % 16 != 0 {
+		hash_input << 0
+	}
+	hash_input << ciphertext
+	for hash_input.len % 16 != 0 {
+		hash_input << 0
+	}
+	additional_bits := u64(additional.len) * 8
+	ciphertext_bits := u64(ciphertext.len) * 8
+	for i in 0 .. 8 {
+		hash_input << u8(additional_bits >> (56 - 8 * i))
+	}
+	for i in 0 .. 8 {
+		hash_input << u8(ciphertext_bits >> (56 - 8 * i))
+	}
+
+	hash := reference_ghash(hash_input, hash_key)
+	mut mask := []u8{len: 16}
+	cipher_.encrypt_block(mut mask, j0) or { panic(err) }
+
+	mut out := ciphertext.clone()
+	for i in 0 .. 16 {
+		out << hash[i] ^ mask[i]
+	}
+	return out
+}
