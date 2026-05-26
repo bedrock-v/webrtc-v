@@ -155,3 +155,31 @@ fn test_gcm_round_trips() {
 	assert sealed.len == plaintext.len + gcm_tag_size
 	assert gcm.open(sealed, nonce, additional)! == plaintext
 }
+
+fn test_gcm_rejects_a_tampered_message() {
+	key := rand.bytes(16)!
+	nonce := rand.bytes(12)!
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal('the quick brown fox'.bytes(), nonce, 'header'.bytes())!
+
+	// Every single-bit change anywhere - ciphertext or tag - must be caught.
+	for index in 0 .. sealed.len {
+		mut tampered := sealed.clone()
+		tampered[index] ^= 0x01
+		if _ := gcm.open(tampered, nonce, 'header'.bytes()) {
+			assert false, 'a flipped bit at byte ${index} was not detected'
+		}
+	}
+}
+
+fn test_gcm_rejects_the_wrong_additional_data() {
+	// The additional data is not in the message, so this is the only thing that
+	// binds a packet to its header.
+	key := rand.bytes(16)!
+	nonce := rand.bytes(12)!
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal('payload'.bytes(), nonce, 'right'.bytes())!
+	if _ := gcm.open(sealed, nonce, 'wrong'.bytes()) {
+		assert false, 'the wrong additional data was accepted'
+	}
+}
