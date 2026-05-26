@@ -166,3 +166,37 @@ const te0 = build_table(0)
 const te1 = build_table(1)
 const te2 = build_table(2)
 const te3 = build_table(3)
+
+// build_sbox derives the S-box: the multiplicative inverse in GF(2^8) followed
+// by the affine transformation of FIPS-197 section 5.1.1.
+fn build_sbox() []u8 {
+	// A log/antilog table over the generator 3 turns the inverse into a
+	// subtraction, which avoids implementing the extended Euclidean algorithm.
+	mut antilog := []u8{len: 256}
+	mut log := []u8{len: 256}
+	mut x := u8(1)
+	for i in 0 .. 255 {
+		antilog[i] = x
+		log[x] = u8(i)
+		x = xtime_multiply(x, 3)
+	}
+
+	mut out := []u8{len: 256}
+	for i in 0 .. 256 {
+		mut inverse := u8(0)
+		if i != 0 {
+			// The exponents run modulo 255, so an element whose logarithm is
+			// zero - that is, one - inverts to itself rather than reading off
+			// the end of the table.
+			inverse = antilog[(255 - int(log[i])) % 255]
+		}
+		mut value := inverse
+		mut result := inverse
+		for _ in 0 .. 4 {
+			value = (value << 1) | (value >> 7)
+			result ^= value
+		}
+		out[i] = result ^ 0x63
+	}
+	return out
+}
