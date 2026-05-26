@@ -155,3 +155,9 @@ fn store_u32(mut b []u8, offset int, v u32) {
 // rcon is the round constant, one per key schedule step.
 const rcon = [u8(0x00), 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
 	0xab, 0x4d]
+
+// The S-box and the four round tables are derived at startup rather than
+// written out as literals. It is a few microseconds once, it keeps 5 KB of
+// magic numbers out of the source, and the derivation is the definition from
+// FIPS-197 - which makes it checkable by reading rather than by trusting.
+const sbox = build_sbox()
