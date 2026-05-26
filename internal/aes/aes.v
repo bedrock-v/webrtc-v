@@ -50,3 +50,20 @@ pub fn Cipher.new(key []u8) !&Cipher {
 pub fn (c &Cipher) key_size() int {
 	return (c.rounds - 6) * 4
 }
+
+// encrypt_block encrypts exactly one block from src into dst.
+//
+// dst and src may be the same slice. Anything shorter than a block is a
+// programming error rather than a runtime condition, so it is an error return
+// and not a panic - this library never panics on data it was handed.
+pub fn (c &Cipher) encrypt_block(mut dst []u8, src []u8) ! {
+	if src.len < block_size || dst.len < block_size {
+		return error('aes: encrypt_block needs a full ${block_size}-byte block')
+	}
+	s0, s1, s2, s3 := c.encrypt_words(load_u32(src, 0), load_u32(src, 4), load_u32(src, 8),
+		load_u32(src, 12))
+	store_u32(mut dst, 0, s0)
+	store_u32(mut dst, 4, s1)
+	store_u32(mut dst, 8, s2)
+	store_u32(mut dst, 12, s3)
+}
