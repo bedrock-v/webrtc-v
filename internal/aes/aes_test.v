@@ -44,3 +44,32 @@ fn test_the_fips_197_aes_192_vector() {
 	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
 	assert bytes_to_hex(out) == 'dda97ca4864cdfe06eaf70a0ec0d7191'
 }
+
+fn test_the_fips_197_aes_256_vector() {
+	// FIPS-197 appendix C.3.
+	cipher_ :=
+		Cipher.new(hex_to_bytes('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'))!
+	mut out := []u8{len: 16}
+	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
+	assert bytes_to_hex(out) == '8ea2b7ca516745bfeafc49904b496089'
+}
+
+fn test_a_key_of_the_wrong_length_is_refused() {
+	for length in [0, 1, 15, 17, 31, 33] {
+		if _ := Cipher.new([]u8{len: length}) {
+			assert false, '${length} bytes should not be accepted as an AES key'
+		}
+	}
+}
+
+fn test_encrypt_block_refuses_a_short_block() {
+	cipher_ := Cipher.new([]u8{len: 16})!
+	mut out := []u8{len: 16}
+	if _ := cipher_.encrypt_block(mut out, []u8{len: 15}) {
+		assert false, 'a short input block should be refused'
+	}
+	mut short := []u8{len: 8}
+	if _ := cipher_.encrypt_block(mut short, []u8{len: 16}) {
+		assert false, 'a short output block should be refused'
+	}
+}
