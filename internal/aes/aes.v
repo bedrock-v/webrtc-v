@@ -30,3 +30,17 @@ mut:
 	round_keys []u32
 	rounds     int
 }
+
+// Cipher.new expands a 16, 24 or 32 byte key.
+pub fn Cipher.new(key []u8) !&Cipher {
+	rounds := match key.len {
+		16 { 10 }
+		24 { 12 }
+		32 { 14 }
+		else { return error('aes: a key must be 16, 24 or 32 bytes, got ${key.len}') }
+	}
+	return &Cipher{
+		round_keys: expand_key(key, rounds)
+		rounds:     rounds
+	}
+}
