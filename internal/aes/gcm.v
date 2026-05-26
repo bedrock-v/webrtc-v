@@ -64,3 +64,26 @@ pub fn Gcm.with_cipher(cipher &Cipher) !&Gcm {
 	}
 	return g
 }
+
+// seal encrypts and authenticates, returning the ciphertext with the tag
+// appended.
+pub fn (mut g Gcm) seal(plaintext []u8, nonce []u8, additional_data []u8) ![]u8 {
+	counter := g.initial_counter(nonce)!
+
+	mut tag_mask := []u8{len: block_size}
+	g.cipher.encrypt_block(mut tag_mask, counter)!
+
+	mut stream_counter := counter.clone()
+	increment(mut stream_counter)
+	mut ctr := Ctr.new(g.cipher, stream_counter)!
+
+	mut out := []u8{len: plaintext.len + gcm_tag_size}
+	mut body := unsafe { out[..plaintext.len] }
+	ctr.xor_key_stream(mut body, plaintext)!
+
+	tag := g.tag(tag_mask, additional_data, body)!
+	for i in 0 .. gcm_tag_size {
+		out[plaintext.len + i] = tag[i]
+	}
+	return out
+}
