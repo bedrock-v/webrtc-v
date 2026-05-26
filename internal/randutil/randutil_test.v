@@ -16,3 +16,11 @@ fn test_string_uses_only_alphabet() {
 		assert c in alphabet
 	}
 }
+
+fn test_string_rejects_bad_alphabet() {
+	chars(4, []u8{}) or {
+		chars(-1, 'ab'.bytes()) or { assert false }
+		return
+	}
+	assert false, 'empty alphabet must be rejected'
+}
