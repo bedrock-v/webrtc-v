@@ -44,3 +44,9 @@ pub fn Cipher.new(key []u8) !&Cipher {
 		rounds:     rounds
 	}
 }
+
+// key_size is the length of the key this cipher was built from.
+@[inline]
+pub fn (c &Cipher) key_size() int {
+	return (c.rounds - 6) * 4
+}
