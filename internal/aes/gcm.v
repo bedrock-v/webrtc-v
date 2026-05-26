@@ -20,3 +20,10 @@ pub const gcm_tag_size = 16
 
 // gcm_standard_nonce_size is the 96-bit nonce every protocol here uses.
 pub const gcm_standard_nonce_size = 12
+
+// FieldElement is a GF(2^128) value, most significant half first.
+struct FieldElement {
+mut:
+	high u64
+	low  u64
+}
