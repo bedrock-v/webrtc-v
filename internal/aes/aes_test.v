@@ -127,3 +127,31 @@ fn test_gcm_agrees_with_the_standard_library() {
 		}
 	}
 }
+
+fn test_gcm_opens_what_the_standard_library_sealed() {
+	// The other direction, so that a mistake shared between our own seal and
+	// open - which would round trip perfectly - cannot hide.
+	key := rand.bytes(16)!
+	nonce := rand.bytes(12)!
+	plaintext := rand.bytes(200)!
+	additional := rand.bytes(13)!
+
+	theirs := vlib_aes.new_aes_gcm(key)!
+	sealed := theirs.encrypt(plaintext, nonce, additional)!
+
+	mut ours := Gcm.new(key)!
+	opened := ours.open(sealed, nonce, additional)!
+	assert opened == plaintext
+}
+
+fn test_gcm_round_trips() {
+	key := rand.bytes(32)!
+	nonce := rand.bytes(12)!
+	plaintext := rand.bytes(4096)!
+	additional := rand.bytes(20)!
+
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal(plaintext, nonce, additional)!
+	assert sealed.len == plaintext.len + gcm_tag_size
+	assert gcm.open(sealed, nonce, additional)! == plaintext
+}
