@@ -218,3 +218,12 @@ fn build_table(rotation int) []u32 {
 	}
 	return out
 }
+
+@[inline]
+fn rotate_right_bytes(w u32, count int) u32 {
+	shift := u32(count * 8)
+	if shift == 0 {
+		return w
+	}
+	return (w >> shift) | (w << (32 - shift))
+}
