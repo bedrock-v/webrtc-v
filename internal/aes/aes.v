@@ -143,3 +143,11 @@ fn load_u32(b []u8, offset int) u32 {
 	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
 		offset + 3])
 }
+
+@[direct_array_access; inline]
+fn store_u32(mut b []u8, offset int, v u32) {
+	b[offset] = u8(v >> 24)
+	b[offset + 1] = u8(v >> 16)
+	b[offset + 2] = u8(v >> 8)
+	b[offset + 3] = u8(v)
+}
