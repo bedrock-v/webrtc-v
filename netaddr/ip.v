@@ -82,3 +82,32 @@ pub fn IpAddr.v4(a u8, b u8, c u8, d u8) IpAddr {
 		octets: [a, b, c, d]
 	}
 }
+
+// with_zone returns a copy of the address carrying the given scope identifier.
+pub fn (a IpAddr) with_zone(zone string) IpAddr {
+	return IpAddr{
+		family: a.family
+		octets: a.octets
+		zone:   zone
+	}
+}
+
+// is_valid reports whether the address holds the right number of octets. A
+// zero-value IpAddr is not valid, which makes an uninitialised field detectable.
+@[inline]
+pub fn (a IpAddr) is_valid() bool {
+	return a.octets.len == a.family.octet_len()
+}
+
+// is_unspecified reports whether the address is all zeros (0.0.0.0 or ::).
+pub fn (a IpAddr) is_unspecified() bool {
+	if !a.is_valid() {
+		return false
+	}
+	for b in a.octets {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
+}
