@@ -28,3 +28,16 @@ fn test_string_rejects_bad_alphabet() {
 fn test_string_zero_length() {
 	assert chars(0, 'ab'.bytes())! == ''
 }
+
+fn test_ice_credentials_meet_rfc8445_minimums() {
+	ufrag := ice_ufrag()!
+	pwd := ice_pwd()!
+	assert ufrag.len >= 4
+	assert pwd.len >= 22
+	for c in ufrag.bytes() {
+		assert c in ice_chars
+	}
+	for c in pwd.bytes() {
+		assert c in ice_chars
+	}
+}
