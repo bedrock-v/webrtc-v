@@ -20,3 +20,13 @@ module aes
 
 // block_size is the AES block size in bytes. It is 16 for every key length.
 pub const block_size = 16
+
+// Cipher is an expanded AES key.
+//
+// It holds the round keys as big-endian 32-bit words, which is the order the
+// round function reads them in, so the hot loop does no byte shuffling.
+pub struct Cipher {
+mut:
+	round_keys []u32
+	rounds     int
+}
