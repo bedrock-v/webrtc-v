@@ -168,3 +168,25 @@ fn (mut g Gcm) tag(mask []u8, additional_data []u8, ciphertext []u8) ![]u8 {
 	}
 	return out
 }
+
+// update absorbs data into the hash, a block at a time, zero-padding a short
+// final block.
+@[direct_array_access]
+fn (mut g Gcm) update(mut hash FieldElement, data []u8) {
+	mut offset := 0
+	for offset + block_size <= data.len {
+		hash.high ^= load_u64(data, offset)
+		hash.low ^= load_u64(data, offset + 8)
+		g.multiply(mut hash)
+		offset += block_size
+	}
+	if offset < data.len {
+		mut last := []u8{len: block_size}
+		for i in 0 .. data.len - offset {
+			last[i] = data[offset + i]
+		}
+		hash.high ^= load_u64(last, 0)
+		hash.low ^= load_u64(last, 8)
+		g.multiply(mut hash)
+	}
+}
