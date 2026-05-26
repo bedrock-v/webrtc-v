@@ -200,3 +200,21 @@ fn build_sbox() []u8 {
 	}
 	return out
 }
+
+// build_table produces one of the four round tables. Each is the same set of
+// values rotated by one byte, which is why the round function can index all
+// four with the same S-box output.
+fn build_table(rotation int) []u32 {
+	// Built here rather than read from the `sbox` const: V does not promise an
+	// initialisation order between consts, and a table silently derived from a
+	// zeroed S-box would encrypt happily and interoperate with nothing.
+	box := build_sbox()
+	mut out := []u32{len: 256}
+	for i in 0 .. 256 {
+		s := box[i]
+		// [s*2, s, s, s*3] is MixColumns applied to a single byte.
+		word := (u32(xtime_multiply(s, 2)) << 24) | (u32(s) << 16) | (u32(s) << 8) | u32(xtime_multiply(s, 3))
+		out[i] = rotate_right_bytes(word, rotation)
+	}
+	return out
+}
