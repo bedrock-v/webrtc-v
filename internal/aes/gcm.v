@@ -239,3 +239,18 @@ fn add_elements(a FieldElement, b FieldElement) FieldElement {
 		low:  a.low ^ b.low
 	}
 }
+
+// double_element multiplies by x in the field. In the reversed bit order that
+// is a shift right, and the carry out of the bottom is reduced by the
+// polynomial's constant.
+fn double_element(a FieldElement) FieldElement {
+	carry := a.low & 1 == 1
+	mut out := FieldElement{
+		low:  (a.low >> 1) | (a.high << 63)
+		high: a.high >> 1
+	}
+	if carry {
+		out.high ^= 0xe100000000000000
+	}
+	return out
+}
