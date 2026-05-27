@@ -27,3 +27,11 @@ fn bytes_to_hex(b []u8) string {
 	}
 	return out
 }
+
+fn test_the_fips_197_aes_128_vector() {
+	// FIPS-197 appendix C.1.
+	cipher_ := Cipher.new(hex_to_bytes('000102030405060708090a0b0c0d0e0f'))!
+	mut out := []u8{len: 16}
+	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
+	assert bytes_to_hex(out) == '69c4e0d86a7b0430d8cdb78070b4c55a'
+}
