@@ -437,3 +437,12 @@ fn parse_ipv6(input string) !IpAddr {
 		zone:   zone
 	}
 }
+
+fn hex_digit(c u8) ?u8 {
+	return match true {
+		c >= `0` && c <= `9` { c - `0` }
+		c >= `a` && c <= `f` { c - `a` + 10 }
+		c >= `A` && c <= `F` { c - `A` + 10 }
+		else { none }
+	}
+}
