@@ -26,3 +26,25 @@ fn test_ipv4_leading_zero_is_rejected() {
 	IpAddr.parse('010.1.1.1') or { return }
 	assert false, 'leading zeros must be rejected'
 }
+
+fn test_ipv6_parse_and_format_round_trip() {
+	cases := {
+		'::':                                      '::'
+		'::1':                                     '::1'
+		'1::':                                     '1::'
+		'1::2':                                    '1::2'
+		'2001:db8::1':                             '2001:db8::1'
+		'2001:0db8:0000:0000:0000:0000:0000:0001': '2001:db8::1'
+		'1:2:3:4:5:6:7:8':                         '1:2:3:4:5:6:7:8'
+		'fe80::1':                                 'fe80::1'
+		'2001:DB8::AB':                            '2001:db8::ab'
+		'::ffff:1.2.3.4':                          '::ffff:1.2.3.4'
+		'2001:db8:0:0:1:0:0:1':                    '2001:db8::1:0:0:1'
+	}
+	for input, want in cases {
+		addr := IpAddr.parse(input)!
+		assert addr.family == .ipv6
+		assert addr.octets.len == 16
+		assert addr.str() == want, 'parse(${input}).str() = ${addr.str()}, want ${want}'
+	}
+}
