@@ -53,3 +53,11 @@ fn test_the_fips_197_aes_256_vector() {
 	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
 	assert bytes_to_hex(out) == '8ea2b7ca516745bfeafc49904b496089'
 }
+
+fn test_a_key_of_the_wrong_length_is_refused() {
+	for length in [0, 1, 15, 17, 31, 33] {
+		if _ := Cipher.new([]u8{len: length}) {
+			assert false, '${length} bytes should not be accepted as an AES key'
+		}
+	}
+}
