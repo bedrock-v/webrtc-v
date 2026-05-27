@@ -313,3 +313,26 @@ fn reference_ghash(data []u8, hash_key []u8) []u8 {
 	}
 	return y
 }
+
+// reference_multiply is the shift-and-add multiplication of section 6.3: walk
+// the bits of x from the most significant, doubling y each step.
+fn reference_multiply(x []u8, y []u8) []u8 {
+	mut z := []u8{len: 16}
+	mut v := y.clone()
+	for i in 0 .. 128 {
+		if (x[i / 8] >> (7 - u8(i % 8))) & 1 == 1 {
+			for j in 0 .. 16 {
+				z[j] ^= v[j]
+			}
+		}
+		carry := v[15] & 1
+		for j := 15; j > 0; j-- {
+			v[j] = (v[j] >> 1) | ((v[j - 1] & 1) << 7)
+		}
+		v[0] >>= 1
+		if carry == 1 {
+			v[0] ^= 0xe1
+		}
+	}
+	return z
+}
