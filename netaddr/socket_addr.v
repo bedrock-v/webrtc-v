@@ -27,3 +27,28 @@ pub fn (a SocketAddr) is_valid() bool {
 pub fn (a SocketAddr) family() Family {
 	return a.ip.family
 }
+
+// unmap converts an IPv4-mapped IPv6 socket address to its IPv4 form.
+pub fn (a SocketAddr) unmap() SocketAddr {
+	return SocketAddr{
+		ip:   a.ip.unmap()
+		port: a.port
+	}
+}
+
+pub fn (a SocketAddr) equal(b SocketAddr) bool {
+	return a.port == b.port && a.ip.equal(b.ip)
+}
+
+fn (a SocketAddr) == (b SocketAddr) bool {
+	return a.equal(b)
+}
+
+// str formats the pair as host:port, bracketing IPv6 hosts so the port stays
+// unambiguous.
+pub fn (a SocketAddr) str() string {
+	if a.ip.family == .ipv6 {
+		return '[${a.ip}]:${a.port}'
+	}
+	return '${a.ip}:${a.port}'
+}
