@@ -254,3 +254,12 @@ fn double_element(a FieldElement) FieldElement {
 	}
 	return out
 }
+
+// reverse_nibble reverses the four bits of i, which is how the product table is
+// indexed: the multiplier reads nibbles in the field's reversed bit order, and
+// doing the reversal once at setup keeps it out of the inner loop.
+@[inline]
+fn reverse_nibble(i int) int {
+	value := u32(i)
+	return int(((value << 3) & 8) | ((value << 1) & 4) | ((value >> 1) & 2) | ((value >> 3) & 1))
+}
