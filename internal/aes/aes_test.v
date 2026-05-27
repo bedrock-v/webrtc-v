@@ -108,3 +108,22 @@ fn test_the_gcm_all_zero_vectors() {
 	assert bytes_to_hex(one_block) == '0388dace60b6a392f328c2b971b2fe78' +
 		'ab6e47d42cec13bdf53a67b21257bddf'
 }
+
+fn test_gcm_agrees_with_the_standard_library() {
+	for key_length in [16, 32] {
+		for size in [0, 1, 15, 16, 17, 63, 64, 1163] {
+			key := rand.bytes(key_length)!
+			nonce := rand.bytes(12)!
+			plaintext := rand.bytes(size)!
+			additional := rand.bytes(size % 29)!
+
+			mut ours := Gcm.new(key)!
+			mine := ours.seal(plaintext, nonce, additional)!
+
+			theirs := vlib_aes.new_aes_gcm(key)!
+			reference := theirs.encrypt(plaintext, nonce, additional)!
+
+			assert mine == reference, 'disagreed at ${size} bytes with a ${key_length}-byte key'
+		}
+	}
+}
