@@ -99,3 +99,32 @@ fn test_ipv6_zone_is_preserved_but_not_part_of_octets() {
 	IpAddr.parse('fe80::1%') or { return }
 	assert false, 'empty zone must be rejected'
 }
+
+fn test_address_classification() {
+	assert IpAddr.parse('127.0.0.1')!.is_loopback()
+	assert IpAddr.parse('127.255.255.255')!.is_loopback()
+	assert IpAddr.parse('::1')!.is_loopback()
+	assert !IpAddr.parse('::2')!.is_loopback()
+	assert !IpAddr.parse('128.0.0.1')!.is_loopback()
+
+	assert IpAddr.parse('169.254.1.1')!.is_link_local()
+	assert IpAddr.parse('fe80::1')!.is_link_local()
+	assert IpAddr.parse('febf::1')!.is_link_local()
+	assert !IpAddr.parse('fec0::1')!.is_link_local()
+
+	assert IpAddr.parse('10.0.0.1')!.is_private()
+	assert IpAddr.parse('172.16.0.1')!.is_private()
+	assert IpAddr.parse('172.31.255.255')!.is_private()
+	assert !IpAddr.parse('172.32.0.1')!.is_private()
+	assert IpAddr.parse('192.168.0.1')!.is_private()
+	assert IpAddr.parse('fd00::1')!.is_private()
+	assert !IpAddr.parse('8.8.8.8')!.is_private()
+
+	assert IpAddr.parse('224.0.0.1')!.is_multicast()
+	assert IpAddr.parse('ff02::1')!.is_multicast()
+	assert !IpAddr.parse('223.255.255.255')!.is_multicast()
+
+	assert IpAddr.parse('0.0.0.0')!.is_unspecified()
+	assert IpAddr.parse('::')!.is_unspecified()
+	assert !IpAddr.parse('0.0.0.1')!.is_unspecified()
+}
