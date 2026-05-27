@@ -194,3 +194,13 @@ fn test_gcm_rejects_the_wrong_nonce() {
 		assert false, 'the wrong nonce was accepted'
 	}
 }
+
+fn test_gcm_rejects_a_truncated_message() {
+	key := rand.bytes(16)!
+	mut gcm := Gcm.new(key)!
+	for length in [0, 1, 15] {
+		if _ := gcm.open([]u8{len: length}, []u8{len: 12}, []u8{}) {
+			assert false, '${length} bytes cannot contain a tag and must be refused'
+		}
+	}
+}
