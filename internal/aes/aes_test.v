@@ -44,3 +44,12 @@ fn test_the_fips_197_aes_192_vector() {
 	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
 	assert bytes_to_hex(out) == 'dda97ca4864cdfe06eaf70a0ec0d7191'
 }
+
+fn test_the_fips_197_aes_256_vector() {
+	// FIPS-197 appendix C.3.
+	cipher_ :=
+		Cipher.new(hex_to_bytes('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f'))!
+	mut out := []u8{len: 16}
+	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
+	assert bytes_to_hex(out) == '8ea2b7ca516745bfeafc49904b496089'
+}
