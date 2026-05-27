@@ -35,3 +35,12 @@ fn test_the_fips_197_aes_128_vector() {
 	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
 	assert bytes_to_hex(out) == '69c4e0d86a7b0430d8cdb78070b4c55a'
 }
+
+fn test_the_fips_197_aes_192_vector() {
+	// FIPS-197 appendix C.2. AES-192 is here because its key schedule takes a
+	// different path through expand_key than either of the other two.
+	cipher_ := Cipher.new(hex_to_bytes('000102030405060708090a0b0c0d0e0f1011121314151617'))!
+	mut out := []u8{len: 16}
+	cipher_.encrypt_block(mut out, hex_to_bytes('00112233445566778899aabbccddeeff'))!
+	assert bytes_to_hex(out) == 'dda97ca4864cdfe06eaf70a0ec0d7191'
+}
