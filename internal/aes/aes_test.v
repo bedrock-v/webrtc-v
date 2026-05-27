@@ -143,3 +143,15 @@ fn test_gcm_opens_what_the_standard_library_sealed() {
 	opened := ours.open(sealed, nonce, additional)!
 	assert opened == plaintext
 }
+
+fn test_gcm_round_trips() {
+	key := rand.bytes(32)!
+	nonce := rand.bytes(12)!
+	plaintext := rand.bytes(4096)!
+	additional := rand.bytes(20)!
+
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal(plaintext, nonce, additional)!
+	assert sealed.len == plaintext.len + gcm_tag_size
+	assert gcm.open(sealed, nonce, additional)! == plaintext
+}
