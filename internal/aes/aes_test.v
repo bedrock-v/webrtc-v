@@ -204,3 +204,26 @@ fn test_gcm_rejects_a_truncated_message() {
 		}
 	}
 }
+
+fn test_gcm_matches_an_independent_reference() {
+	// The standard library only does 96-bit nonces, so the derivation for every
+	// other length has nothing to be compared against. This reference is the
+	// specification written out the slow way - GHASH one bit at a time - which
+	// makes it obviously correct and useless for production, exactly what a
+	// reference should be.
+	for nonce_length in [1, 8, 12, 13, 16, 60] {
+		for size in [0, 1, 16, 30, 64, 257] {
+			key := rand.bytes(16)!
+			nonce := rand.bytes(nonce_length)!
+			plaintext := rand.bytes(size)!
+			additional := rand.bytes(size % 17)!
+
+			mut gcm := Gcm.new(key)!
+			mine := gcm.seal(plaintext, nonce, additional)!
+			reference := reference_seal(key, nonce, plaintext, additional)
+
+			assert mine == reference, 'disagreed on a ${nonce_length}-byte nonce and ${size} bytes'
+			assert gcm.open(mine, nonce, additional)! == plaintext
+		}
+	}
+}
