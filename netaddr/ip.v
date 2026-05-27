@@ -327,3 +327,113 @@ fn parse_ipv4(s string) !IpAddr {
 		octets: octets
 	}
 }
+
+fn parse_ipv6(input string) !IpAddr {
+	mut s := input
+	mut zone := ''
+	if idx := s.index('%') {
+		zone = s[idx + 1..]
+		s = s[..idx]
+		if zone == '' {
+			return error('netaddr: empty IPv6 zone in ${input}')
+		}
+	}
+	if s == '' {
+		return error('netaddr: empty IPv6 address')
+	}
+	// A colon may only appear doubled at either end. Rejecting the single-colon
+	// forms up front is what keeps ":1" from being read as "::1".
+	if s.starts_with(':') && !s.starts_with('::') {
+		return error('netaddr: ${input} starts with a single colon')
+	}
+	if s.ends_with(':') && !s.ends_with('::') {
+		return error('netaddr: ${input} ends with a single colon')
+	}
+
+	// A trailing dotted-quad (::ffff:1.2.3.4) is rewritten into the two hex
+	// groups it stands for, so the scanner below has only one syntax to handle.
+	if s.contains('.') {
+		last_colon := s.last_index(':') or {
+			return error('netaddr: ${input} is not an IPv6 address')
+		}
+		v4 := parse_ipv4(s[last_colon + 1..])!
+		hi := ((u32(v4.octets[0]) << 8) | u32(v4.octets[1])).hex()
+		lo := ((u32(v4.octets[2]) << 8) | u32(v4.octets[3])).hex()
+		s = '${s[..last_colon + 1]}${hi}:${lo}'
+	}
+
+	if s == '::' {
+		return IpAddr{
+			family: .ipv6
+			octets: []u8{len: 16}
+			zone:   zone
+		}
+	}
+
+	// Collapsing the doubled colon at either end to a single one leaves exactly
+	// one empty token marking the '::' position after splitting.
+	mut work := s
+	if work.starts_with('::') {
+		work = work[1..]
+	}
+	if work.ends_with('::') {
+		work = work[..work.len - 1]
+	}
+
+	mut head := []u16{cap: 8}
+	mut back := []u16{cap: 8}
+	mut seen_double := false
+	for part in work.split(':') {
+		if part.len == 0 {
+			if seen_double {
+				return error('netaddr: ${input} has more than one ::')
+			}
+			seen_double = true
+			continue
+		}
+		if part.len > 4 {
+			return error('netaddr: IPv6 group "${part}" in ${input} is longer than 4 digits')
+		}
+		mut group := u16(0)
+		for c in part {
+			d := hex_digit(c) or {
+				return error('netaddr: bad hex digit in IPv6 group "${part}" of ${input}')
+			}
+			group = (group << 4) | u16(d)
+		}
+		if seen_double {
+			back << group
+		} else {
+			head << group
+		}
+	}
+
+	total := head.len + back.len
+	if seen_double {
+		// '::' stands for at least one group of zeros.
+		if total > 7 {
+			return error('netaddr: ${input} has ${total} groups, too many for ::')
+		}
+	} else if total != 8 {
+		return error('netaddr: ${input} has ${total} groups, expected 8')
+	}
+
+	mut octets := []u8{len: 16}
+	mut pos := 0
+	for g in head {
+		octets[pos] = u8(g >> 8)
+		octets[pos + 1] = u8(g)
+		pos += 2
+	}
+	pos += (8 - total) * 2
+	for g in back {
+		octets[pos] = u8(g >> 8)
+		octets[pos + 1] = u8(g)
+		pos += 2
+	}
+	return IpAddr{
+		family: .ipv6
+		octets: octets
+		zone:   zone
+	}
+}
