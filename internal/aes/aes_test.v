@@ -19,3 +19,11 @@ fn hex_to_bytes(s string) []u8 {
 	}
 	return out
 }
+
+fn bytes_to_hex(b []u8) string {
+	mut out := ''
+	for value in b {
+		out += value.hex_full()
+	}
+	return out
+}
