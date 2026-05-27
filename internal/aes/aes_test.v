@@ -300,3 +300,16 @@ fn reference_seal(key []u8, nonce []u8, plaintext []u8, additional []u8) []u8 {
 	}
 	return out
 }
+
+fn reference_ghash(data []u8, hash_key []u8) []u8 {
+	mut y := []u8{len: 16}
+	mut offset := 0
+	for offset + 16 <= data.len {
+		for i in 0 .. 16 {
+			y[i] ^= data[offset + i]
+		}
+		y = reference_multiply(y, hash_key)
+		offset += 16
+	}
+	return y
+}
