@@ -128,3 +128,37 @@ fn test_address_classification() {
 	assert IpAddr.parse('::')!.is_unspecified()
 	assert !IpAddr.parse('0.0.0.1')!.is_unspecified()
 }
+
+fn test_zero_value_is_invalid() {
+	addr := IpAddr{}
+	assert !addr.is_valid()
+	assert addr.str() == '<invalid>'
+	assert !addr.is_loopback()
+	assert !addr.is_private()
+	assert !addr.is_unspecified()
+}
+
+fn test_from_octets_validates_length() {
+	ok := IpAddr.from_octets(.ipv4, [u8(1), 2, 3, 4])!
+	assert ok.str() == '1.2.3.4'
+	IpAddr.from_octets(.ipv4, [u8(1), 2, 3]) or {
+		IpAddr.from_octets(.ipv6, [u8(1)]) or { return }
+		assert false
+	}
+	assert false, 'wrong octet count must be rejected'
+}
+
+fn test_from_octets_copies_input() {
+	mut src := [u8(1), 2, 3, 4]
+	addr := IpAddr.from_octets(.ipv4, src)!
+	src[0] = 9
+	assert addr.str() == '1.2.3.4'
+}
+
+fn test_socket_addr_format_and_parse() {
+	cases := ['1.2.3.4:5000', '[::1]:3478', '[fe80::1%eth0]:9', '0.0.0.0:0', '255.255.255.255:65535']
+	for c in cases {
+		addr := SocketAddr.parse(c)!
+		assert addr.str() == c
+	}
+}
