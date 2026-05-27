@@ -183,3 +183,14 @@ fn test_gcm_rejects_the_wrong_additional_data() {
 		assert false, 'the wrong additional data was accepted'
 	}
 }
+
+fn test_gcm_rejects_the_wrong_nonce() {
+	key := rand.bytes(16)!
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal('payload'.bytes(), []u8{len: 12}, []u8{})!
+	mut other := []u8{len: 12}
+	other[11] = 1
+	if _ := gcm.open(sealed, other, []u8{}) {
+		assert false, 'the wrong nonce was accepted'
+	}
+}
