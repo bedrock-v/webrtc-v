@@ -171,3 +171,15 @@ fn test_gcm_rejects_a_tampered_message() {
 		}
 	}
 }
+
+fn test_gcm_rejects_the_wrong_additional_data() {
+	// The additional data is not in the message, so this is the only thing that
+	// binds a packet to its header.
+	key := rand.bytes(16)!
+	nonce := rand.bytes(12)!
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal('payload'.bytes(), nonce, 'right'.bytes())!
+	if _ := gcm.open(sealed, nonce, 'wrong'.bytes()) {
+		assert false, 'the wrong additional data was accepted'
+	}
+}
