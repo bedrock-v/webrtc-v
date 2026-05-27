@@ -61,3 +61,15 @@ fn test_a_key_of_the_wrong_length_is_refused() {
 		}
 	}
 }
+
+fn test_encrypt_block_refuses_a_short_block() {
+	cipher_ := Cipher.new([]u8{len: 16})!
+	mut out := []u8{len: 16}
+	if _ := cipher_.encrypt_block(mut out, []u8{len: 15}) {
+		assert false, 'a short input block should be refused'
+	}
+	mut short := []u8{len: 8}
+	if _ := cipher_.encrypt_block(mut short, []u8{len: 16}) {
+		assert false, 'a short output block should be refused'
+	}
+}
