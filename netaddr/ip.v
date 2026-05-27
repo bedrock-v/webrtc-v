@@ -294,3 +294,36 @@ pub fn IpAddr.parse(s string) !IpAddr {
 	}
 	return parse_ipv4(s)
 }
+
+fn parse_ipv4(s string) !IpAddr {
+	parts := s.split('.')
+	if parts.len != 4 {
+		return error('netaddr: ${s} is not a dotted-quad IPv4 address')
+	}
+	mut octets := []u8{len: 4}
+	for i, part in parts {
+		if part.len == 0 || part.len > 3 {
+			return error('netaddr: bad IPv4 octet ${i} in ${s}')
+		}
+		if part.len > 1 && part[0] == `0` {
+			// "010" is 8 to a C resolver and 10 to a human. Rejecting the form
+			// removes an entire class of address-confusion bug.
+			return error('netaddr: IPv4 octet ${i} in ${s} has a leading zero')
+		}
+		mut value := 0
+		for c in part {
+			if c < `0` || c > `9` {
+				return error('netaddr: non-digit in IPv4 octet ${i} of ${s}')
+			}
+			value = value * 10 + int(c - `0`)
+		}
+		if value > 255 {
+			return error('netaddr: IPv4 octet ${i} of ${s} is out of range')
+		}
+		octets[i] = u8(value)
+	}
+	return IpAddr{
+		family: .ipv4
+		octets: octets
+	}
+}
