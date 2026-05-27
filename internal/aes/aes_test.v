@@ -155,3 +155,19 @@ fn test_gcm_round_trips() {
 	assert sealed.len == plaintext.len + gcm_tag_size
 	assert gcm.open(sealed, nonce, additional)! == plaintext
 }
+
+fn test_gcm_rejects_a_tampered_message() {
+	key := rand.bytes(16)!
+	nonce := rand.bytes(12)!
+	mut gcm := Gcm.new(key)!
+	sealed := gcm.seal('the quick brown fox'.bytes(), nonce, 'header'.bytes())!
+
+	// Every single-bit change anywhere - ciphertext or tag - must be caught.
+	for index in 0 .. sealed.len {
+		mut tampered := sealed.clone()
+		tampered[index] ^= 0x01
+		if _ := gcm.open(tampered, nonce, 'header'.bytes()) {
+			assert false, 'a flipped bit at byte ${index} was not detected'
+		}
+	}
+}
