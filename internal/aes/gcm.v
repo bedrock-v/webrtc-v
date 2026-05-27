@@ -282,3 +282,16 @@ fn store_u64(mut b []u8, offset int, v u64) {
 	b[offset + 6] = u8(v >> 8)
 	b[offset + 7] = u8(v)
 }
+
+// constant_time_equal compares two byte slices without an early exit.
+@[direct_array_access]
+fn constant_time_equal(a []u8, b []u8) bool {
+	if a.len != b.len {
+		return false
+	}
+	mut difference := u8(0)
+	for i in 0 .. a.len {
+		difference |= a[i] ^ b[i]
+	}
+	return difference == 0
+}
