@@ -263,3 +263,10 @@ fn reverse_nibble(i int) int {
 	value := u32(i)
 	return int(((value << 3) & 8) | ((value << 1) & 4) | ((value >> 1) & 2) | ((value >> 3) & 1))
 }
+
+@[direct_array_access; inline]
+fn load_u64(b []u8, offset int) u64 {
+	return (u64(b[offset]) << 56) | (u64(b[offset + 1]) << 48) | (u64(b[offset + 2]) << 40) | (u64(b[
+		offset + 3]) << 32) | (u64(b[offset + 4]) << 24) | (u64(b[offset + 5]) << 16) | (u64(b[
+		offset + 6]) << 8) | u64(b[offset + 7])
+}
