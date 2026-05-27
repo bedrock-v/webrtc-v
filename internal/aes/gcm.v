@@ -231,3 +231,11 @@ fn (mut g Gcm) multiply(mut x FieldElement) {
 // exclusive-ors.
 const gcm_reduction = [u16(0x0000), 0x1c20, 0x3840, 0x2460, 0x7080, 0x6ca0, 0x48c0, 0x54e0, 0xe100,
 	0xfd20, 0xd940, 0xc560, 0x9180, 0x8da0, 0xa9c0, 0xb5e0]
+
+@[inline]
+fn add_elements(a FieldElement, b FieldElement) FieldElement {
+	return FieldElement{
+		high: a.high ^ b.high
+		low:  a.low ^ b.low
+	}
+}
