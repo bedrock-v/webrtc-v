@@ -18,3 +18,10 @@ pub enum Family as u8 {
 	ipv4 = 4
 	ipv6 = 6
 }
+
+pub fn (f Family) str() string {
+	return match f {
+		.ipv4 { 'IPv4' }
+		.ipv6 { 'IPv6' }
+	}
+}
