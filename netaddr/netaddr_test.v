@@ -162,3 +162,33 @@ fn test_socket_addr_format_and_parse() {
 		assert addr.str() == c
 	}
 }
+
+fn test_socket_addr_rejects_malformed() {
+	bad := ['', '1.2.3.4', '1.2.3.4:', ':1234', '::1:3478', '[::1]3478', '[::1', '1.2.3.4:65536',
+		'1.2.3.4:-1', '1.2.3.4:abc', '1.2.3.4:123456']
+	for c in bad {
+		if _ := SocketAddr.parse(c) {
+			assert false, 'expected ${c} to be rejected'
+		}
+	}
+}
+
+fn test_socket_addr_equality_and_unmap() {
+	a := SocketAddr.parse('1.2.3.4:5')!
+	b := SocketAddr.new(IpAddr.v4(1, 2, 3, 4), 5)
+	assert a == b
+
+	c := SocketAddr.parse('1.2.3.4:6')!
+	assert a != c
+
+	mapped := SocketAddr.parse('[::ffff:1.2.3.4]:5')!
+	assert mapped.unmap() == a
+}
+
+fn test_socket_addr_usable_as_map_key() {
+	mut seen := map[string]int{}
+	a := SocketAddr.parse('1.2.3.4:5')!
+	seen[a.str()] = 1
+	b := SocketAddr.new(IpAddr.v4(1, 2, 3, 4), 5)
+	assert seen[b.str()] == 1
+}
