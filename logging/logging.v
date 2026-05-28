@@ -143,3 +143,41 @@ fn (l Logger) emit(level Level, msg string) {
 	}
 	l.sink.write(level, l.scope, msg)
 }
+
+pub fn (l Logger) error(msg string) {
+	l.emit(.error, msg)
+}
+
+pub fn (l Logger) warn(msg string) {
+	l.emit(.warn, msg)
+}
+
+pub fn (l Logger) info(msg string) {
+	l.emit(.info, msg)
+}
+
+pub fn (l Logger) debug(msg string) {
+	l.emit(.debug, msg)
+}
+
+pub fn (l Logger) trace(msg string) {
+	l.emit(.trace, msg)
+}
+
+// format_record renders a record as a single line, including the trailing
+// newline. Sinks share it so output stays consistent across destinations.
+pub fn format_record(level Level, scope string, msg string) string {
+	mut sb := strings.new_builder(64 + msg.len)
+	sb.write_string(time.now().format_rfc3339_micro())
+	sb.write_string(' ')
+	sb.write_string(level_label(level))
+	sb.write_string(' ')
+	if scope != '' {
+		sb.write_string('[')
+		sb.write_string(scope)
+		sb.write_string('] ')
+	}
+	sb.write_string(msg)
+	sb.write_string('\n')
+	return sb.str()
+}
