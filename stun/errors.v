@@ -72,3 +72,26 @@ pub struct AttributeNotFoundError {
 pub:
 	typ u16
 }
+
+pub fn (e AttributeNotFoundError) msg() string {
+	return 'stun: attribute ${attr_name(e.typ)} not present'
+}
+
+pub fn (e AttributeNotFoundError) code() int {
+	return 300
+}
+
+// EncodeError is returned when a message cannot be serialised, which only
+// happens if the caller supplied something that does not fit the wire format.
+pub struct EncodeError {
+pub:
+	detail string
+}
+
+pub fn (e EncodeError) msg() string {
+	return 'stun: ${e.detail}'
+}
+
+pub fn (e EncodeError) code() int {
+	return 400
+}
