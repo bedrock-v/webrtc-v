@@ -91,3 +91,10 @@ pub fn (a IpAddr) with_zone(zone string) IpAddr {
 		zone:   zone
 	}
 }
+
+// is_valid reports whether the address holds the right number of octets. A
+// zero-value IpAddr is not valid, which makes an uninitialised field detectable.
+@[inline]
+pub fn (a IpAddr) is_valid() bool {
+	return a.octets.len == a.family.octet_len()
+}
