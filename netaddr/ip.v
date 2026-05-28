@@ -98,3 +98,16 @@ pub fn (a IpAddr) with_zone(zone string) IpAddr {
 pub fn (a IpAddr) is_valid() bool {
 	return a.octets.len == a.family.octet_len()
 }
+
+// is_unspecified reports whether the address is all zeros (0.0.0.0 or ::).
+pub fn (a IpAddr) is_unspecified() bool {
+	if !a.is_valid() {
+		return false
+	}
+	for b in a.octets {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
+}
