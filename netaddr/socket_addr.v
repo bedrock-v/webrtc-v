@@ -27,3 +27,11 @@ pub fn (a SocketAddr) is_valid() bool {
 pub fn (a SocketAddr) family() Family {
 	return a.ip.family
 }
+
+// unmap converts an IPv4-mapped IPv6 socket address to its IPv4 form.
+pub fn (a SocketAddr) unmap() SocketAddr {
+	return SocketAddr{
+		ip:   a.ip.unmap()
+		port: a.port
+	}
+}
