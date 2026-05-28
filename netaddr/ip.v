@@ -199,3 +199,8 @@ pub fn (a IpAddr) unmap() IpAddr {
 pub fn (a IpAddr) equal(b IpAddr) bool {
 	return a.family == b.family && a.zone == b.zone && a.octets == b.octets
 }
+
+// == is defined so addresses can be used as map keys and compared directly.
+fn (a IpAddr) == (b IpAddr) bool {
+	return a.equal(b)
+}
