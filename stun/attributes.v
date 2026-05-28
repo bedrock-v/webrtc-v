@@ -50,3 +50,20 @@ pub const attr_fingerprint = u16(0x8028)
 pub const attr_ice_controlled = u16(0x8029)
 pub const attr_ice_controlling = u16(0x802A)
 pub const attr_response_origin = u16(0x802B)
+pub const attr_other_address = u16(0x802C)
+pub const attr_ecn_check = u16(0x802D)
+pub const attr_third_party_authorization = u16(0x802E)
+pub const attr_mobility_ticket = u16(0x8030)
+
+// Non-standard attributes seen from Chrome. They are comprehension-optional, so
+// interoperating only requires being able to name them in logs.
+pub const attr_goog_network_info = u16(0xC057)
+pub const attr_goog_last_ice_check_received = u16(0xC058)
+pub const attr_goog_misc_info = u16(0xC059)
+
+// is_comprehension_required reports whether an agent that does not understand
+// this attribute must reject the message (RFC 8489 section 14).
+@[inline]
+pub fn is_comprehension_required(typ u16) bool {
+	return typ <= 0x7FFF
+}
