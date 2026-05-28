@@ -74,3 +74,11 @@ pub fn IpAddr.from_octets(family Family, octets []u8) !IpAddr {
 		octets: octets.clone()
 	}
 }
+
+// IpAddr.v4 builds an IPv4 address from its four octets.
+pub fn IpAddr.v4(a u8, b u8, c u8, d u8) IpAddr {
+	return IpAddr{
+		family: .ipv4
+		octets: [a, b, c, d]
+	}
+}
