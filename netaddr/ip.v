@@ -8,3 +8,5 @@
 // remote peer, an XOR-MAPPED-ADDRESS from an untrusted STUN server - is handled
 // by code that returns errors instead of trusting the platform resolver.
 module netaddr
+
+import strings
