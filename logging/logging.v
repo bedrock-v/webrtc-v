@@ -108,3 +108,38 @@ pub fn from_env(scope string) Logger {
 	level := level_from_string(raw) or { Level.warn }
 	return default(scope, level)
 }
+
+// with_scope returns a copy of the logger under a nested scope, so a
+// per-connection component can be told apart from its peers in the output.
+pub fn (l Logger) with_scope(scope string) Logger {
+	nested := if l.scope == '' { scope } else { '${l.scope}.${scope}' }
+	return Logger{
+		scope: nested
+		sink:  l.sink
+		level: l.level
+	}
+}
+
+// with_level returns a copy of the logger at a different level.
+pub fn (l Logger) with_level(level Level) Logger {
+	return Logger{
+		scope: l.scope
+		sink:  l.sink
+		level: level
+	}
+}
+
+// enabled reports whether records at the given level would be emitted. Call it
+// before building an expensive message.
+@[inline]
+pub fn (l Logger) enabled(level Level) bool {
+	return l.level != .disabled && int(level) <= int(l.level)
+}
+
+@[inline]
+fn (l Logger) emit(level Level, msg string) {
+	if !l.enabled(level) {
+		return
+	}
+	l.sink.write(level, l.scope, msg)
+}
