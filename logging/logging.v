@@ -207,3 +207,22 @@ pub struct StderrSink {
 mut:
 	mu &sync.Mutex = unsafe { nil }
 }
+
+// StderrSink.new returns a sink ready for concurrent use.
+pub fn StderrSink.new() &StderrSink {
+	return &StderrSink{
+		mu: sync.new_mutex()
+	}
+}
+
+pub fn (s &StderrSink) write(level Level, scope string, msg string) {
+	line := format_record(level, scope, msg)
+	if s.mu == unsafe { nil } {
+		eprint(line)
+		return
+	}
+	mut mu := s.mu
+	mu.lock()
+	eprint(line)
+	mu.unlock()
+}
