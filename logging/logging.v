@@ -68,3 +68,23 @@ pub:
 pub mut:
 	level Level
 }
+
+// new returns a Logger for the given scope backed by sink.
+pub fn new(scope string, level Level, sink Sink) Logger {
+	return Logger{
+		scope: scope
+		sink:  sink
+		level: level
+	}
+}
+
+// nop returns a Logger that discards everything. It is the default for
+// components constructed without explicit configuration, so a library embedded
+// in a quiet process stays quiet.
+pub fn nop() Logger {
+	return Logger{
+		scope: ''
+		sink:  NopSink{}
+		level: .disabled
+	}
+}
