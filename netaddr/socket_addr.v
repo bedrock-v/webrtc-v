@@ -21,3 +21,9 @@ pub fn SocketAddr.new(ip IpAddr, port u16) SocketAddr {
 pub fn (a SocketAddr) is_valid() bool {
 	return a.ip.is_valid()
 }
+
+// family returns the address family of the IP part.
+@[inline]
+pub fn (a SocketAddr) family() Family {
+	return a.ip.family
+}
