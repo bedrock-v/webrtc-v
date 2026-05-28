@@ -156,3 +156,15 @@ pub fn (a IpAddr) is_private() bool {
 	}
 	return (a.octets[0] & 0xfe) == 0xfc
 }
+
+// is_multicast reports whether the address is 224.0.0.0/4 or ff00::/8.
+// Multicast addresses are never valid ICE candidates.
+pub fn (a IpAddr) is_multicast() bool {
+	if !a.is_valid() {
+		return false
+	}
+	if a.family == .ipv4 {
+		return (a.octets[0] & 0xf0) == 0xe0
+	}
+	return a.octets[0] == 0xff
+}
