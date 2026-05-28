@@ -111,3 +111,19 @@ pub fn (a IpAddr) is_unspecified() bool {
 	}
 	return true
 }
+
+// is_loopback reports whether the address is 127.0.0.0/8 or ::1.
+pub fn (a IpAddr) is_loopback() bool {
+	if !a.is_valid() {
+		return false
+	}
+	if a.family == .ipv4 {
+		return a.octets[0] == 127
+	}
+	for i in 0 .. 15 {
+		if a.octets[i] != 0 {
+			return false
+		}
+	}
+	return a.octets[15] == 1
+}
