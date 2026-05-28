@@ -279,3 +279,18 @@ fn format_ipv6(octets []u8) string {
 	}
 	return sb.str()
 }
+
+// IpAddr.parse parses a textual IPv4 or IPv6 address.
+//
+// It accepts exactly the forms this stack must interoperate with and nothing
+// else: no hostnames, no DNS, and no leading zeros in IPv4 octets, which some
+// resolvers read as octal.
+pub fn IpAddr.parse(s string) !IpAddr {
+	if s == '' {
+		return error('netaddr: empty address')
+	}
+	if s.contains(':') {
+		return parse_ipv6(s)
+	}
+	return parse_ipv4(s)
+}
