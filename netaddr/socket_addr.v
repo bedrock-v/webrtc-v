@@ -35,3 +35,11 @@ pub fn (a SocketAddr) unmap() SocketAddr {
 		port: a.port
 	}
 }
+
+pub fn (a SocketAddr) equal(b SocketAddr) bool {
+	return a.port == b.port && a.ip.equal(b.ip)
+}
+
+fn (a SocketAddr) == (b SocketAddr) bool {
+	return a.equal(b)
+}
