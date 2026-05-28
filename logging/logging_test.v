@@ -22,3 +22,20 @@ fn (s &CaptureSink) snapshot() []string {
 	m.mu.unlock()
 	return out
 }
+
+fn test_level_ordering_filters_records() {
+	sink := &CaptureSink{}
+	log := new('test', .info, sink)
+
+	log.trace('t')
+	log.debug('d')
+	log.info('i')
+	log.warn('w')
+	log.error('e')
+
+	records := sink.snapshot()
+	assert records.len == 3
+	assert records[0] == 'info|test|i'
+	assert records[1] == 'warn|test|w'
+	assert records[2] == 'error|test|e'
+}
