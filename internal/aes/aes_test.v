@@ -345,3 +345,10 @@ fn reference_increment(mut counter []u8) {
 		}
 	}
 }
+
+fn test_gcm_refuses_an_empty_nonce() {
+	mut gcm := Gcm.new([]u8{len: 16})!
+	if _ := gcm.seal('x'.bytes(), []u8{}, []u8{}) {
+		assert false, 'an empty nonce should be refused'
+	}
+}
