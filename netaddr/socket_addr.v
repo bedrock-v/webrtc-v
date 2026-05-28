@@ -43,3 +43,12 @@ pub fn (a SocketAddr) equal(b SocketAddr) bool {
 fn (a SocketAddr) == (b SocketAddr) bool {
 	return a.equal(b)
 }
+
+// str formats the pair as host:port, bracketing IPv6 hosts so the port stays
+// unambiguous.
+pub fn (a SocketAddr) str() string {
+	if a.ip.family == .ipv6 {
+		return '[${a.ip}]:${a.port}'
+	}
+	return '${a.ip}:${a.port}'
+}
