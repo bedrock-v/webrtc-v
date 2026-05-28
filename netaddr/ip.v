@@ -127,3 +127,15 @@ pub fn (a IpAddr) is_loopback() bool {
 	}
 	return a.octets[15] == 1
 }
+
+// is_link_local reports whether the address is 169.254.0.0/16 or fe80::/10.
+// ICE gathers link-local addresses but ranks them below routable ones.
+pub fn (a IpAddr) is_link_local() bool {
+	if !a.is_valid() {
+		return false
+	}
+	if a.family == .ipv4 {
+		return a.octets[0] == 169 && a.octets[1] == 254
+	}
+	return a.octets[0] == 0xfe && (a.octets[1] & 0xc0) == 0x80
+}
