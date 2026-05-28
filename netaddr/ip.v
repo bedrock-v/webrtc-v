@@ -194,3 +194,8 @@ pub fn (a IpAddr) unmap() IpAddr {
 		octets: [a.octets[12], a.octets[13], a.octets[14], a.octets[15]]
 	}
 }
+
+// equal compares two addresses, including the IPv6 scope identifier.
+pub fn (a IpAddr) equal(b IpAddr) bool {
+	return a.family == b.family && a.zone == b.zone && a.octets == b.octets
+}
