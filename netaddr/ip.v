@@ -168,3 +168,16 @@ pub fn (a IpAddr) is_multicast() bool {
 	}
 	return a.octets[0] == 0xff
 }
+
+// is_ipv4_mapped reports whether an IPv6 address is of the form ::ffff:a.b.c.d.
+pub fn (a IpAddr) is_ipv4_mapped() bool {
+	if a.family != .ipv6 || !a.is_valid() {
+		return false
+	}
+	for i in 0 .. 10 {
+		if a.octets[i] != 0 {
+			return false
+		}
+	}
+	return a.octets[10] == 0xff && a.octets[11] == 0xff
+}
