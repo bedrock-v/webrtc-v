@@ -19,3 +19,10 @@ fn test_ipv4_rejects_malformed() {
 		}
 	}
 }
+
+fn test_ipv4_leading_zero_is_rejected() {
+	// "010.1.1.1" is 8.1.1.1 to an octal-aware resolver and 10.1.1.1 to a
+	// reader. Accepting it invites address-confusion bugs.
+	IpAddr.parse('010.1.1.1') or { return }
+	assert false, 'leading zeros must be rejected'
+}
