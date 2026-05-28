@@ -7,3 +7,11 @@ pub:
 	ip   IpAddr
 	port u16
 }
+
+// SocketAddr.new pairs an address with a port.
+pub fn SocketAddr.new(ip IpAddr, port u16) SocketAddr {
+	return SocketAddr{
+		ip:   ip
+		port: port
+	}
+}
