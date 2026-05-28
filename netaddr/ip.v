@@ -139,3 +139,20 @@ pub fn (a IpAddr) is_link_local() bool {
 	}
 	return a.octets[0] == 0xfe && (a.octets[1] & 0xc0) == 0x80
 }
+
+// is_private reports whether the address is in a range that is not globally
+// routable: RFC 1918 for IPv4, RFC 4193 unique-local for IPv6.
+pub fn (a IpAddr) is_private() bool {
+	if !a.is_valid() {
+		return false
+	}
+	if a.family == .ipv4 {
+		return match true {
+			a.octets[0] == 10 { true }
+			a.octets[0] == 172 && (a.octets[1] & 0xf0) == 16 { true }
+			a.octets[0] == 192 && a.octets[1] == 168 { true }
+			else { false }
+		}
+	}
+	return (a.octets[0] & 0xfe) == 0xfc
+}
