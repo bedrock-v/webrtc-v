@@ -66,3 +66,40 @@ fn test_with_scope_nests_names() {
 	assert records[0] == 'debug|ice.agent|a'
 	assert records[1] == 'debug|ice.agent.pair|b'
 }
+
+fn test_with_scope_on_empty_scope() {
+	log := nop().with_scope('root')
+	assert log.scope == 'root'
+}
+
+fn test_with_level_returns_independent_copy() {
+	sink := &CaptureSink{}
+	log := new('x', .error, sink)
+	verbose := log.with_level(.trace)
+
+	log.debug('hidden')
+	verbose.debug('shown')
+
+	records := sink.snapshot()
+	assert records.len == 1
+	assert records[0] == 'debug|x|shown'
+}
+
+fn test_enabled_reports_threshold() {
+	log := new('x', .warn, NopSink{})
+	assert log.enabled(.error)
+	assert log.enabled(.warn)
+	assert !log.enabled(.info)
+	assert !log.enabled(.debug)
+}
+
+fn test_level_string_round_trip() {
+	levels := [Level.disabled, .error, .warn, .info, .debug, .trace]
+	for level in levels {
+		assert level_from_string(level.str())! == level
+	}
+	assert level_from_string('WARNING')! == Level.warn
+	assert level_from_string(' Off ')! == Level.disabled
+	level_from_string('nonsense') or { return }
+	assert false, 'unknown level must be rejected'
+}
