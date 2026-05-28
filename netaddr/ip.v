@@ -50,3 +50,9 @@ pub:
 	// put on the wire.
 	zone string
 }
+
+// ipv4_unspecified is 0.0.0.0.
+pub const ipv4_unspecified = IpAddr{
+	family: .ipv4
+	octets: [u8(0), 0, 0, 0]
+}
