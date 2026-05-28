@@ -10,3 +10,11 @@
 module netaddr
 
 import strings
+
+// Family distinguishes IPv4 from IPv6. The values match the version numbers
+// used in textual descriptions; the STUN wire encoding uses different numbers
+// and converts at its own boundary.
+pub enum Family as u8 {
+	ipv4 = 4
+	ipv6 = 6
+}
