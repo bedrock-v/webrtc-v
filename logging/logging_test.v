@@ -103,3 +103,31 @@ fn test_level_string_round_trip() {
 	level_from_string('nonsense') or { return }
 	assert false, 'unknown level must be rejected'
 }
+
+fn test_format_record_shape() {
+	line := format_record(.warn, 'ice', 'candidate failed')
+	assert line.ends_with('\n')
+	assert line.contains('WARN')
+	assert line.contains('[ice]')
+	assert line.contains('candidate failed')
+
+	unscoped := format_record(.info, '', 'plain')
+	assert !unscoped.contains('[]')
+}
+
+fn test_concurrent_logging_does_not_lose_records() {
+	sink := &CaptureSink{}
+	log := new('c', .info, sink)
+
+	mut threads := []thread{}
+	for i in 0 .. 8 {
+		threads << spawn fn (l Logger, id int) {
+			for j in 0 .. 32 {
+				l.info('${id}-${j}')
+			}
+		}(log, i)
+	}
+	threads.wait()
+
+	assert sink.snapshot().len == 8 * 32
+}
