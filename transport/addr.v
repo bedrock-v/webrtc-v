@@ -27,3 +27,31 @@ pub fn socket_addr_from_net(addr net.Addr) !netaddr.SocketAddr {
 	}
 	return netaddr.SocketAddr.parse(addr.str())!
 }
+
+// socket_addr_to_net converts to a standard library socket address suitable for sendto.
+pub fn socket_addr_to_net(a netaddr.SocketAddr) !net.Addr {
+	if !a.is_valid() {
+		return error('netaddr: cannot convert an invalid address')
+	}
+	if a.ip.family == .ipv4 {
+		mut octets := [4]u8{}
+		for i in 0 .. 4 {
+			octets[i] = a.ip.octets[i]
+		}
+		return net.new_ip(a.port, octets)
+	}
+	mut octets := [16]u8{}
+	for i in 0 .. 16 {
+		octets[i] = a.ip.octets[i]
+	}
+	return net.new_ip6(a.port, octets)
+}
+
+// local_addr returns the address a UDP socket is bound to.
+//
+// ICE needs this after binding to port 0: the kernel picks the port, and the
+// host candidate cannot be described until we know which one it chose.
+pub fn local_addr(conn &net.UdpConn) !netaddr.SocketAddr {
+	bound := conn.sock.address()!
+	return socket_addr_from_net(bound)!
+}
