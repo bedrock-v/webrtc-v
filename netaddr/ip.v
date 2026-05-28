@@ -221,3 +221,61 @@ pub fn (a IpAddr) str() string {
 	}
 	return '${base}%${a.zone}'
 }
+
+fn format_ipv6(octets []u8) string {
+	mut groups := []u16{len: 8}
+	for i in 0 .. 8 {
+		groups[i] = (u16(octets[i * 2]) << 8) | u16(octets[i * 2 + 1])
+	}
+
+	mut best_start := -1
+	mut best_len := 0
+	mut run_start := -1
+	mut run_len := 0
+	for i in 0 .. 8 {
+		if groups[i] == 0 {
+			if run_start < 0 {
+				run_start = i
+				run_len = 0
+			}
+			run_len++
+			if run_len > best_len {
+				best_len = run_len
+				best_start = run_start
+			}
+		} else {
+			run_start = -1
+			run_len = 0
+		}
+	}
+	// A run of one is written out in full; '::' must save at least two groups.
+	if best_len < 2 {
+		best_start = -1
+		best_len = 0
+	}
+
+	// An IPv4-mapped address is conventionally printed with a dotted tail. Every
+	// other stack emits it that way, and it is what an operator reading a log
+	// expects to see.
+	if best_start == 0 && best_len == 5 && groups[5] == 0xffff {
+		return '::ffff:${octets[12]}.${octets[13]}.${octets[14]}.${octets[15]}'
+	}
+
+	mut sb := strings.new_builder(45)
+	mut i := 0
+	for i < 8 {
+		if best_start >= 0 && i == best_start {
+			sb.write_string('::')
+			i += best_len
+			continue
+		}
+		// A separator is needed before every group except the first, and except
+		// immediately after a '::' that already supplied one.
+		if i > 0 && !(best_start >= 0 && i == best_start + best_len) {
+			sb.write_string(':')
+		}
+		sb.write_string(groups[i].hex())
+		i++
+	}
+	return sb.str()
+}
