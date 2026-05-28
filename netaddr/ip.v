@@ -25,3 +25,12 @@ pub fn (f Family) str() string {
 		.ipv6 { 'IPv6' }
 	}
 }
+
+// octet_len is the size of an address of this family in bytes.
+@[inline]
+pub fn (f Family) octet_len() int {
+	return match f {
+		.ipv4 { 4 }
+		.ipv6 { 16 }
+	}
+}
