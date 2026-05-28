@@ -181,3 +181,29 @@ pub fn format_record(level Level, scope string, msg string) string {
 	sb.write_string('\n')
 	return sb.str()
 }
+
+fn level_label(level Level) string {
+	return match level {
+		.disabled { 'OFF  ' }
+		.error { 'ERROR' }
+		.warn { 'WARN ' }
+		.info { 'INFO ' }
+		.debug { 'DEBUG' }
+		.trace { 'TRACE' }
+	}
+}
+
+// NopSink discards every record.
+pub struct NopSink {}
+
+pub fn (s NopSink) write(level Level, scope string, msg string) {}
+
+// StderrSink writes one line per record to standard error.
+//
+// Writes are serialised by a mutex: the stack logs from several threads and
+// interleaved partial lines are worse than useless when debugging a
+// connectivity failure.
+pub struct StderrSink {
+mut:
+	mu &sync.Mutex = unsafe { nil }
+}
