@@ -336,3 +336,12 @@ fn reference_multiply(x []u8, y []u8) []u8 {
 	}
 	return z
 }
+
+fn reference_increment(mut counter []u8) {
+	for i := 15; i >= 0; i-- {
+		counter[i]++
+		if counter[i] != 0 {
+			return
+		}
+	}
+}
