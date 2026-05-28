@@ -82,3 +82,12 @@ pub fn IpAddr.v4(a u8, b u8, c u8, d u8) IpAddr {
 		octets: [a, b, c, d]
 	}
 }
+
+// with_zone returns a copy of the address carrying the given scope identifier.
+pub fn (a IpAddr) with_zone(zone string) IpAddr {
+	return IpAddr{
+		family: a.family
+		octets: a.octets
+		zone:   zone
+	}
+}
