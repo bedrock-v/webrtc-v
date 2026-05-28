@@ -403,3 +403,10 @@ fn test_the_counter_wraps() {
 	increment(mut counter)
 	assert counter == []u8{len: 16}
 }
+
+fn test_a_counter_of_the_wrong_length_is_refused() {
+	cipher_ := Cipher.new([]u8{len: 16})!
+	if _ := Ctr.new(cipher_, []u8{len: 8}) {
+		assert false, 'a short counter should be refused'
+	}
+}
