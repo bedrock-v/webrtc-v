@@ -204,3 +204,20 @@ pub fn (a IpAddr) equal(b IpAddr) bool {
 fn (a IpAddr) == (b IpAddr) bool {
 	return a.equal(b)
 }
+
+// str formats the address. IPv6 output follows RFC 5952: lowercase hex, the
+// longest run of zero groups compressed to '::', ties broken leftmost, and a
+// single zero group never compressed.
+pub fn (a IpAddr) str() string {
+	if !a.is_valid() {
+		return '<invalid>'
+	}
+	if a.family == .ipv4 {
+		return '${a.octets[0]}.${a.octets[1]}.${a.octets[2]}.${a.octets[3]}'
+	}
+	base := format_ipv6(a.octets)
+	if a.zone == '' {
+		return base
+	}
+	return '${base}%${a.zone}'
+}
