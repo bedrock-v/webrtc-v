@@ -56,3 +56,9 @@ pub const ipv4_unspecified = IpAddr{
 	family: .ipv4
 	octets: [u8(0), 0, 0, 0]
 }
+
+// ipv6_unspecified is ::.
+pub const ipv6_unspecified = IpAddr{
+	family: .ipv6
+	octets: []u8{len: 16}
+}
