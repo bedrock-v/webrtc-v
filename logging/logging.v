@@ -226,3 +226,32 @@ pub fn (s &StderrSink) write(level Level, scope string, msg string) {
 	eprint(line)
 	mu.unlock()
 }
+
+// WriterSink sends records to any io.Writer, for applications that route logs
+// into a file or an existing logging pipeline.
+pub struct WriterSink {
+mut:
+	dest io.Writer
+	mu   &sync.Mutex = unsafe { nil }
+}
+
+// WriterSink.new returns a sink that writes formatted records to dest.
+pub fn WriterSink.new(dest io.Writer) &WriterSink {
+	return &WriterSink{
+		dest: dest
+		mu:   sync.new_mutex()
+	}
+}
+
+pub fn (s &WriterSink) write(level Level, scope string, msg string) {
+	line := format_record(level, scope, msg)
+	mut mu := s.mu
+	mut dest := s.dest
+	if mu != unsafe { nil } {
+		mu.lock()
+	}
+	dest.write(line.bytes()) or {}
+	if mu != unsafe { nil } {
+		mu.unlock()
+	}
+}
