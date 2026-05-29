@@ -46,3 +46,9 @@ fn test_disabled_logger_emits_nothing() {
 	log.error('should not appear')
 	assert sink.snapshot().len == 0
 }
+
+fn test_nop_logger_is_disabled() {
+	log := nop()
+	assert !log.enabled(.error)
+	log.error('safe to call')
+}
