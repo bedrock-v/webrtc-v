@@ -35,3 +35,17 @@ pub fn (l Level) str() string {
 		.trace { 'trace' }
 	}
 }
+
+// level_from_string parses a level name, accepting the spellings used by the
+// WEBRTC_LOG_LEVEL environment variable.
+pub fn level_from_string(s string) !Level {
+	return match s.to_lower().trim_space() {
+		'disabled', 'off', 'none' { Level.disabled }
+		'error' { Level.error }
+		'warn', 'warning' { Level.warn }
+		'info' { Level.info }
+		'debug' { Level.debug }
+		'trace' { Level.trace }
+		else { error('logging: unknown level ${s}') }
+	}
+}
