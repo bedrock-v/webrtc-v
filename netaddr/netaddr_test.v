@@ -48,3 +48,9 @@ fn test_ipv6_parse_and_format_round_trip() {
 		assert addr.str() == want, 'parse(${input}).str() = ${addr.str()}, want ${want}'
 	}
 }
+
+fn test_ipv6_single_zero_group_is_not_compressed() {
+	// RFC 5952 section 4.2.2: '::' must not replace a single group.
+	addr := IpAddr.parse('1:2:3:4:5:6:0:8')!
+	assert addr.str() == '1:2:3:4:5:6:0:8'
+}
