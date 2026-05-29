@@ -70,3 +70,18 @@ fn test_ipv6_rejects_malformed() {
 		}
 	}
 }
+
+fn test_ipv6_embedded_ipv4() {
+	mapped := IpAddr.parse('::ffff:192.168.1.1')!
+	assert mapped.is_ipv4_mapped()
+	assert mapped.octets[12..] == [u8(192), 168, 1, 1]
+	assert mapped.str() == '::ffff:192.168.1.1'
+
+	unmapped := mapped.unmap()
+	assert unmapped.family == .ipv4
+	assert unmapped.str() == '192.168.1.1'
+
+	// A non-mapped address passes through unchanged.
+	plain := IpAddr.parse('2001:db8::1')!
+	assert plain.unmap().equal(plain)
+}
