@@ -145,3 +145,24 @@ pub mut:
 	attributes     []RawAttribute
 	raw            []u8
 }
+
+// Message.new returns a message with a fresh random transaction identifier.
+//
+// The identifier is 96 bits from the system CSPRNG. It is not merely a
+// correlation token: for a client behind a NAT it is the only thing an off-path
+// attacker would have to guess in order to forge a response, so it must not
+// come from a predictable source.
+pub fn Message.new(class Class, method Method) !Message {
+	tid := randutil.bytes(transaction_id_size)!
+	mut id := [transaction_id_size]u8{}
+	for i in 0 .. transaction_id_size {
+		id[i] = tid[i]
+	}
+	return Message{
+		typ:            MessageType{
+			method: method
+			class:  class
+		}
+		transaction_id: id
+	}
+}
