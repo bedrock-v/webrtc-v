@@ -192,3 +192,8 @@ fn level_label(level Level) string {
 		.trace { 'TRACE' }
 	}
 }
+
+// NopSink discards every record.
+pub struct NopSink {}
+
+pub fn (s NopSink) write(level Level, scope string, msg string) {}
