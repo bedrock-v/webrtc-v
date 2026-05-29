@@ -64,3 +64,19 @@ pub enum Method as u16 {
 	connection_bind    = 0x00B
 	connection_attempt = 0x00C
 }
+
+// MessageType is the class and method pair carried in the first two bytes.
+pub struct MessageType {
+pub:
+	method Method = .binding
+	class  Class  = .request
+}
+
+// value packs the type into its wire representation. The method bits are split
+// around the class bits (RFC 5389 section 6), which is why this is not a plain
+// bit concatenation.
+pub fn (t MessageType) value() u16 {
+	m := u16(t.method)
+	c := u16(t.class)
+	return (m & 0x000F) | ((m & 0x0070) << 1) | ((m & 0x0F80) << 2) | ((c & 0x0001) << 4) | ((c & 0x0002) << 7)
+}
