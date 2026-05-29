@@ -120,3 +120,28 @@ pub:
 	// ICE connectivity checks.
 	fingerprint bool
 }
+
+// DecodeOptions bounds the resources a single decode may consume. The defaults
+// are sized for WebRTC; a TURN relay forwarding large DATA indications can
+// raise max_message_size.
+@[params]
+pub struct DecodeOptions {
+pub:
+	max_message_size int = default_max_message_size
+	max_attributes   int = default_max_attributes
+}
+
+// Message is a decoded STUN message.
+//
+// raw holds the exact bytes the message was decoded from, or the bytes produced
+// by the most recent encode. Integrity checks are defined over the encoded form
+// - MESSAGE-INTEGRITY covers everything before itself - so they can only be
+// verified against raw, never against a re-encoding, which might order
+// attributes differently than the sender did.
+pub struct Message {
+pub mut:
+	typ            MessageType
+	transaction_id [transaction_id_size]u8
+	attributes     []RawAttribute
+	raw            []u8
+}
