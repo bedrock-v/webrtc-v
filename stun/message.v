@@ -546,3 +546,40 @@ fn (m &Message) reject_unprotected_trailers(typ u16, offset int) ! {
 		}
 	}
 }
+
+// check_fingerprint verifies the FINGERPRINT attribute.
+//
+// FINGERPRINT is not a security mechanism - a CRC-32 with a published XOR
+// constant stops accidents, not attackers. Its purpose is demultiplexing: it
+// tells a receiver that a datagram really is STUN and not another protocol that
+// happens to start with the same bits.
+pub fn (m &Message) check_fingerprint() ! {
+	attr := m.get(attr_fingerprint) or {
+		return IntegrityError{
+			reason: .missing
+			detail: 'FINGERPRINT'
+		}
+	}
+	if attr.value.len != 4 {
+		return IntegrityError{
+			reason: .malformed
+			detail: 'FINGERPRINT is ${attr.value.len} bytes, expected 4'
+		}
+	}
+	// FINGERPRINT must be the final attribute.
+	if attr.offset + 8 != m.raw.len {
+		return IntegrityError{
+			reason: .not_last
+			detail: 'FINGERPRINT is not the last attribute'
+		}
+	}
+	mut prefix := m.raw[..attr.offset].clone()
+	set_body_length(mut prefix, attr.offset + 8)
+	expected := fingerprint_value(prefix)
+	if !hmac.equal(expected, attr.value) {
+		return IntegrityError{
+			reason: .mismatch
+			detail: 'FINGERPRINT'
+		}
+	}
+}
