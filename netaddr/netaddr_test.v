@@ -154,3 +154,11 @@ fn test_from_octets_copies_input() {
 	src[0] = 9
 	assert addr.str() == '1.2.3.4'
 }
+
+fn test_socket_addr_format_and_parse() {
+	cases := ['1.2.3.4:5000', '[::1]:3478', '[fe80::1%eth0]:9', '0.0.0.0:0', '255.255.255.255:65535']
+	for c in cases {
+		addr := SocketAddr.parse(c)!
+		assert addr.str() == c
+	}
+}
