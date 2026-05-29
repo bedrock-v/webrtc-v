@@ -49,3 +49,9 @@ pub fn level_from_string(s string) !Level {
 		else { error('logging: unknown level ${s}') }
 	}
 }
+
+// Sink receives log records. Implementations must be safe to call from several
+// threads, because the stack logs from its network read loops.
+pub interface Sink {
+	write(level Level, scope string, msg string)
+}
