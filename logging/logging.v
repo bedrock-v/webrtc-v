@@ -207,3 +207,10 @@ pub struct StderrSink {
 mut:
 	mu &sync.Mutex = unsafe { nil }
 }
+
+// StderrSink.new returns a sink ready for concurrent use.
+pub fn StderrSink.new() &StderrSink {
+	return &StderrSink{
+		mu: sync.new_mutex()
+	}
+}
