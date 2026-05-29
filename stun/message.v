@@ -583,3 +583,11 @@ pub fn (m &Message) check_fingerprint() ! {
 		}
 	}
 }
+
+pub fn (m &Message) str() string {
+	mut parts := []string{cap: m.attributes.len}
+	for attr in m.attributes {
+		parts << attr.str()
+	}
+	return '${m.typ} tid=${m.transaction_id[..].hex()} attrs=[${parts.join(', ')}]'
+}
