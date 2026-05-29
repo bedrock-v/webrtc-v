@@ -60,3 +60,13 @@ fn test_ipv6_leftmost_run_wins_on_tie() {
 	addr := IpAddr.parse('1:0:0:2:3:0:0:4')!
 	assert addr.str() == '1::2:3:0:0:4'
 }
+
+fn test_ipv6_rejects_malformed() {
+	bad := ['', ':', ':1', '1:', '1:::2', '::1::2', '1:2:3:4:5:6:7', '1:2:3:4:5:6:7:8:9', '12345::',
+		'gggg::1', '1:2:3:4:5:6:7:8:', '::1.2.3', '1.2.3.4:5:6']
+	for c in bad {
+		if _ := IpAddr.parse(c) {
+			assert false, 'expected ${c} to be rejected'
+		}
+	}
+}
