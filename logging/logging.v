@@ -197,3 +197,13 @@ fn level_label(level Level) string {
 pub struct NopSink {}
 
 pub fn (s NopSink) write(level Level, scope string, msg string) {}
+
+// StderrSink writes one line per record to standard error.
+//
+// Writes are serialised by a mutex: the stack logs from several threads and
+// interleaved partial lines are worse than useless when debugging a
+// connectivity failure.
+pub struct StderrSink {
+mut:
+	mu &sync.Mutex = unsafe { nil }
+}
