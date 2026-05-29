@@ -85,3 +85,17 @@ fn test_ipv6_embedded_ipv4() {
 	plain := IpAddr.parse('2001:db8::1')!
 	assert plain.unmap().equal(plain)
 }
+
+fn test_ipv6_zone_is_preserved_but_not_part_of_octets() {
+	addr := IpAddr.parse('fe80::1%eth0')!
+	assert addr.zone == 'eth0'
+	assert addr.str() == 'fe80::1%eth0'
+	assert addr.is_link_local()
+
+	without := IpAddr.parse('fe80::1')!
+	assert !addr.equal(without), 'zone must participate in equality'
+	assert addr.octets == without.octets
+
+	IpAddr.parse('fe80::1%') or { return }
+	assert false, 'empty zone must be rejected'
+}
