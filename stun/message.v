@@ -166,3 +166,28 @@ pub fn Message.new(class Class, method Method) !Message {
 		transaction_id: id
 	}
 }
+
+// Message.with_transaction_id returns a message reusing a known identifier,
+// which is how a response is built for a received request.
+pub fn Message.with_transaction_id(class Class, method Method, tid [transaction_id_size]u8) Message {
+	return Message{
+		typ:            MessageType{
+			method: method
+			class:  class
+		}
+		transaction_id: tid
+	}
+}
+
+// Message.response builds a response to req, copying its transaction id and
+// method. This is the only correct way to answer a request, so it exists to
+// keep callers from open-coding it and getting the method wrong.
+pub fn Message.response(req &Message, class Class) Message {
+	return Message{
+		typ:            MessageType{
+			method: req.typ.method
+			class:  class
+		}
+		transaction_id: req.transaction_id
+	}
+}
