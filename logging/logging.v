@@ -181,3 +181,14 @@ pub fn format_record(level Level, scope string, msg string) string {
 	sb.write_string('\n')
 	return sb.str()
 }
+
+fn level_label(level Level) string {
+	return match level {
+		.disabled { 'OFF  ' }
+		.error { 'ERROR' }
+		.warn { 'WARN ' }
+		.info { 'INFO ' }
+		.debug { 'DEBUG' }
+		.trace { 'TRACE' }
+	}
+}
