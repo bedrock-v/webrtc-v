@@ -119,3 +119,12 @@ pub fn (l Logger) with_scope(scope string) Logger {
 		level: l.level
 	}
 }
+
+// with_level returns a copy of the logger at a different level.
+pub fn (l Logger) with_level(level Level) Logger {
+	return Logger{
+		scope: l.scope
+		sink:  l.sink
+		level: level
+	}
+}
