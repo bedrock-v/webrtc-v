@@ -135,3 +135,11 @@ pub fn (l Logger) with_level(level Level) Logger {
 pub fn (l Logger) enabled(level Level) bool {
 	return l.level != .disabled && int(level) <= int(l.level)
 }
+
+@[inline]
+fn (l Logger) emit(level Level, msg string) {
+	if !l.enabled(level) {
+		return
+	}
+	l.sink.write(level, l.scope, msg)
+}
