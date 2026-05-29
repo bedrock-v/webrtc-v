@@ -234,3 +234,11 @@ mut:
 	dest io.Writer
 	mu   &sync.Mutex = unsafe { nil }
 }
+
+// WriterSink.new returns a sink that writes formatted records to dest.
+pub fn WriterSink.new(dest io.Writer) &WriterSink {
+	return &WriterSink{
+		dest: dest
+		mu:   sync.new_mutex()
+	}
+}
