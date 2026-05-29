@@ -55,3 +55,16 @@ pub fn level_from_string(s string) !Level {
 pub interface Sink {
 	write(level Level, scope string, msg string)
 }
+
+// Logger is the handle components hold. It carries a scope name so records can
+// be attributed to the subsystem that produced them, and a level so a noisy
+// subsystem can be turned down without touching the rest.
+//
+// Logger is a value type: copying one is cheap and shares the underlying sink.
+pub struct Logger {
+pub:
+	scope string
+	sink  Sink = NopSink{}
+pub mut:
+	level Level
+}
