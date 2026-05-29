@@ -454,3 +454,34 @@ pub fn Message.decode(b []u8, opts DecodeOptions) !Message {
 		raw:            b.clone()
 	}
 }
+
+// integrity_digest computes the HMAC over the given prefix of a message.
+fn integrity_digest(prefix []u8, key []u8, algorithm IntegrityAlgorithm) []u8 {
+	return match algorithm {
+		.sha1 { hmac.new(key, prefix, sha1.sum, sha1.block_size) }
+		.sha256 { hmac.new(key, prefix, sha256.sum, sha256.block_size) }
+	}
+}
+
+// fingerprint_value computes the FINGERPRINT payload over the given prefix.
+fn fingerprint_value(prefix []u8) []u8 {
+	v := crc32.sum(prefix) ^ fingerprint_xor
+	return [u8(v >> 24), u8(v >> 16), u8(v >> 8), u8(v)]
+}
+
+// check_message_integrity verifies the MESSAGE-INTEGRITY attribute against key.
+//
+// The digest covers the message from its first byte up to the start of the
+// MESSAGE-INTEGRITY attribute, with the header's length field set as though the
+// message ended just after that attribute. Attributes that follow it are
+// therefore unprotected, so anything other than FINGERPRINT or the SHA-256
+// variant appearing after it is rejected rather than merely ignored.
+pub fn (m &Message) check_message_integrity(key []u8) ! {
+	m.check_integrity(attr_message_integrity, sha1.size, .sha1, key)!
+}
+
+// check_message_integrity_sha256 verifies the MESSAGE-INTEGRITY-SHA256
+// attribute against key.
+pub fn (m &Message) check_message_integrity_sha256(key []u8) ! {
+	m.check_integrity(attr_message_integrity_sha256, sha256.size, .sha256, key)!
+}
