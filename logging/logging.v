@@ -23,3 +23,15 @@ pub enum Level {
 	debug    = 4
 	trace    = 5
 }
+
+// str returns the lowercase name used in log output and configuration.
+pub fn (l Level) str() string {
+	return match l {
+		.disabled { 'disabled' }
+		.error { 'error' }
+		.warn { 'warn' }
+		.info { 'info' }
+		.debug { 'debug' }
+		.trace { 'trace' }
+	}
+}
