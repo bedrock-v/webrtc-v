@@ -128,3 +128,10 @@ pub fn (l Logger) with_level(level Level) Logger {
 		level: level
 	}
 }
+
+// enabled reports whether records at the given level would be emitted. Call it
+// before building an expensive message.
+@[inline]
+pub fn (l Logger) enabled(level Level) bool {
+	return l.level != .disabled && int(level) <= int(l.level)
+}
