@@ -66,3 +66,8 @@ fn test_with_scope_nests_names() {
 	assert records[0] == 'debug|ice.agent|a'
 	assert records[1] == 'debug|ice.agent.pair|b'
 }
+
+fn test_with_scope_on_empty_scope() {
+	log := nop().with_scope('root')
+	assert log.scope == 'root'
+}
