@@ -71,3 +71,16 @@ fn test_with_scope_on_empty_scope() {
 	log := nop().with_scope('root')
 	assert log.scope == 'root'
 }
+
+fn test_with_level_returns_independent_copy() {
+	sink := &CaptureSink{}
+	log := new('x', .error, sink)
+	verbose := log.with_level(.trace)
+
+	log.debug('hidden')
+	verbose.debug('shown')
+
+	records := sink.snapshot()
+	assert records.len == 1
+	assert records[0] == 'debug|x|shown'
+}
