@@ -92,3 +92,14 @@ fn test_enabled_reports_threshold() {
 	assert !log.enabled(.info)
 	assert !log.enabled(.debug)
 }
+
+fn test_level_string_round_trip() {
+	levels := [Level.disabled, .error, .warn, .info, .debug, .trace]
+	for level in levels {
+		assert level_from_string(level.str())! == level
+	}
+	assert level_from_string('WARNING')! == Level.warn
+	assert level_from_string(' Off ')! == Level.disabled
+	level_from_string('nonsense') or { return }
+	assert false, 'unknown level must be rejected'
+}
