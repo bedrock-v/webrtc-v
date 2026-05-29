@@ -151,3 +151,11 @@ pub fn (l Logger) error(msg string) {
 pub fn (l Logger) warn(msg string) {
 	l.emit(.warn, msg)
 }
+
+pub fn (l Logger) info(msg string) {
+	l.emit(.info, msg)
+}
+
+pub fn (l Logger) debug(msg string) {
+	l.emit(.debug, msg)
+}
