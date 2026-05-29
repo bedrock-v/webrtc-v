@@ -39,3 +39,10 @@ fn test_level_ordering_filters_records() {
 	assert records[1] == 'warn|test|w'
 	assert records[2] == 'error|test|e'
 }
+
+fn test_disabled_logger_emits_nothing() {
+	sink := &CaptureSink{}
+	log := new('test', .disabled, sink)
+	log.error('should not appear')
+	assert sink.snapshot().len == 0
+}
