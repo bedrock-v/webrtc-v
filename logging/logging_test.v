@@ -84,3 +84,11 @@ fn test_with_level_returns_independent_copy() {
 	assert records.len == 1
 	assert records[0] == 'debug|x|shown'
 }
+
+fn test_enabled_reports_threshold() {
+	log := new('x', .warn, NopSink{})
+	assert log.enabled(.error)
+	assert log.enabled(.warn)
+	assert !log.enabled(.info)
+	assert !log.enabled(.debug)
+}
