@@ -159,3 +159,7 @@ pub fn (l Logger) info(msg string) {
 pub fn (l Logger) debug(msg string) {
 	l.emit(.debug, msg)
 }
+
+pub fn (l Logger) trace(msg string) {
+	l.emit(.trace, msg)
+}
