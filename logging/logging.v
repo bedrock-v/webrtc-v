@@ -214,3 +214,15 @@ pub fn StderrSink.new() &StderrSink {
 		mu: sync.new_mutex()
 	}
 }
+
+pub fn (s &StderrSink) write(level Level, scope string, msg string) {
+	line := format_record(level, scope, msg)
+	if s.mu == unsafe { nil } {
+		eprint(line)
+		return
+	}
+	mut mu := s.mu
+	mu.lock()
+	eprint(line)
+	mu.unlock()
+}
