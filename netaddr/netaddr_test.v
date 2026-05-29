@@ -147,3 +147,10 @@ fn test_from_octets_validates_length() {
 	}
 	assert false, 'wrong octet count must be rejected'
 }
+
+fn test_from_octets_copies_input() {
+	mut src := [u8(1), 2, 3, 4]
+	addr := IpAddr.from_octets(.ipv4, src)!
+	src[0] = 9
+	assert addr.str() == '1.2.3.4'
+}
