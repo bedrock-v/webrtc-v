@@ -143,3 +143,11 @@ fn (l Logger) emit(level Level, msg string) {
 	}
 	l.sink.write(level, l.scope, msg)
 }
+
+pub fn (l Logger) error(msg string) {
+	l.emit(.error, msg)
+}
+
+pub fn (l Logger) warn(msg string) {
+	l.emit(.warn, msg)
+}
