@@ -12,3 +12,14 @@ import os
 import sync
 import time
 import strings
+
+// Level orders log severities. Comparisons rely on the declared order, so new
+// levels must be inserted in severity order.
+pub enum Level {
+	disabled = 0
+	error    = 1
+	warn     = 2
+	info     = 3
+	debug    = 4
+	trace    = 5
+}
