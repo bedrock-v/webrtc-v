@@ -52,3 +52,17 @@ fn test_nop_logger_is_disabled() {
 	assert !log.enabled(.error)
 	log.error('safe to call')
 }
+
+fn test_with_scope_nests_names() {
+	sink := &CaptureSink{}
+	log := new('ice', .debug, sink)
+	child := log.with_scope('agent')
+	grandchild := child.with_scope('pair')
+
+	child.debug('a')
+	grandchild.debug('b')
+
+	records := sink.snapshot()
+	assert records[0] == 'debug|ice.agent|a'
+	assert records[1] == 'debug|ice.agent.pair|b'
+}
