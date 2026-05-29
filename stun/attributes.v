@@ -67,3 +67,58 @@ pub const attr_goog_misc_info = u16(0xC059)
 pub fn is_comprehension_required(typ u16) bool {
 	return typ <= 0x7FFF
 }
+
+// attr_name returns the registered name of an attribute type, or a hex literal
+// for types outside the registry. Used only for diagnostics.
+pub fn attr_name(typ u16) string {
+	return match typ {
+		attr_mapped_address { 'MAPPED-ADDRESS' }
+		attr_username { 'USERNAME' }
+		attr_message_integrity { 'MESSAGE-INTEGRITY' }
+		attr_error_code { 'ERROR-CODE' }
+		attr_unknown_attributes { 'UNKNOWN-ATTRIBUTES' }
+		attr_channel_number { 'CHANNEL-NUMBER' }
+		attr_lifetime { 'LIFETIME' }
+		attr_xor_peer_address { 'XOR-PEER-ADDRESS' }
+		attr_data { 'DATA' }
+		attr_realm { 'REALM' }
+		attr_nonce { 'NONCE' }
+		attr_xor_relayed_address { 'XOR-RELAYED-ADDRESS' }
+		attr_requested_address_family { 'REQUESTED-ADDRESS-FAMILY' }
+		attr_even_port { 'EVEN-PORT' }
+		attr_requested_transport { 'REQUESTED-TRANSPORT' }
+		attr_dont_fragment { 'DONT-FRAGMENT' }
+		attr_access_token { 'ACCESS-TOKEN' }
+		attr_message_integrity_sha256 { 'MESSAGE-INTEGRITY-SHA256' }
+		attr_password_algorithm { 'PASSWORD-ALGORITHM' }
+		attr_userhash { 'USERHASH' }
+		attr_xor_mapped_address { 'XOR-MAPPED-ADDRESS' }
+		attr_reservation_token { 'RESERVATION-TOKEN' }
+		attr_priority { 'PRIORITY' }
+		attr_use_candidate { 'USE-CANDIDATE' }
+		attr_padding { 'PADDING' }
+		attr_response_port { 'RESPONSE-PORT' }
+		attr_connection_id { 'CONNECTION-ID' }
+		attr_additional_address_family { 'ADDITIONAL-ADDRESS-FAMILY' }
+		attr_address_error_code { 'ADDRESS-ERROR-CODE' }
+		attr_password_algorithms { 'PASSWORD-ALGORITHMS' }
+		attr_alternate_domain { 'ALTERNATE-DOMAIN' }
+		attr_icmp { 'ICMP' }
+		attr_software { 'SOFTWARE' }
+		attr_alternate_server { 'ALTERNATE-SERVER' }
+		attr_transaction_transmit_counter { 'TRANSACTION-TRANSMIT-COUNTER' }
+		attr_cache_timeout { 'CACHE-TIMEOUT' }
+		attr_fingerprint { 'FINGERPRINT' }
+		attr_ice_controlled { 'ICE-CONTROLLED' }
+		attr_ice_controlling { 'ICE-CONTROLLING' }
+		attr_response_origin { 'RESPONSE-ORIGIN' }
+		attr_other_address { 'OTHER-ADDRESS' }
+		attr_ecn_check { 'ECN-CHECK' }
+		attr_third_party_authorization { 'THIRD-PARTY-AUTHORIZATION' }
+		attr_mobility_ticket { 'MOBILITY-TICKET' }
+		attr_goog_network_info { 'GOOG-NETWORK-INFO' }
+		attr_goog_last_ice_check_received { 'GOOG-LAST-ICE-CHECK-RECEIVED' }
+		attr_goog_misc_info { 'GOOG-MISC-INFO' }
+		else { '0x' + typ.hex() }
+	}
+}
