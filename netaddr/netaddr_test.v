@@ -54,3 +54,9 @@ fn test_ipv6_single_zero_group_is_not_compressed() {
 	addr := IpAddr.parse('1:2:3:4:5:6:0:8')!
 	assert addr.str() == '1:2:3:4:5:6:0:8'
 }
+
+fn test_ipv6_leftmost_run_wins_on_tie() {
+	// RFC 5952 section 4.2.3: with equal-length runs, compress the first.
+	addr := IpAddr.parse('1:0:0:2:3:0:0:4')!
+	assert addr.str() == '1::2:3:0:0:4'
+}
