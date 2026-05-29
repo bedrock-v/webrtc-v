@@ -68,3 +68,12 @@ pub:
 pub mut:
 	level Level
 }
+
+// new returns a Logger for the given scope backed by sink.
+pub fn new(scope string, level Level, sink Sink) Logger {
+	return Logger{
+		scope: scope
+		sink:  sink
+		level: level
+	}
+}
