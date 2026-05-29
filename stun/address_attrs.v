@@ -72,3 +72,33 @@ fn decode_address(value []u8) !netaddr.SocketAddr {
 		port: port
 	}
 }
+
+// xor_address applies the XOR obfuscation used by XOR-MAPPED-ADDRESS and its
+// TURN relatives (RFC 8489 section 14.2).
+//
+// The obfuscation exists because some NATs rewrite anything in a payload that
+// looks like an IP address. XORing with the magic cookie - and, for IPv6, with
+// the transaction id as well - keeps the address off the wire in recognisable
+// form. It is not encryption: the mask is public and the operation is its own
+// inverse, which is why one function serves both directions.
+fn xor_address(value []u8, tid [transaction_id_size]u8) []u8 {
+	mut mask := []u8{cap: 4 + transaction_id_size}
+	mask << u8(magic_cookie >> 24)
+	mask << u8(magic_cookie >> 16)
+	mask << u8(magic_cookie >> 8)
+	mask << u8(magic_cookie)
+	mask << tid[..]
+
+	mut out := value.clone()
+	// The reserved and family bytes are not obfuscated. The port is XORed with
+	// the top 16 bits of the cookie, and the address restarts the mask from the
+	// beginning - it is not a continuation of the port's keystream.
+	if out.len >= 4 {
+		out[2] ^= mask[0]
+		out[3] ^= mask[1]
+		for j in 0 .. out.len - 4 {
+			out[4 + j] ^= mask[j % mask.len]
+		}
+	}
+	return out
+}
