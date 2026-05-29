@@ -265,3 +265,70 @@ pub fn (m &Message) unknown_comprehension_required(known []u16) []u16 {
 	}
 	return out
 }
+
+// encode serialises the message, appending the authentication attributes
+// requested in opts, and stores the result in m.raw.
+pub fn (mut m Message) encode(opts EncodeOptions) ![]u8 {
+	mut w := codec.Writer.with_capacity(header_size + 128)
+	w.u16(m.typ.value())
+	// Placeholder for the body length, patched once the body is known.
+	w.u16(0)
+	w.u32(magic_cookie)
+	w.bytes(m.transaction_id[..])
+
+	mut encoded := []RawAttribute{cap: m.attributes.len + 2}
+	for attr in m.attributes {
+		if attr.typ == attr_message_integrity || attr.typ == attr_message_integrity_sha256
+			|| attr.typ == attr_fingerprint {
+			// These are derived from the surrounding bytes. Accepting a
+			// caller-supplied value would let a stale or forged digest through.
+			return EncodeError{
+				detail: '${attr_name(attr.typ)} must be requested through EncodeOptions, not added as an attribute'
+			}
+		}
+		if attr.value.len > 0xFFFF {
+			return EncodeError{
+				detail: 'attribute ${attr.name()} value of ${attr.value.len} bytes exceeds the 16-bit length field'
+			}
+		}
+		encoded << RawAttribute{
+			typ:    attr.typ
+			value:  attr.value
+			offset: w.len()
+		}
+		write_attribute(mut w, attr.typ, attr.value)
+	}
+
+	if opts.integrity_key.len > 0 {
+		typ, digest_len := match opts.integrity_algorithm {
+			.sha1 { attr_message_integrity, sha1.size }
+			.sha256 { attr_message_integrity_sha256, sha256.size }
+		}
+		offset := w.len()
+		set_body_length(mut w.buf, offset + 4 + digest_len)
+		digest := integrity_digest(w.buf, opts.integrity_key, opts.integrity_algorithm)
+		encoded << RawAttribute{
+			typ:    typ
+			value:  digest
+			offset: offset
+		}
+		write_attribute(mut w, typ, digest)
+	}
+
+	if opts.fingerprint {
+		offset := w.len()
+		set_body_length(mut w.buf, offset + 8)
+		value := fingerprint_value(w.buf)
+		encoded << RawAttribute{
+			typ:    attr_fingerprint
+			value:  value
+			offset: offset
+		}
+		write_attribute(mut w, attr_fingerprint, value)
+	}
+
+	set_body_length(mut w.buf, w.len())
+	m.raw = w.buf
+	m.attributes = encoded
+	return m.raw
+}
