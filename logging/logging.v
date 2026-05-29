@@ -97,3 +97,14 @@ pub fn default(scope string, level Level) Logger {
 		level: level
 	}
 }
+
+// from_env returns a Logger configured from the WEBRTC_LOG_LEVEL environment
+// variable, falling back to warn when the variable is unset or unparseable.
+pub fn from_env(scope string) Logger {
+	raw := os.getenv('WEBRTC_LOG_LEVEL')
+	if raw == '' {
+		return default(scope, .warn)
+	}
+	level := level_from_string(raw) or { Level.warn }
+	return default(scope, level)
+}
