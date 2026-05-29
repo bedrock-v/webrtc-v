@@ -242,3 +242,16 @@ pub fn WriterSink.new(dest io.Writer) &WriterSink {
 		mu:   sync.new_mutex()
 	}
 }
+
+pub fn (s &WriterSink) write(level Level, scope string, msg string) {
+	line := format_record(level, scope, msg)
+	mut mu := s.mu
+	mut dest := s.dest
+	if mu != unsafe { nil } {
+		mu.lock()
+	}
+	dest.write(line.bytes()) or {}
+	if mu != unsafe { nil } {
+		mu.unlock()
+	}
+}
