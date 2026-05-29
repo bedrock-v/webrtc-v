@@ -88,3 +88,12 @@ pub fn nop() Logger {
 		level: .disabled
 	}
 }
+
+// default returns a Logger writing to stderr at the given level.
+pub fn default(scope string, level Level) Logger {
+	return Logger{
+		scope: scope
+		sink:  StderrSink.new()
+		level: level
+	}
+}
