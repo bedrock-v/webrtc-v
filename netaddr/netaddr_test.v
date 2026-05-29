@@ -137,3 +137,13 @@ fn test_zero_value_is_invalid() {
 	assert !addr.is_private()
 	assert !addr.is_unspecified()
 }
+
+fn test_from_octets_validates_length() {
+	ok := IpAddr.from_octets(.ipv4, [u8(1), 2, 3, 4])!
+	assert ok.str() == '1.2.3.4'
+	IpAddr.from_octets(.ipv4, [u8(1), 2, 3]) or {
+		IpAddr.from_octets(.ipv6, [u8(1)]) or { return }
+		assert false
+	}
+	assert false, 'wrong octet count must be rejected'
+}
