@@ -6,3 +6,9 @@
 // sink writes human-readable lines to stderr and is quiet below the warn level,
 // so a library user who configures nothing sees only what they need to act on.
 module logging
+
+import io
+import os
+import sync
+import time
+import strings
