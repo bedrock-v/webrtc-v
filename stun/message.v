@@ -39,3 +39,28 @@ pub enum Class as u8 {
 	success_response = 0x02
 	error_response   = 0x03
 }
+
+pub fn (c Class) str() string {
+	return match c {
+		.request { 'request' }
+		.indication { 'indication' }
+		.success_response { 'success response' }
+		.error_response { 'error response' }
+	}
+}
+
+// Method is the twelve-bit STUN method. Binding is the only method WebRTC needs
+// directly; the TURN methods are here because a relay candidate speaks them
+// over the same codec.
+pub enum Method as u16 {
+	binding            = 0x001
+	allocate           = 0x003
+	refresh            = 0x004
+	send               = 0x006
+	data               = 0x007
+	create_permission  = 0x008
+	channel_bind       = 0x009
+	connect            = 0x00A
+	connection_bind    = 0x00B
+	connection_attempt = 0x00C
+}
