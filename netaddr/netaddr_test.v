@@ -128,3 +128,12 @@ fn test_address_classification() {
 	assert IpAddr.parse('::')!.is_unspecified()
 	assert !IpAddr.parse('0.0.0.1')!.is_unspecified()
 }
+
+fn test_zero_value_is_invalid() {
+	addr := IpAddr{}
+	assert !addr.is_valid()
+	assert addr.str() == '<invalid>'
+	assert !addr.is_loopback()
+	assert !addr.is_private()
+	assert !addr.is_unspecified()
+}
