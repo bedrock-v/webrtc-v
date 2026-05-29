@@ -163,3 +163,21 @@ pub fn (l Logger) debug(msg string) {
 pub fn (l Logger) trace(msg string) {
 	l.emit(.trace, msg)
 }
+
+// format_record renders a record as a single line, including the trailing
+// newline. Sinks share it so output stays consistent across destinations.
+pub fn format_record(level Level, scope string, msg string) string {
+	mut sb := strings.new_builder(64 + msg.len)
+	sb.write_string(time.now().format_rfc3339_micro())
+	sb.write_string(' ')
+	sb.write_string(level_label(level))
+	sb.write_string(' ')
+	if scope != '' {
+		sb.write_string('[')
+		sb.write_string(scope)
+		sb.write_string('] ')
+	}
+	sb.write_string(msg)
+	sb.write_string('\n')
+	return sb.str()
+}
