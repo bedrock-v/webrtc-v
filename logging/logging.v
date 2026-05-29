@@ -108,3 +108,14 @@ pub fn from_env(scope string) Logger {
 	level := level_from_string(raw) or { Level.warn }
 	return default(scope, level)
 }
+
+// with_scope returns a copy of the logger under a nested scope, so a
+// per-connection component can be told apart from its peers in the output.
+pub fn (l Logger) with_scope(scope string) Logger {
+	nested := if l.scope == '' { scope } else { '${l.scope}.${scope}' }
+	return Logger{
+		scope: nested
+		sink:  l.sink
+		level: l.level
+	}
+}
