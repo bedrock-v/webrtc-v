@@ -65,3 +65,10 @@ pub fn (e IntegrityError) msg() string {
 pub fn (e IntegrityError) code() int {
 	return int(e.reason) + 200
 }
+
+// AttributeNotFoundError is returned by typed getters when the attribute is
+// absent, so that "absent" and "present but corrupt" stay distinguishable.
+pub struct AttributeNotFoundError {
+pub:
+	typ u16
+}
