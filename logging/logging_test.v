@@ -114,3 +114,20 @@ fn test_format_record_shape() {
 	unscoped := format_record(.info, '', 'plain')
 	assert !unscoped.contains('[]')
 }
+
+fn test_concurrent_logging_does_not_lose_records() {
+	sink := &CaptureSink{}
+	log := new('c', .info, sink)
+
+	mut threads := []thread{}
+	for i in 0 .. 8 {
+		threads << spawn fn (l Logger, id int) {
+			for j in 0 .. 32 {
+				l.info('${id}-${j}')
+			}
+		}(log, i)
+	}
+	threads.wait()
+
+	assert sink.snapshot().len == 8 * 32
+}
