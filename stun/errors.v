@@ -27,3 +27,11 @@ pub enum DecodeReason {
 	// bad_value: an attribute's payload is not valid for its type.
 	bad_value
 }
+
+pub fn (e DecodeError) msg() string {
+	return 'stun: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 100
+}
