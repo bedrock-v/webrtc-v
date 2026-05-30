@@ -57,3 +57,11 @@ pub enum IntegrityReason {
 	// to, which would let an attacker append content outside the protection.
 	not_last
 }
+
+pub fn (e IntegrityError) msg() string {
+	return 'stun: integrity ${e.reason}: ${e.detail}'
+}
+
+pub fn (e IntegrityError) code() int {
+	return int(e.reason) + 200
+}
