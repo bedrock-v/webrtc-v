@@ -46,3 +46,12 @@ pub fn socket_addr_to_net(a netaddr.SocketAddr) !net.Addr {
 	}
 	return net.new_ip6(a.port, octets)
 }
+
+// local_addr returns the address a UDP socket is bound to.
+//
+// ICE needs this after binding to port 0: the kernel picks the port, and the
+// host candidate cannot be described until we know which one it chose.
+pub fn local_addr(conn &net.UdpConn) !netaddr.SocketAddr {
+	bound := conn.sock.address()!
+	return socket_addr_from_net(bound)!
+}
