@@ -102,3 +102,35 @@ fn xor_address(value []u8, tid [transaction_id_size]u8) []u8 {
 	}
 	return out
 }
+
+// mapped_address returns the MAPPED-ADDRESS attribute.
+//
+// MAPPED-ADDRESS is the pre-RFC-5389 form and is only sent for backward
+// compatibility; WebRTC endpoints read XOR-MAPPED-ADDRESS. It is supported here
+// because some deployed STUN servers still answer with it alone.
+pub fn (m &Message) mapped_address() !netaddr.SocketAddr {
+	attr := m.get(attr_mapped_address) or {
+		return AttributeNotFoundError{
+			typ: attr_mapped_address
+		}
+	}
+	return decode_address(attr.value)!
+}
+
+// xor_mapped_address returns the XOR-MAPPED-ADDRESS attribute: the transport
+// address the server observed the request coming from, which is what makes a
+// server-reflexive ICE candidate possible.
+pub fn (m &Message) xor_mapped_address() !netaddr.SocketAddr {
+	attr := m.get(attr_xor_mapped_address) or {
+		return AttributeNotFoundError{
+			typ: attr_xor_mapped_address
+		}
+	}
+	if attr.value.len < 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'XOR-MAPPED-ADDRESS is ${attr.value.len} bytes, needs at least 4'
+		}
+	}
+	return decode_address(xor_address(attr.value, m.transaction_id))!
+}
