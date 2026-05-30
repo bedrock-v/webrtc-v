@@ -103,3 +103,14 @@ fn test_level_string_round_trip() {
 	level_from_string('nonsense') or { return }
 	assert false, 'unknown level must be rejected'
 }
+
+fn test_format_record_shape() {
+	line := format_record(.warn, 'ice', 'candidate failed')
+	assert line.ends_with('\n')
+	assert line.contains('WARN')
+	assert line.contains('[ice]')
+	assert line.contains('candidate failed')
+
+	unscoped := format_record(.info, '', 'plain')
+	assert !unscoped.contains('[]')
+}
