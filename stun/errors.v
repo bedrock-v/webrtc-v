@@ -45,3 +45,15 @@ pub:
 	reason IntegrityReason
 	detail string
 }
+
+pub enum IntegrityReason {
+	// missing: the message carries no attribute of the required kind.
+	missing
+	// mismatch: the computed value differs from the transmitted one.
+	mismatch
+	// malformed: the attribute is present but the wrong length.
+	malformed
+	// not_last: an attribute followed MESSAGE-INTEGRITY that is not permitted
+	// to, which would let an attacker append content outside the protection.
+	not_last
+}
