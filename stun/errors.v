@@ -35,3 +35,13 @@ pub fn (e DecodeError) msg() string {
 pub fn (e DecodeError) code() int {
 	return int(e.reason) + 100
 }
+
+// IntegrityError is returned when MESSAGE-INTEGRITY or FINGERPRINT validation
+// fails. A caller must treat every variant as "discard the message": a missing
+// attribute is as fatal as a wrong one, otherwise an attacker could strip
+// authentication by omitting it.
+pub struct IntegrityError {
+pub:
+	reason IntegrityReason
+	detail string
+}
