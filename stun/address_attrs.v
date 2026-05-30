@@ -164,3 +164,39 @@ pub fn (m &Message) xor_relayed_address() !netaddr.SocketAddr {
 	}
 	return decode_address(xor_address(attr.value, m.transaction_id))!
 }
+
+// alternate_server returns the ALTERNATE-SERVER attribute sent with a 300 error
+// to redirect a client.
+pub fn (m &Message) alternate_server() !netaddr.SocketAddr {
+	attr := m.get(attr_alternate_server) or {
+		return AttributeNotFoundError{
+			typ: attr_alternate_server
+		}
+	}
+	return decode_address(attr.value)!
+}
+
+// add_mapped_address appends a MAPPED-ADDRESS attribute.
+pub fn (mut m Message) add_mapped_address(addr netaddr.SocketAddr) ! {
+	m.add(attr_mapped_address, encode_address(addr)!)
+}
+
+// add_xor_mapped_address appends an XOR-MAPPED-ADDRESS attribute.
+pub fn (mut m Message) add_xor_mapped_address(addr netaddr.SocketAddr) ! {
+	m.add(attr_xor_mapped_address, xor_address(encode_address(addr)!, m.transaction_id))
+}
+
+// add_xor_peer_address appends a TURN XOR-PEER-ADDRESS attribute.
+pub fn (mut m Message) add_xor_peer_address(addr netaddr.SocketAddr) ! {
+	m.add(attr_xor_peer_address, xor_address(encode_address(addr)!, m.transaction_id))
+}
+
+// add_xor_relayed_address appends a TURN XOR-RELAYED-ADDRESS attribute.
+pub fn (mut m Message) add_xor_relayed_address(addr netaddr.SocketAddr) ! {
+	m.add(attr_xor_relayed_address, xor_address(encode_address(addr)!, m.transaction_id))
+}
+
+// add_alternate_server appends an ALTERNATE-SERVER attribute.
+pub fn (mut m Message) add_alternate_server(addr netaddr.SocketAddr) ! {
+	m.add(attr_alternate_server, encode_address(addr)!)
+}
