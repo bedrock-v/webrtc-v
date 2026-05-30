@@ -115,3 +115,33 @@ pub fn (m &Message) nonce() !string {
 	} }
 	return decode_text(attr, max_nonce_bytes)!
 }
+
+// software returns the SOFTWARE attribute, a free-form description of the
+// sending implementation.
+pub fn (m &Message) software() !string {
+	attr := m.get(attr_software) or { return AttributeNotFoundError{
+		typ: attr_software
+	} }
+	return decode_text(attr, max_software_bytes)!
+}
+
+pub fn (mut m Message) add_username(username string) ! {
+	m.add(attr_username, encode_text('USERNAME', username, max_username_bytes)!)
+}
+
+pub fn (mut m Message) add_realm(realm string) ! {
+	m.add(attr_realm, encode_text('REALM', realm, max_realm_bytes)!)
+}
+
+pub fn (mut m Message) add_nonce(nonce string) ! {
+	m.add(attr_nonce, encode_text('NONCE', nonce, max_nonce_bytes)!)
+}
+
+// add_software appends a SOFTWARE attribute.
+//
+// It is optional and purely informational. Advertising a precise version tells
+// anyone on the path exactly which implementation and release they are looking
+// at, so this library never adds it on its own; an application opts in.
+pub fn (mut m Message) add_software(software string) ! {
+	m.add(attr_software, encode_text('SOFTWARE', software, max_software_bytes)!)
+}
