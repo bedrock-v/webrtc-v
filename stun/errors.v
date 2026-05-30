@@ -72,3 +72,11 @@ pub struct AttributeNotFoundError {
 pub:
 	typ u16
 }
+
+pub fn (e AttributeNotFoundError) msg() string {
+	return 'stun: attribute ${attr_name(e.typ)} not present'
+}
+
+pub fn (e AttributeNotFoundError) code() int {
+	return 300
+}
