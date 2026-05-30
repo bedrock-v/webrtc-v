@@ -80,3 +80,10 @@ pub fn (e AttributeNotFoundError) msg() string {
 pub fn (e AttributeNotFoundError) code() int {
 	return 300
 }
+
+// EncodeError is returned when a message cannot be serialised, which only
+// happens if the caller supplied something that does not fit the wire format.
+pub struct EncodeError {
+pub:
+	detail string
+}
