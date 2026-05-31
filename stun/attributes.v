@@ -34,3 +34,11 @@ pub const attr_use_candidate = u16(0x0025)
 pub const attr_padding = u16(0x0026)
 pub const attr_response_port = u16(0x0027)
 pub const attr_connection_id = u16(0x002A)
+
+// Comprehension-optional range (0x8000-0xFFFF). Unknown attributes here are
+// ignored, which is what makes the protocol extensible.
+pub const attr_additional_address_family = u16(0x8000)
+pub const attr_address_error_code = u16(0x8001)
+pub const attr_password_algorithms = u16(0x8002)
+pub const attr_alternate_domain = u16(0x8003)
+pub const attr_icmp = u16(0x8004)
