@@ -54,3 +54,9 @@ pub const attr_other_address = u16(0x802C)
 pub const attr_ecn_check = u16(0x802D)
 pub const attr_third_party_authorization = u16(0x802E)
 pub const attr_mobility_ticket = u16(0x8030)
+
+// Non-standard attributes seen from Chrome. They are comprehension-optional, so
+// interoperating only requires being able to name them in logs.
+pub const attr_goog_network_info = u16(0xC057)
+pub const attr_goog_last_ice_check_received = u16(0xC058)
+pub const attr_goog_misc_info = u16(0xC059)
