@@ -128,3 +128,35 @@ pub fn (mut m Message) add_error_code(code int, reason string) ! {
 	value << body
 	m.add(attr_error_code, value)
 }
+
+// unknown_attributes returns the UNKNOWN-ATTRIBUTES list carried by a 420
+// error, naming the comprehension-required attributes the peer could not
+// process.
+pub fn (m &Message) unknown_attributes() ![]u16 {
+	attr := m.get(attr_unknown_attributes) or {
+		return AttributeNotFoundError{
+			typ: attr_unknown_attributes
+		}
+	}
+	if attr.value.len % 2 != 0 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'UNKNOWN-ATTRIBUTES is ${attr.value.len} bytes, not a whole number of types'
+		}
+	}
+	mut out := []u16{cap: attr.value.len / 2}
+	for i := 0; i < attr.value.len; i += 2 {
+		out << (u16(attr.value[i]) << 8) | u16(attr.value[i + 1])
+	}
+	return out
+}
+
+// add_unknown_attributes appends an UNKNOWN-ATTRIBUTES attribute.
+pub fn (mut m Message) add_unknown_attributes(types []u16) {
+	mut value := []u8{cap: types.len * 2}
+	for t in types {
+		value << u8(t >> 8)
+		value << u8(t)
+	}
+	m.add(attr_unknown_attributes, value)
+}
