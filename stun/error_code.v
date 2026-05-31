@@ -39,3 +39,26 @@ pub fn (e ErrorCode) code() int {
 pub fn (e ErrorCode) str() string {
 	return '${e.code} ${e.reason}'
 }
+
+// default_reason returns the registered reason phrase for a code, for use when
+// building an error response.
+pub fn default_reason(code int) string {
+	return match code {
+		code_try_alternate { 'Try Alternate' }
+		code_bad_request { 'Bad Request' }
+		code_unauthenticated { 'Unauthenticated' }
+		code_forbidden { 'Forbidden' }
+		code_unknown_attribute { 'Unknown Attribute' }
+		code_allocation_mismatch { 'Allocation Mismatch' }
+		code_stale_nonce { 'Stale Nonce' }
+		code_address_family_not_supported { 'Address Family not Supported' }
+		code_wrong_credentials { 'Wrong Credentials' }
+		code_unsupported_transport_protocol { 'Unsupported Transport Protocol' }
+		code_peer_address_family_mismatch { 'Peer Address Family Mismatch' }
+		code_allocation_quota_reached { 'Allocation Quota Reached' }
+		code_role_conflict { 'Role Conflict' }
+		code_server_error { 'Server Error' }
+		code_insufficient_capacity { 'Insufficient Capacity' }
+		else { '' }
+	}
+}
