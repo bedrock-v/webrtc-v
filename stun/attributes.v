@@ -60,3 +60,10 @@ pub const attr_mobility_ticket = u16(0x8030)
 pub const attr_goog_network_info = u16(0xC057)
 pub const attr_goog_last_ice_check_received = u16(0xC058)
 pub const attr_goog_misc_info = u16(0xC059)
+
+// is_comprehension_required reports whether an agent that does not understand
+// this attribute must reject the message (RFC 8489 section 14).
+@[inline]
+pub fn is_comprehension_required(typ u16) bool {
+	return typ <= 0x7FFF
+}
