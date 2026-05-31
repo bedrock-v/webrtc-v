@@ -18,3 +18,28 @@ pub fn (m &Message) priority() !u32 {
 	}
 	return (u32(attr.value[0]) << 24) | (u32(attr.value[1]) << 16) | (u32(attr.value[2]) << 8) | u32(attr.value[3])
 }
+
+pub fn (mut m Message) add_priority(priority u32) {
+	m.add(attr_priority, [u8(priority >> 24), u8(priority >> 16), u8(priority >> 8), u8(priority)])
+}
+
+// has_use_candidate reports whether the USE-CANDIDATE flag is present. The
+// controlling agent sets it on the check for the pair it has selected.
+pub fn (m &Message) has_use_candidate() bool {
+	return m.has(attr_use_candidate)
+}
+
+// add_use_candidate appends the USE-CANDIDATE flag, which carries no value.
+pub fn (mut m Message) add_use_candidate() {
+	m.add(attr_use_candidate, []u8{})
+}
+
+// ice_controlling returns the tiebreaker from an ICE-CONTROLLING attribute.
+pub fn (m &Message) ice_controlling() !u64 {
+	return m.tiebreaker(attr_ice_controlling)
+}
+
+// ice_controlled returns the tiebreaker from an ICE-CONTROLLED attribute.
+pub fn (m &Message) ice_controlled() !u64 {
+	return m.tiebreaker(attr_ice_controlled)
+}
