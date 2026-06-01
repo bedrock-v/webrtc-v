@@ -81,3 +81,30 @@ pub fn (m &Message) data() ![]u8 {
 	}
 	return attr.value.clone()
 }
+
+// add_data attaches a payload to a Send indication.
+pub fn (mut m Message) add_data(payload []u8) ! {
+	if payload.len > max_turn_data {
+		return EncodeError{
+			detail: 'DATA is ${payload.len} bytes, over the ${max_turn_data}-byte limit'
+		}
+	}
+	m.add(attr_data, payload.clone())
+}
+
+// channel_number returns the CHANNEL-NUMBER attribute.
+pub fn (m &Message) channel_number() !u16 {
+	attr := m.get(attr_channel_number) or {
+		return AttributeNotFoundError{
+			typ: attr_channel_number
+		}
+	}
+	if attr.value.len != 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'CHANNEL-NUMBER is ${attr.value.len} bytes, expected 4'
+		}
+	}
+	mut r := codec.Reader.new(attr.value)
+	return r.u16('CHANNEL-NUMBER')!
+}
