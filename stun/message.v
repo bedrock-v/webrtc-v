@@ -11,3 +11,9 @@ import webrtc.internal.randutil
 // (RFC 8489 section 5). It is what lets a receiver tell STUN apart from other
 // protocols multiplexed on the same socket.
 pub const magic_cookie = u32(0x2112A442)
+
+// header_size is the size of the fixed STUN header.
+pub const header_size = 20
+
+// transaction_id_size is the length of the transaction identifier.
+pub const transaction_id_size = 12
