@@ -144,3 +144,11 @@ pub fn (a RawAttribute) name() string {
 pub fn (a RawAttribute) str() string {
 	return '${a.name()}: ${a.value.hex()}'
 }
+
+// padded_len is the number of bytes the attribute occupies on the wire,
+// including the 4-byte header and the padding that aligns the value to a 4-byte
+// boundary.
+@[inline]
+pub fn (a RawAttribute) padded_len() int {
+	return 4 + padded_size(a.value.len)
+}
