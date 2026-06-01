@@ -135,3 +135,12 @@ pub:
 	value  []u8
 	offset int
 }
+
+// name returns the registered name of the attribute type.
+pub fn (a RawAttribute) name() string {
+	return attr_name(a.typ)
+}
+
+pub fn (a RawAttribute) str() string {
+	return '${a.name()}: ${a.value.hex()}'
+}
