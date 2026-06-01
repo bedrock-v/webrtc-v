@@ -152,3 +152,13 @@ pub fn (a RawAttribute) str() string {
 pub fn (a RawAttribute) padded_len() int {
 	return 4 + padded_size(a.value.len)
 }
+
+// padded_size rounds a value length up to the next 4-byte boundary.
+@[inline]
+fn padded_size(n int) int {
+	rem := n % 4
+	if rem == 0 {
+		return n
+	}
+	return n + (4 - rem)
+}
