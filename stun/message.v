@@ -64,3 +64,10 @@ pub enum Method as u16 {
 	connection_bind    = 0x00B
 	connection_attempt = 0x00C
 }
+
+// MessageType is the class and method pair carried in the first two bytes.
+pub struct MessageType {
+pub:
+	method Method = .binding
+	class  Class  = .request
+}
