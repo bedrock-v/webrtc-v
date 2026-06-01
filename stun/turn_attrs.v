@@ -61,3 +61,23 @@ pub fn (m &Message) requested_transport() !u8 {
 	}
 	return attr.value[0]
 }
+
+// add_requested_transport sets the transport for an ALLOCATE. The last three
+// bytes are reserved and must be zero.
+pub fn (mut m Message) add_requested_transport(protocol u8) {
+	m.add(attr_requested_transport, [protocol, 0, 0, 0])
+}
+
+// data returns the DATA attribute: the payload a peer sent through the relay.
+pub fn (m &Message) data() ![]u8 {
+	attr := m.get(attr_data) or { return AttributeNotFoundError{
+		typ: attr_data
+	} }
+	if attr.value.len > max_turn_data {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'DATA is ${attr.value.len} bytes, over the ${max_turn_data}-byte limit'
+		}
+	}
+	return attr.value.clone()
+}
