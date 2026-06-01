@@ -17,3 +17,12 @@ pub const header_size = 20
 
 // transaction_id_size is the length of the transaction identifier.
 pub const transaction_id_size = 12
+
+// fingerprint_xor is XORed into the CRC-32 in a FINGERPRINT attribute
+// (RFC 8489 section 14.7), so that a plain CRC never appears on the wire.
+pub const fingerprint_xor = u32(0x5354554e)
+
+// default_max_message_size bounds how much memory one message may consume.
+// The length field is 16 bits, but nothing in WebRTC needs anywhere near that,
+// and a lower ceiling limits what a single spoofed datagram can cost us.
+pub const default_max_message_size = 8192
