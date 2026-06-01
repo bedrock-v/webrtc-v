@@ -26,3 +26,8 @@ pub const fingerprint_xor = u32(0x5354554e)
 // The length field is 16 bits, but nothing in WebRTC needs anywhere near that,
 // and a lower ceiling limits what a single spoofed datagram can cost us.
 pub const default_max_message_size = 8192
+
+// default_max_attributes bounds the attribute count. A message that packs the
+// maximum body with 4-byte attributes would otherwise force thousands of small
+// allocations.
+pub const default_max_attributes = 128
