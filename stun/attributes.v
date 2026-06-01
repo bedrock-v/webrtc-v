@@ -122,3 +122,16 @@ pub fn attr_name(typ u16) string {
 		else { '0x' + typ.hex() }
 	}
 }
+
+// RawAttribute is a type-length-value triple as it appears on the wire.
+//
+// offset records where the attribute header starts within Message.raw. Decoders
+// need it to compute MESSAGE-INTEGRITY and FINGERPRINT, both of which cover the
+// bytes preceding themselves; it is zero for attributes that have not been
+// encoded yet.
+pub struct RawAttribute {
+pub:
+	typ    u16
+	value  []u8
+	offset int
+}
