@@ -43,3 +43,41 @@ pub fn (m &Message) ice_controlling() !u64 {
 pub fn (m &Message) ice_controlled() !u64 {
 	return m.tiebreaker(attr_ice_controlled)
 }
+
+fn (m &Message) tiebreaker(typ u16) !u64 {
+	attr := m.get(typ) or { return AttributeNotFoundError{
+		typ: typ
+	} }
+	if attr.value.len != 8 {
+		return DecodeError{
+			reason: .bad_value
+			detail: '${attr_name(typ)} is ${attr.value.len} bytes, expected 8'
+		}
+	}
+	mut v := u64(0)
+	for b in attr.value {
+		v = (v << 8) | u64(b)
+	}
+	return v
+}
+
+// add_ice_controlling appends the ICE-CONTROLLING attribute with the agent's
+// tiebreaker value. Both agents include their role attribute on every check so
+// that a role conflict is detected on the first exchange rather than after a
+// timeout.
+pub fn (mut m Message) add_ice_controlling(tiebreaker u64) {
+	m.add(attr_ice_controlling, encode_u64(tiebreaker))
+}
+
+// add_ice_controlled appends the ICE-CONTROLLED attribute.
+pub fn (mut m Message) add_ice_controlled(tiebreaker u64) {
+	m.add(attr_ice_controlled, encode_u64(tiebreaker))
+}
+
+fn encode_u64(v u64) []u8 {
+	mut out := []u8{len: 8}
+	for i in 0 .. 8 {
+		out[i] = u8(v >> (56 - i * 8))
+	}
+	return out
+}
