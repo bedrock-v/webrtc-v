@@ -39,3 +39,12 @@ pub enum Class as u8 {
 	success_response = 0x02
 	error_response   = 0x03
 }
+
+pub fn (c Class) str() string {
+	return match c {
+		.request { 'request' }
+		.indication { 'indication' }
+		.success_response { 'success response' }
+		.error_response { 'error response' }
+	}
+}
