@@ -31,3 +31,11 @@ pub const default_max_message_size = 8192
 // maximum body with 4-byte attributes would otherwise force thousands of small
 // allocations.
 pub const default_max_attributes = 128
+
+// Class is the two-bit STUN message class.
+pub enum Class as u8 {
+	request          = 0x00
+	indication       = 0x01
+	success_response = 0x02
+	error_response   = 0x03
+}
