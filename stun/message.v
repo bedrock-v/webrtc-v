@@ -222,3 +222,13 @@ pub fn (mut m Message) add(typ u16, value []u8) {
 		value: value
 	}
 }
+
+// get returns the first attribute of the given type, or none.
+pub fn (m &Message) get(typ u16) ?RawAttribute {
+	for attr in m.attributes {
+		if attr.typ == typ {
+			return attr
+		}
+	}
+	return none
+}
