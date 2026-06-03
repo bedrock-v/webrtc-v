@@ -178,3 +178,16 @@ pub fn Message.with_transaction_id(class Class, method Method, tid [transaction_
 		transaction_id: tid
 	}
 }
+
+// Message.response builds a response to req, copying its transaction id and
+// method. This is the only correct way to answer a request, so it exists to
+// keep callers from open-coding it and getting the method wrong.
+pub fn Message.response(req &Message, class Class) Message {
+	return Message{
+		typ:            MessageType{
+			method: req.typ.method
+			class:  class
+		}
+		transaction_id: req.transaction_id
+	}
+}
