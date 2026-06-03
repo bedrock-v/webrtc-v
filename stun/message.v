@@ -191,3 +191,25 @@ pub fn Message.response(req &Message, class Class) Message {
 		transaction_id: req.transaction_id
 	}
 }
+
+// is_message reports whether a datagram plausibly holds a STUN message.
+//
+// This is the demultiplexing predicate from RFC 7983. On a WebRTC socket one
+// port carries STUN, DTLS, RTP and RTCP, and they are told apart by the value
+// of the first byte: 0-3 is STUN, 20-63 is DTLS, 128-191 is RTP or RTCP. Note
+// that checking only that the top two bits are clear is not enough - a DTLS
+// record begins with a content type of 20-25, which also has them clear - so
+// the full range is tested here and the magic cookie confirms the guess.
+//
+// It is deliberately cheap and does not validate the body; Message.decode does
+// that.
+pub fn is_message(b []u8) bool {
+	if b.len < header_size {
+		return false
+	}
+	if b[0] > 3 {
+		return false
+	}
+	cookie := (u32(b[4]) << 24) | (u32(b[5]) << 16) | (u32(b[6]) << 8) | u32(b[7])
+	return cookie == magic_cookie
+}
