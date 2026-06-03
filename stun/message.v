@@ -166,3 +166,15 @@ pub fn Message.new(class Class, method Method) !Message {
 		transaction_id: id
 	}
 }
+
+// Message.with_transaction_id returns a message reusing a known identifier,
+// which is how a response is built for a received request.
+pub fn Message.with_transaction_id(class Class, method Method, tid [transaction_id_size]u8) Message {
+	return Message{
+		typ:            MessageType{
+			method: method
+			class:  class
+		}
+		transaction_id: tid
+	}
+}
