@@ -48,3 +48,32 @@ fn test_error_code_rejects_malformed_wire_value() {
 		assert false, 'expected ${value.hex()} to be rejected'
 	}
 }
+
+fn test_error_code_absent() {
+	msg := Message.new(.error_response, .binding)!
+	msg.error_code() or {
+		assert err is AttributeNotFoundError
+		return
+	}
+	assert false, 'missing ERROR-CODE must be reported'
+}
+
+fn test_unknown_attributes_round_trip() {
+	mut msg := Message.new(.error_response, .binding)!
+	msg.add_error_code(code_unknown_attribute, '')!
+	msg.add_unknown_attributes([u16(0x0024), 0x0025, 0x7FFF])
+
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.unknown_attributes()! == [u16(0x0024), 0x0025, 0x7FFF]
+}
+
+fn test_unknown_attributes_rejects_odd_length() {
+	mut msg := Message.new(.error_response, .binding)!
+	msg.add(attr_unknown_attributes, [u8(0x00), 0x24, 0x00])
+	decoded := Message.decode(msg.encode()!)!
+	decoded.unknown_attributes() or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'odd-length UNKNOWN-ATTRIBUTES must be rejected'
+}
