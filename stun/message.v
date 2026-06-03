@@ -80,3 +80,15 @@ pub fn (t MessageType) value() u16 {
 	c := u16(t.class)
 	return (m & 0x000F) | ((m & 0x0070) << 1) | ((m & 0x0F80) << 2) | ((c & 0x0001) << 4) | ((c & 0x0002) << 7)
 }
+
+// MessageType.from_value unpacks a wire type. Unknown methods are preserved as
+// their numeric value so that an unsupported request can still be answered with
+// the correct method in the error response.
+pub fn MessageType.from_value(v u16) MessageType {
+	method := (v & 0x000F) | ((v & 0x00E0) >> 1) | ((v & 0x3E00) >> 2)
+	class := ((v & 0x0010) >> 4) | ((v & 0x0100) >> 7)
+	return MessageType{
+		method: unsafe { Method(method) }
+		class:  unsafe { Class(u8(class)) }
+	}
+}
