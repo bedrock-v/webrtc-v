@@ -92,3 +92,7 @@ pub fn MessageType.from_value(v u16) MessageType {
 		class:  unsafe { Class(u8(class)) }
 	}
 }
+
+pub fn (t MessageType) str() string {
+	return '${t.method} ${t.class}'
+}
