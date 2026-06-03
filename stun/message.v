@@ -104,3 +104,19 @@ pub enum IntegrityAlgorithm {
 	sha1
 	sha256
 }
+
+// EncodeOptions controls the authentication attributes appended during
+// encoding. Both are appended after every other attribute and in the order the
+// RFC requires: MESSAGE-INTEGRITY first, FINGERPRINT last.
+@[params]
+pub struct EncodeOptions {
+pub:
+	// integrity_key, when non-empty, causes a MESSAGE-INTEGRITY attribute to be
+	// computed over the message and appended.
+	integrity_key []u8
+	// integrity_algorithm selects the HMAC used with integrity_key.
+	integrity_algorithm IntegrityAlgorithm = .sha1
+	// fingerprint appends a FINGERPRINT attribute. RFC 8445 requires it on all
+	// ICE connectivity checks.
+	fingerprint bool
+}
