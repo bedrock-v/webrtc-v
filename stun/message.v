@@ -120,3 +120,13 @@ pub:
 	// ICE connectivity checks.
 	fingerprint bool
 }
+
+// DecodeOptions bounds the resources a single decode may consume. The defaults
+// are sized for WebRTC; a TURN relay forwarding large DATA indications can
+// raise max_message_size.
+@[params]
+pub struct DecodeOptions {
+pub:
+	max_message_size int = default_max_message_size
+	max_attributes   int = default_max_attributes
+}
