@@ -213,3 +213,12 @@ pub fn is_message(b []u8) bool {
 	cookie := (u32(b[4]) << 24) | (u32(b[5]) << 16) | (u32(b[6]) << 8) | u32(b[7])
 	return cookie == magic_cookie
 }
+
+// add appends an attribute. Attributes are emitted in insertion order, which
+// matters because MESSAGE-INTEGRITY and FINGERPRINT protect what precedes them.
+pub fn (mut m Message) add(typ u16, value []u8) {
+	m.attributes << RawAttribute{
+		typ:   typ
+		value: value
+	}
+}
