@@ -108,3 +108,23 @@ pub fn (m &Message) channel_number() !u16 {
 	mut r := codec.Reader.new(attr.value)
 	return r.u16('CHANNEL-NUMBER')!
 }
+
+// add_channel_number sets the channel for a ChannelBind. The trailing two bytes
+// are reserved and must be zero.
+pub fn (mut m Message) add_channel_number(channel u16) {
+	mut w := codec.Writer.with_capacity(4)
+	w.u16(channel)
+	w.u16(0)
+	m.add(attr_channel_number, w.buf)
+}
+
+// add_dont_fragment asks the relay to set the IP don't-fragment bit towards
+// peers. It has no value; its presence is the request.
+pub fn (mut m Message) add_dont_fragment() {
+	m.add(attr_dont_fragment, []u8{})
+}
+
+// has_dont_fragment reports whether the attribute is present.
+pub fn (m &Message) has_dont_fragment() bool {
+	return m.get(attr_dont_fragment) != none
+}
