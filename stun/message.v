@@ -96,3 +96,11 @@ pub fn MessageType.from_value(v u16) MessageType {
 pub fn (t MessageType) str() string {
 	return '${t.method} ${t.class}'
 }
+
+// IntegrityAlgorithm selects which MESSAGE-INTEGRITY variant to append.
+// ICE (RFC 8445) uses the HMAC-SHA1 form; RFC 8489 added the SHA-256 form for
+// long-term credentials.
+pub enum IntegrityAlgorithm {
+	sha1
+	sha256
+}
