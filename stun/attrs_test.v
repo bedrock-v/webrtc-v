@@ -146,3 +146,21 @@ fn test_text_attributes_enforce_length_limits() {
 	}
 	assert false, 'over-long text attributes must be rejected'
 }
+
+fn test_ice_attributes_round_trip() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add_priority(0x7E0000FF)
+	msg.add_ice_controlling(0xDEADBEEFCAFEBABE)
+	msg.add_use_candidate()
+
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.priority()! == 0x7E0000FF
+	assert decoded.ice_controlling()! == 0xDEADBEEFCAFEBABE
+	assert decoded.has_use_candidate()
+
+	decoded.ice_controlled() or {
+		assert err is AttributeNotFoundError
+		return
+	}
+	assert false, 'ICE-CONTROLLED must be absent'
+}
