@@ -350,3 +350,107 @@ fn set_body_length(mut buf []u8, total_len int) {
 	buf[2] = u8(body >> 8)
 	buf[3] = u8(body)
 }
+
+// Message.decode parses a STUN message.
+//
+// Everything reaching this function came off a socket, so every length is
+// treated as hostile: the declared body length must agree with the buffer, each
+// attribute must fit inside the body, and both the total size and the attribute
+// count are capped.
+pub fn Message.decode(b []u8, opts DecodeOptions) !Message {
+	if b.len < header_size {
+		return DecodeError{
+			reason: .too_short
+			detail: '${b.len} bytes is smaller than the ${header_size}-byte header'
+		}
+	}
+	if b.len > opts.max_message_size {
+		return DecodeError{
+			reason: .too_large
+			detail: '${b.len} bytes exceeds the ${opts.max_message_size}-byte limit'
+		}
+	}
+	if b[0] & 0xC0 != 0 {
+		return DecodeError{
+			reason: .not_stun
+			detail: 'leading bits of first byte are not zero'
+		}
+	}
+
+	mut r := codec.Reader.new(b)
+	raw_type := r.u16('message type')!
+	body_len := int(r.u16('message length')!)
+	cookie := r.u32('magic cookie')!
+	if cookie != magic_cookie {
+		return DecodeError{
+			reason: .not_stun
+			detail: 'magic cookie 0x${cookie.hex()} does not match 0x${magic_cookie.hex()}'
+		}
+	}
+	if body_len % 4 != 0 {
+		return DecodeError{
+			reason: .bad_length
+			detail: 'body length ${body_len} is not a multiple of 4'
+		}
+	}
+	if header_size + body_len != b.len {
+		return DecodeError{
+			reason: .bad_length
+			detail: 'body length ${body_len} does not match the ${b.len - header_size} bytes present'
+		}
+	}
+
+	mut tid := [transaction_id_size]u8{}
+	tid_bytes := r.view(transaction_id_size, 'transaction id')!
+	for i in 0 .. transaction_id_size {
+		tid[i] = tid_bytes[i]
+	}
+
+	mut attributes := []RawAttribute{}
+	for r.remaining() > 0 {
+		if attributes.len >= opts.max_attributes {
+			return DecodeError{
+				reason: .too_many_attributes
+				detail: 'more than ${opts.max_attributes} attributes'
+			}
+		}
+		offset := r.pos
+		typ := r.u16('attribute type') or {
+			return DecodeError{
+				reason: .bad_attribute
+				detail: 'truncated attribute header at offset ${offset}'
+			}
+		}
+		value_len := int(r.u16('attribute length') or {
+			return DecodeError{
+				reason: .bad_attribute
+				detail: 'truncated attribute header at offset ${offset}'
+			}
+		})
+		value := r.bytes(value_len, 'attribute value') or {
+			return DecodeError{
+				reason: .bad_attribute
+				detail: '${attr_name(typ)} declares ${value_len} bytes but only ${r.remaining()} remain'
+			}
+		}
+		// Padding is present for every attribute except, possibly, the last one
+		// in a message emitted by a non-conforming implementation. Being
+		// tolerant here costs nothing and is what other stacks do.
+		pad := padded_size(value_len) - value_len
+		if pad > 0 && r.remaining() >= pad {
+			r.skip(pad, 'attribute padding')!
+		}
+		attributes << RawAttribute{
+			typ:    typ
+			value:  value
+			offset: offset
+		}
+	}
+
+	return Message{
+		typ:            MessageType.from_value(raw_type)
+		transaction_id: tid
+		attributes:     attributes
+		raw:            b.clone()
+	}
+}
