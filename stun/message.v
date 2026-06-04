@@ -332,3 +332,12 @@ pub fn (mut m Message) encode(opts EncodeOptions) ![]u8 {
 	m.attributes = encoded
 	return m.raw
 }
+
+// write_attribute emits one TLV, padded to a 4-byte boundary. The padding is
+// not counted in the length field (RFC 8489 section 14).
+fn write_attribute(mut w codec.Writer, typ u16, value []u8) {
+	w.u16(typ)
+	w.u16(u16(value.len))
+	w.bytes(value)
+	w.pad(4)
+}
