@@ -479,3 +479,9 @@ fn fingerprint_value(prefix []u8) []u8 {
 pub fn (m &Message) check_message_integrity(key []u8) ! {
 	m.check_integrity(attr_message_integrity, sha1.size, .sha1, key)!
 }
+
+// check_message_integrity_sha256 verifies the MESSAGE-INTEGRITY-SHA256
+// attribute against key.
+pub fn (m &Message) check_message_integrity_sha256(key []u8) ! {
+	m.check_integrity(attr_message_integrity_sha256, sha256.size, .sha256, key)!
+}
