@@ -462,3 +462,9 @@ fn integrity_digest(prefix []u8, key []u8, algorithm IntegrityAlgorithm) []u8 {
 		.sha256 { hmac.new(key, prefix, sha256.sum, sha256.block_size) }
 	}
 }
+
+// fingerprint_value computes the FINGERPRINT payload over the given prefix.
+fn fingerprint_value(prefix []u8) []u8 {
+	v := crc32.sum(prefix) ^ fingerprint_xor
+	return [u8(v >> 24), u8(v >> 16), u8(v >> 8), u8(v)]
+}
