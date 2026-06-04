@@ -485,3 +485,41 @@ pub fn (m &Message) check_message_integrity(key []u8) ! {
 pub fn (m &Message) check_message_integrity_sha256(key []u8) ! {
 	m.check_integrity(attr_message_integrity_sha256, sha256.size, .sha256, key)!
 }
+
+fn (m &Message) check_integrity(typ u16, digest_len int, algorithm IntegrityAlgorithm, key []u8) ! {
+	if key.len == 0 {
+		return IntegrityError{
+			reason: .malformed
+			detail: 'empty integrity key'
+		}
+	}
+	attr := m.get(typ) or { return IntegrityError{
+		reason: .missing
+		detail: attr_name(typ)
+	} }
+	if attr.value.len != digest_len {
+		return IntegrityError{
+			reason: .malformed
+			detail: '${attr_name(typ)} is ${attr.value.len} bytes, expected ${digest_len}'
+		}
+	}
+	if attr.offset + 4 + digest_len > m.raw.len {
+		return IntegrityError{
+			reason: .malformed
+			detail: '${attr_name(typ)} extends past the message'
+		}
+	}
+	m.reject_unprotected_trailers(typ, attr.offset)!
+
+	// Rebuild the protected prefix with the length field the sender used.
+	mut prefix := m.raw[..attr.offset].clone()
+	set_body_length(mut prefix, attr.offset + 4 + digest_len)
+	expected := integrity_digest(prefix, key, algorithm)
+
+	if !hmac.equal(expected, attr.value) {
+		return IntegrityError{
+			reason: .mismatch
+			detail: attr_name(typ)
+		}
+	}
+}
