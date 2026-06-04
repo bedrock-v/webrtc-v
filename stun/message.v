@@ -454,3 +454,11 @@ pub fn Message.decode(b []u8, opts DecodeOptions) !Message {
 		raw:            b.clone()
 	}
 }
+
+// integrity_digest computes the HMAC over the given prefix of a message.
+fn integrity_digest(prefix []u8, key []u8, algorithm IntegrityAlgorithm) []u8 {
+	return match algorithm {
+		.sha1 { hmac.new(key, prefix, sha1.sum, sha1.block_size) }
+		.sha256 { hmac.new(key, prefix, sha256.sum, sha256.block_size) }
+	}
+}
