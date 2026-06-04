@@ -243,3 +243,8 @@ pub fn (m &Message) get_all(typ u16) []RawAttribute {
 	}
 	return out
 }
+
+// has reports whether an attribute of the given type is present.
+pub fn (m &Message) has(typ u16) bool {
+	return m.get(typ) != none
+}
