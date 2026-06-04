@@ -232,3 +232,14 @@ pub fn (m &Message) get(typ u16) ?RawAttribute {
 	}
 	return none
 }
+
+// get_all returns every attribute of the given type, in wire order.
+pub fn (m &Message) get_all(typ u16) []RawAttribute {
+	mut out := []RawAttribute{}
+	for attr in m.attributes {
+		if attr.typ == typ {
+			out << attr
+		}
+	}
+	return out
+}
