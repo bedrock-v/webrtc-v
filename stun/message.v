@@ -341,3 +341,12 @@ fn write_attribute(mut w codec.Writer, typ u16, value []u8) {
 	w.bytes(value)
 	w.pad(4)
 }
+
+// set_body_length writes the STUN length field, which counts the bytes after
+// the 20-byte header.
+@[inline]
+fn set_body_length(mut buf []u8, total_len int) {
+	body := total_len - header_size
+	buf[2] = u8(body >> 8)
+	buf[3] = u8(body)
+}
