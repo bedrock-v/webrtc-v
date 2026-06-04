@@ -164,3 +164,33 @@ fn test_ice_attributes_round_trip() {
 	}
 	assert false, 'ICE-CONTROLLED must be absent'
 }
+
+fn test_ice_attributes_reject_wrong_length() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add(attr_priority, [u8(1), 2, 3])
+	msg.add(attr_ice_controlling, [u8(1), 2, 3, 4])
+	decoded := Message.decode(msg.encode()!)!
+
+	decoded.priority() or {
+		decoded.ice_controlling() or { return }
+		assert false, 'short ICE-CONTROLLING must be rejected'
+	}
+	assert false, 'short PRIORITY must be rejected'
+}
+
+fn test_short_term_key_is_the_password() {
+	key := short_term_key('VOkJxbRl1RmTxUk/WvJxBt')!
+	assert key == 'VOkJxbRl1RmTxUk/WvJxBt'.bytes()
+	// A space is printable ASCII and SASLprep leaves it alone.
+	assert short_term_key('a b')!.len == 3
+}
+
+fn test_short_term_key_rejects_unprepped_input() {
+	// Two peers that normalise differently would derive different keys and fail
+	// authentication with no diagnosable cause, so non-ASCII is refused rather
+	// than passed through.
+	for password in ['', 'pass\tword', 'pässword', 'pass\x00word', 'pass\nword'] {
+		short_term_key(password) or { continue }
+		assert false, 'expected ${password} to be rejected'
+	}
+}
