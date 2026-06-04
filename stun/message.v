@@ -248,3 +248,20 @@ pub fn (m &Message) get_all(typ u16) []RawAttribute {
 pub fn (m &Message) has(typ u16) bool {
 	return m.get(typ) != none
 }
+
+// unknown_comprehension_required returns the types of any comprehension-
+// required attributes not in known. A server answers a request carrying these
+// with a 420 error listing them, per RFC 8489 section 6.3.2.
+pub fn (m &Message) unknown_comprehension_required(known []u16) []u16 {
+	mut out := []u16{}
+	for attr in m.attributes {
+		if !is_comprehension_required(attr.typ) {
+			continue
+		}
+		if attr.typ in known || attr.typ in out {
+			continue
+		}
+		out << attr.typ
+	}
+	return out
+}
