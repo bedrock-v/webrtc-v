@@ -468,3 +468,14 @@ fn fingerprint_value(prefix []u8) []u8 {
 	v := crc32.sum(prefix) ^ fingerprint_xor
 	return [u8(v >> 24), u8(v >> 16), u8(v >> 8), u8(v)]
 }
+
+// check_message_integrity verifies the MESSAGE-INTEGRITY attribute against key.
+//
+// The digest covers the message from its first byte up to the start of the
+// MESSAGE-INTEGRITY attribute, with the header's length field set as though the
+// message ended just after that attribute. Attributes that follow it are
+// therefore unprotected, so anything other than FINGERPRINT or the SHA-256
+// variant appearing after it is rejected rather than merely ignored.
+pub fn (m &Message) check_message_integrity(key []u8) ! {
+	m.check_integrity(attr_message_integrity, sha1.size, .sha1, key)!
+}
