@@ -523,3 +523,26 @@ fn (m &Message) check_integrity(typ u16, digest_len int, algorithm IntegrityAlgo
 		}
 	}
 }
+
+// reject_unprotected_trailers fails if an attribute that the digest does not
+// cover follows the integrity attribute. RFC 8489 section 14.5 allows only
+// MESSAGE-INTEGRITY-SHA256 and FINGERPRINT after MESSAGE-INTEGRITY, and only
+// FINGERPRINT after MESSAGE-INTEGRITY-SHA256.
+fn (m &Message) reject_unprotected_trailers(typ u16, offset int) ! {
+	for attr in m.attributes {
+		if attr.offset <= offset {
+			continue
+		}
+		allowed := if typ == attr_message_integrity {
+			attr.typ == attr_message_integrity_sha256 || attr.typ == attr_fingerprint
+		} else {
+			attr.typ == attr_fingerprint
+		}
+		if !allowed {
+			return IntegrityError{
+				reason: .not_last
+				detail: '${attr.name()} follows ${attr_name(typ)} and is not covered by it'
+			}
+		}
+	}
+}
