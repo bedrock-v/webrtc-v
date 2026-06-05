@@ -135,3 +135,19 @@ fn test_rfc5769_request_reencodes() {
 	)!
 	assert_matches_reference(out, raw, vector_request_password)!
 }
+
+fn test_rfc5769_ipv4_response() {
+	raw := hex.decode(vector_response_v4)!
+	msg := Message.decode(raw)!
+
+	assert msg.typ.class == .success_response
+	assert msg.typ.method == .binding
+	assert msg.software()! == vector_response_software
+
+	addr := msg.xor_mapped_address()!
+	assert addr.ip.family == .ipv4
+	assert addr.str() == '192.0.2.1:32853'
+
+	msg.check_message_integrity(short_term_key(vector_response_password)!)!
+	msg.check_fingerprint()!
+}
