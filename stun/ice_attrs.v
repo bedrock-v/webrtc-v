@@ -18,3 +18,7 @@ pub fn (m &Message) priority() !u32 {
 	}
 	return (u32(attr.value[0]) << 24) | (u32(attr.value[1]) << 16) | (u32(attr.value[2]) << 8) | u32(attr.value[3])
 }
+
+pub fn (mut m Message) add_priority(priority u32) {
+	m.add(attr_priority, [u8(priority >> 24), u8(priority >> 16), u8(priority >> 8), u8(priority)])
+}
