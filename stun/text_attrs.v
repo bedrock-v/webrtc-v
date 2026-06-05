@@ -136,3 +136,12 @@ pub fn (mut m Message) add_realm(realm string) ! {
 pub fn (mut m Message) add_nonce(nonce string) ! {
 	m.add(attr_nonce, encode_text('NONCE', nonce, max_nonce_bytes)!)
 }
+
+// add_software appends a SOFTWARE attribute.
+//
+// It is optional and purely informational. Advertising a precise version tells
+// anyone on the path exactly which implementation and release they are looking
+// at, so this library never adds it on its own; an application opts in.
+pub fn (mut m Message) add_software(software string) ! {
+	m.add(attr_software, encode_text('SOFTWARE', software, max_software_bytes)!)
+}
