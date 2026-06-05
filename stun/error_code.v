@@ -35,3 +35,7 @@ pub fn (e ErrorCode) msg() string {
 pub fn (e ErrorCode) code() int {
 	return e.code
 }
+
+pub fn (e ErrorCode) str() string {
+	return '${e.code} ${e.reason}'
+}
