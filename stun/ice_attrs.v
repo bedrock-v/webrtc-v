@@ -43,3 +43,20 @@ pub fn (m &Message) ice_controlling() !u64 {
 pub fn (m &Message) ice_controlled() !u64 {
 	return m.tiebreaker(attr_ice_controlled)
 }
+
+fn (m &Message) tiebreaker(typ u16) !u64 {
+	attr := m.get(typ) or { return AttributeNotFoundError{
+		typ: typ
+	} }
+	if attr.value.len != 8 {
+		return DecodeError{
+			reason: .bad_value
+			detail: '${attr_name(typ)} is ${attr.value.len} bytes, expected 8'
+		}
+	}
+	mut v := u64(0)
+	for b in attr.value {
+		v = (v << 8) | u64(b)
+	}
+	return v
+}
