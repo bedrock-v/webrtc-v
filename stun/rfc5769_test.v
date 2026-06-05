@@ -151,3 +151,31 @@ fn test_rfc5769_ipv4_response() {
 	msg.check_message_integrity(short_term_key(vector_response_password)!)!
 	msg.check_fingerprint()!
 }
+
+fn test_rfc5769_ipv6_response() {
+	raw := hex.decode(vector_response_v6)!
+	msg := Message.decode(raw)!
+
+	assert msg.typ.class == .success_response
+	addr := msg.xor_mapped_address()!
+	assert addr.ip.family == .ipv6
+	assert addr.str() == '[2001:db8:1234:5678:11:2233:4455:6677]:32853'
+
+	msg.check_message_integrity(short_term_key(vector_response_password)!)!
+	msg.check_fingerprint()!
+}
+
+fn test_rfc5769_ipv4_response_reencodes() {
+	raw := hex.decode(vector_response_v4)!
+	decoded := Message.decode(raw)!
+
+	mut rebuilt := Message.with_transaction_id(.success_response, .binding, decoded.transaction_id)
+	rebuilt.add_software(vector_response_software)!
+	rebuilt.add_xor_mapped_address(netaddr.SocketAddr.parse('192.0.2.1:32853')!)!
+
+	out := rebuilt.encode(
+		integrity_key: short_term_key(vector_response_password)!
+		fingerprint:   true
+	)!
+	assert_matches_reference(out, raw, vector_response_password)!
+}
