@@ -28,3 +28,8 @@ pub fn (mut m Message) add_priority(priority u32) {
 pub fn (m &Message) has_use_candidate() bool {
 	return m.has(attr_use_candidate)
 }
+
+// add_use_candidate appends the USE-CANDIDATE flag, which carries no value.
+pub fn (mut m Message) add_use_candidate() {
+	m.add(attr_use_candidate, []u8{})
+}
