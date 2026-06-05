@@ -132,3 +132,7 @@ pub fn (mut m Message) add_username(username string) ! {
 pub fn (mut m Message) add_realm(realm string) ! {
 	m.add(attr_realm, encode_text('REALM', realm, max_realm_bytes)!)
 }
+
+pub fn (mut m Message) add_nonce(nonce string) ! {
+	m.add(attr_nonce, encode_text('NONCE', nonce, max_nonce_bytes)!)
+}
