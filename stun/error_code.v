@@ -104,3 +104,27 @@ pub fn (m &Message) error_code() !ErrorCode {
 		reason: reason_bytes.bytestr()
 	}
 }
+
+// add_error_code appends an ERROR-CODE attribute. An empty reason is replaced
+// by the registered phrase for the code.
+pub fn (mut m Message) add_error_code(code int, reason string) ! {
+	if code < 300 || code > 699 {
+		return EncodeError{
+			detail: 'ERROR-CODE ${code} is outside the valid 300-699 range'
+		}
+	}
+	text := if reason == '' { default_reason(code) } else { reason }
+	body := text.bytes()
+	if body.len > max_reason_bytes {
+		return EncodeError{
+			detail: 'ERROR-CODE reason phrase is ${body.len} bytes, over the ${max_reason_bytes}-byte limit'
+		}
+	}
+	mut value := []u8{cap: 4 + body.len}
+	value << 0
+	value << 0
+	value << u8(code / 100)
+	value << u8(code % 100)
+	value << body
+	m.add(attr_error_code, value)
+}
