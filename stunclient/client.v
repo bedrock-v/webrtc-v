@@ -67,3 +67,28 @@ mut:
 pub:
 	server string
 }
+
+// Client.dial opens a socket to a STUN server given as "host:port".
+pub fn Client.dial(server string, config ClientConfig) !&Client {
+	if config.max_transmissions < 1 {
+		return error('stun: max_transmissions must be at least 1')
+	}
+	if config.rto <= 0 {
+		return error('stun: rto must be positive')
+	}
+	conn := net.dial_udp(server)!
+	return &Client{
+		conn:   conn
+		config: config
+		server: server
+	}
+}
+
+// close releases the socket. It is safe to call more than once.
+pub fn (mut c Client) close() {
+	if c.closed {
+		return
+	}
+	c.closed = true
+	c.conn.close() or {}
+}
