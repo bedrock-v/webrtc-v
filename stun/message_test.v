@@ -439,3 +439,41 @@ fn test_address_attributes_round_trip() {
 		assert decoded.reflexive_address()!.str() == text
 	}
 }
+
+fn test_xor_is_its_own_inverse() {
+	tid := [transaction_id_size]u8{init: u8(index * 7 + 3)}
+	original := hex.decode('000102030405060708090a0b0c0d0e0f10111213')!
+	once := xor_address(original, tid)
+	twice := xor_address(once, tid)
+	assert twice == original
+	assert once != original
+}
+
+fn test_address_attribute_rejects_bad_family_and_length() {
+	tid := [transaction_id_size]u8{}
+	cases := [
+		[u8(0), 0x03, 0, 0, 1, 2, 3, 4], // unknown family
+		[u8(0), 0x01, 0, 0, 1, 2, 3], // IPv4 too short
+		[u8(0), 0x01, 0, 0, 1, 2, 3, 4, 5], // IPv4 too long
+		[u8(0), 0x02, 0, 0, 1, 2, 3, 4], // IPv6 too short
+		[u8(0), 0x01], // truncated header
+	]
+	for value in cases {
+		mut msg := Message.with_transaction_id(.success_response, .binding, tid)
+		msg.add(attr_mapped_address, value)
+		decoded := Message.decode(msg.encode()!)!
+		decoded.mapped_address() or { continue }
+		assert false, 'expected ${value.hex()} to be rejected'
+	}
+}
+
+fn test_reflexive_address_prefers_xor_form() {
+	xor_addr := netaddr.SocketAddr.parse('1.1.1.1:1111')!
+	plain_addr := netaddr.SocketAddr.parse('2.2.2.2:2222')!
+	mut msg := Message.new(.success_response, .binding)!
+	msg.add_mapped_address(plain_addr)!
+	msg.add_xor_mapped_address(xor_addr)!
+
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.reflexive_address()!.str() == '1.1.1.1:1111'
+}
