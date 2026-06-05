@@ -22,3 +22,9 @@ pub fn (m &Message) priority() !u32 {
 pub fn (mut m Message) add_priority(priority u32) {
 	m.add(attr_priority, [u8(priority >> 24), u8(priority >> 16), u8(priority >> 8), u8(priority)])
 }
+
+// has_use_candidate reports whether the USE-CANDIDATE flag is present. The
+// controlling agent sets it on the check for the pair it has selected.
+pub fn (m &Message) has_use_candidate() bool {
+	return m.has(attr_use_candidate)
+}
