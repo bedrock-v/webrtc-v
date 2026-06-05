@@ -150,3 +150,13 @@ pub fn (m &Message) unknown_attributes() ![]u16 {
 	}
 	return out
 }
+
+// add_unknown_attributes appends an UNKNOWN-ATTRIBUTES attribute.
+pub fn (mut m Message) add_unknown_attributes(types []u16) {
+	mut value := []u8{cap: types.len * 2}
+	for t in types {
+		value << u8(t >> 8)
+		value << u8(t)
+	}
+	m.add(attr_unknown_attributes, value)
+}
