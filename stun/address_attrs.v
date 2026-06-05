@@ -134,3 +134,12 @@ pub fn (m &Message) xor_mapped_address() !netaddr.SocketAddr {
 	}
 	return decode_address(xor_address(attr.value, m.transaction_id))!
 }
+
+// reflexive_address returns the address the server observed, preferring
+// XOR-MAPPED-ADDRESS and falling back to MAPPED-ADDRESS.
+pub fn (m &Message) reflexive_address() !netaddr.SocketAddr {
+	if addr := m.xor_mapped_address() {
+		return addr
+	}
+	return m.mapped_address()
+}
