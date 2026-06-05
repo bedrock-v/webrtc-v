@@ -175,3 +175,8 @@ pub fn (m &Message) alternate_server() !netaddr.SocketAddr {
 	}
 	return decode_address(attr.value)!
 }
+
+// add_mapped_address appends a MAPPED-ADDRESS attribute.
+pub fn (mut m Message) add_mapped_address(addr netaddr.SocketAddr) ! {
+	m.add(attr_mapped_address, encode_address(addr)!)
+}
