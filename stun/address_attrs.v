@@ -153,3 +153,14 @@ pub fn (m &Message) xor_peer_address() !netaddr.SocketAddr {
 	}
 	return decode_address(xor_address(attr.value, m.transaction_id))!
 }
+
+// xor_relayed_address returns the TURN XOR-RELAYED-ADDRESS attribute: the
+// address the relay allocated on the client's behalf.
+pub fn (m &Message) xor_relayed_address() !netaddr.SocketAddr {
+	attr := m.get(attr_xor_relayed_address) or {
+		return AttributeNotFoundError{
+			typ: attr_xor_relayed_address
+		}
+	}
+	return decode_address(xor_address(attr.value, m.transaction_id))!
+}
