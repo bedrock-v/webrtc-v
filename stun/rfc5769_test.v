@@ -179,3 +179,36 @@ fn test_rfc5769_ipv4_response_reencodes() {
 	)!
 	assert_matches_reference(out, raw, vector_response_password)!
 }
+
+fn test_rfc5769_ipv6_response_reencodes() {
+	raw := hex.decode(vector_response_v6)!
+	decoded := Message.decode(raw)!
+
+	mut rebuilt := Message.with_transaction_id(.success_response, .binding, decoded.transaction_id)
+	rebuilt.add_software(vector_response_software)!
+	rebuilt.add_xor_mapped_address(netaddr.SocketAddr.parse('[2001:db8:1234:5678:11:2233:4455:6677]:32853')!)!
+
+	out := rebuilt.encode(
+		integrity_key: short_term_key(vector_response_password)!
+		fingerprint:   true
+	)!
+	assert_matches_reference(out, raw, vector_response_password)!
+}
+
+fn test_rfc5769_flipping_any_byte_breaks_a_check() {
+	// Every byte of the message is covered by either MESSAGE-INTEGRITY or
+	// FINGERPRINT, so no single-byte edit can survive both checks.
+	raw := hex.decode(vector_request)!
+	key := short_term_key(vector_request_password)!
+
+	for i in 0 .. raw.len {
+		mut tampered := raw.clone()
+		tampered[i] ^= 0x01
+
+		msg := Message.decode(tampered) or { continue }
+		mut passed_both := true
+		msg.check_message_integrity(key) or { passed_both = false }
+		msg.check_fingerprint() or { passed_both = false }
+		assert !passed_both, 'flipping byte ${i} left both checks passing'
+	}
+}
