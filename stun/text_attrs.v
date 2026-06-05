@@ -99,3 +99,11 @@ pub fn (m &Message) username() !string {
 	} }
 	return decode_text(attr, max_username_bytes)!
 }
+
+// realm returns the REALM attribute used by long-term credentials.
+pub fn (m &Message) realm() !string {
+	attr := m.get(attr_realm) or { return AttributeNotFoundError{
+		typ: attr_realm
+	} }
+	return decode_text(attr, max_realm_bytes)!
+}
