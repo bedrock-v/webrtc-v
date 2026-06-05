@@ -38,3 +38,8 @@ pub fn (mut m Message) add_use_candidate() {
 pub fn (m &Message) ice_controlling() !u64 {
 	return m.tiebreaker(attr_ice_controlling)
 }
+
+// ice_controlled returns the tiebreaker from an ICE-CONTROLLED attribute.
+pub fn (m &Message) ice_controlled() !u64 {
+	return m.tiebreaker(attr_ice_controlled)
+}
