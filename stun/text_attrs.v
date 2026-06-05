@@ -124,3 +124,11 @@ pub fn (m &Message) software() !string {
 	} }
 	return decode_text(attr, max_software_bytes)!
 }
+
+pub fn (mut m Message) add_username(username string) ! {
+	m.add(attr_username, encode_text('USERNAME', username, max_username_bytes)!)
+}
+
+pub fn (mut m Message) add_realm(realm string) ! {
+	m.add(attr_realm, encode_text('REALM', realm, max_realm_bytes)!)
+}
