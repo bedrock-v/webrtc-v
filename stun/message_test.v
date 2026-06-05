@@ -341,3 +341,41 @@ fn test_unknown_comprehension_required_detection() {
 	assert is_comprehension_required(0x7FFF)
 	assert !is_comprehension_required(0x8000)
 }
+
+fn test_attribute_names() {
+	assert attr_name(attr_xor_mapped_address) == 'XOR-MAPPED-ADDRESS'
+	assert attr_name(attr_ice_controlling) == 'ICE-CONTROLLING'
+	assert attr_name(0x9999) == '0x9999'
+}
+
+fn test_encode_rejects_oversized_attribute() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add(attr_data, []u8{len: 0x10000})
+	msg.encode() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'attribute larger than the length field must be rejected'
+}
+
+fn test_round_trip_preserves_attribute_order() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add_username('alice:bob')!
+	msg.add_priority(0x7E0000FF)
+	msg.add_ice_controlling(0x0102030405060708)
+	msg.add_use_candidate()
+
+	raw := msg.encode(integrity_key: 'pw'.bytes(), fingerprint: true)!
+	decoded := Message.decode(raw)!
+
+	types := decoded.attributes.map(it.typ)
+	assert types == [attr_username, attr_priority, attr_ice_controlling, attr_use_candidate,
+		attr_message_integrity, attr_fingerprint]
+}
+
+fn test_str_does_not_panic_on_any_message() {
+	mut msg := Message.new(.indication, .data)!
+	msg.add(0xC0DE, [u8(0xff)])
+	assert msg.str().contains('data')
+	assert msg.str().contains('0xc0de')
+}
