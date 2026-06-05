@@ -145,3 +145,32 @@ fn test_decode_enforces_size_limit() {
 	}
 	assert false, 'oversized message must be rejected'
 }
+
+fn test_decode_enforces_attribute_limit() {
+	mut msg := Message.new(.request, .binding)!
+	for i in 0 .. 40 {
+		msg.add(attr_padding, [u8(i), 0, 0, 0])
+	}
+	raw := msg.encode()!
+
+	Message.decode(raw, max_attributes: 10) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .too_many_attributes
+		}
+		return
+	}
+	assert false, 'attribute flood must be rejected'
+}
+
+fn test_zero_length_attribute_round_trips() {
+	// USE-CANDIDATE is a flag: present with no value.
+	mut msg := Message.new(.request, .binding)!
+	msg.add_use_candidate()
+	raw := msg.encode()!
+
+	decoded := Message.decode(raw)!
+	assert decoded.has_use_candidate()
+	attr := decoded.get(attr_use_candidate)?
+	assert attr.value.len == 0
+}
