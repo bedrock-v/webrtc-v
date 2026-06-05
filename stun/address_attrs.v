@@ -185,3 +185,8 @@ pub fn (mut m Message) add_mapped_address(addr netaddr.SocketAddr) ! {
 pub fn (mut m Message) add_xor_mapped_address(addr netaddr.SocketAddr) ! {
 	m.add(attr_xor_mapped_address, xor_address(encode_address(addr)!, m.transaction_id))
 }
+
+// add_xor_peer_address appends a TURN XOR-PEER-ADDRESS attribute.
+pub fn (mut m Message) add_xor_peer_address(addr netaddr.SocketAddr) ! {
+	m.add(attr_xor_peer_address, xor_address(encode_address(addr)!, m.transaction_id))
+}
