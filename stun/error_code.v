@@ -62,3 +62,45 @@ pub fn default_reason(code int) string {
 		else { '' }
 	}
 }
+
+// error_code returns the decoded ERROR-CODE attribute.
+//
+// The wire format splits the number: two bytes are reserved, the next holds the
+// hundreds digit in its low three bits, and the last holds the remainder
+// (RFC 8489 section 14.8).
+pub fn (m &Message) error_code() !ErrorCode {
+	attr := m.get(attr_error_code) or { return AttributeNotFoundError{
+		typ: attr_error_code
+	} }
+	if attr.value.len < 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'ERROR-CODE is ${attr.value.len} bytes, needs at least 4'
+		}
+	}
+	if attr.value.len > 4 + max_reason_bytes {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'ERROR-CODE reason phrase exceeds ${max_reason_bytes} bytes'
+		}
+	}
+	class := int(attr.value[2] & 0x07)
+	number := int(attr.value[3])
+	if class < 3 || class > 6 || number > 99 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'ERROR-CODE ${class}${number:02} is outside the valid 300-699 range'
+		}
+	}
+	reason_bytes := attr.value[4..]
+	if !is_valid_utf8(reason_bytes) {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'ERROR-CODE reason phrase is not valid UTF-8'
+		}
+	}
+	return ErrorCode{
+		code:   class * 100 + number
+		reason: reason_bytes.bytestr()
+	}
+}
