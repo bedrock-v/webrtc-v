@@ -7,3 +7,22 @@ pub const max_username_bytes = 513
 pub const max_realm_bytes = 763
 pub const max_nonce_bytes = 763
 pub const max_software_bytes = 763
+
+// decode_text validates a text attribute's length and rejects payloads that are
+// not valid UTF-8. A decoder that let invalid UTF-8 through would hand callers
+// a string that misbehaves in comparisons and logging.
+fn decode_text(attr RawAttribute, limit int) !string {
+	if attr.value.len > limit {
+		return DecodeError{
+			reason: .bad_value
+			detail: '${attr.name()} is ${attr.value.len} bytes, over the ${limit}-byte limit'
+		}
+	}
+	if !is_valid_utf8(attr.value) {
+		return DecodeError{
+			reason: .bad_value
+			detail: '${attr.name()} is not valid UTF-8'
+		}
+	}
+	return attr.value.bytestr()
+}
