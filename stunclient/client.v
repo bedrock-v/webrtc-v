@@ -35,3 +35,35 @@ pub:
 	software string
 	logger   logging.Logger = logging.nop()
 }
+
+// TimeoutError is returned when no valid response arrived within the
+// retransmission schedule.
+pub struct TimeoutError {
+pub:
+	transmissions int
+	elapsed       time.Duration
+}
+
+pub fn (e TimeoutError) msg() string {
+	return 'stun: no response after ${e.transmissions} transmissions over ${e.elapsed.milliseconds()}ms'
+}
+
+pub fn (e TimeoutError) code() int {
+	return 500
+}
+
+// Client performs STUN transactions over a connected UDP socket.
+//
+// One client owns one socket. That matters for ICE: the mapping a NAT creates
+// is per source port, so a server-reflexive candidate is only valid for the
+// socket that discovered it. Callers that need a candidate for an existing
+// socket should drive transactions on that socket themselves rather than
+// letting this type open its own.
+pub struct Client {
+mut:
+	conn   &net.UdpConn
+	config ClientConfig
+	closed bool
+pub:
+	server string
+}
