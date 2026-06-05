@@ -115,3 +115,12 @@ pub fn (m &Message) nonce() !string {
 	} }
 	return decode_text(attr, max_nonce_bytes)!
 }
+
+// software returns the SOFTWARE attribute, a free-form description of the
+// sending implementation.
+pub fn (m &Message) software() !string {
+	attr := m.get(attr_software) or { return AttributeNotFoundError{
+		typ: attr_software
+	} }
+	return decode_text(attr, max_software_bytes)!
+}
