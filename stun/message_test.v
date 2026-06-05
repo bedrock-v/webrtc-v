@@ -317,3 +317,27 @@ fn test_fingerprint_must_be_last() {
 	}
 	assert false, 'FINGERPRINT must be the final attribute'
 }
+
+fn test_missing_fingerprint_is_reported() {
+	mut msg := Message.new(.request, .binding)!
+	raw := msg.encode()!
+	decoded := Message.decode(raw)!
+	decoded.check_fingerprint() or {
+		assert err is IntegrityError
+		return
+	}
+	assert false, 'missing FINGERPRINT must be reported'
+}
+
+fn test_unknown_comprehension_required_detection() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add_username('u')!
+	msg.add(0x7FFF, [u8(1), 2, 3, 4]) // comprehension-required, unknown
+	msg.add(0x8FFF, [u8(1), 2, 3, 4]) // comprehension-optional, unknown
+	msg.add(0x7FFF, [u8(5), 6, 7, 8]) // duplicate: reported once
+
+	unknown := msg.unknown_comprehension_required([attr_username])
+	assert unknown == [u16(0x7FFF)]
+	assert is_comprehension_required(0x7FFF)
+	assert !is_comprehension_required(0x8000)
+}
