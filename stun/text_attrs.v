@@ -26,3 +26,13 @@ fn decode_text(attr RawAttribute, limit int) !string {
 	}
 	return attr.value.bytestr()
 }
+
+fn encode_text(name string, s string, limit int) ![]u8 {
+	b := s.bytes()
+	if b.len > limit {
+		return EncodeError{
+			detail: '${name} is ${b.len} bytes, over the ${limit}-byte limit'
+		}
+	}
+	return b
+}
