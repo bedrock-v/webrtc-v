@@ -13,3 +13,20 @@ fn wire_family(f netaddr.Family) u8 {
 		.ipv6 { wire_family_ipv6 }
 	}
 }
+
+// encode_address serialises the shared MAPPED-ADDRESS layout: a reserved byte,
+// a family byte, a big-endian port and the address octets.
+fn encode_address(addr netaddr.SocketAddr) ![]u8 {
+	if !addr.is_valid() {
+		return EncodeError{
+			detail: 'cannot encode an invalid address'
+		}
+	}
+	mut out := []u8{cap: 4 + addr.ip.octets.len}
+	out << 0
+	out << wire_family(addr.ip.family)
+	out << u8(addr.port >> 8)
+	out << u8(addr.port)
+	out << addr.ip.octets
+	return out
+}
