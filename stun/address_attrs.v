@@ -116,3 +116,21 @@ pub fn (m &Message) mapped_address() !netaddr.SocketAddr {
 	}
 	return decode_address(attr.value)!
 }
+
+// xor_mapped_address returns the XOR-MAPPED-ADDRESS attribute: the transport
+// address the server observed the request coming from, which is what makes a
+// server-reflexive ICE candidate possible.
+pub fn (m &Message) xor_mapped_address() !netaddr.SocketAddr {
+	attr := m.get(attr_xor_mapped_address) or {
+		return AttributeNotFoundError{
+			typ: attr_xor_mapped_address
+		}
+	}
+	if attr.value.len < 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'XOR-MAPPED-ADDRESS is ${attr.value.len} bytes, needs at least 4'
+		}
+	}
+	return decode_address(xor_address(attr.value, m.transaction_id))!
+}
