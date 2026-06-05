@@ -30,3 +30,45 @@ fn encode_address(addr netaddr.SocketAddr) ![]u8 {
 	out << addr.ip.octets
 	return out
 }
+
+// decode_address parses the shared MAPPED-ADDRESS layout.
+fn decode_address(value []u8) !netaddr.SocketAddr {
+	if value.len < 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'address attribute is ${value.len} bytes, needs at least 4'
+		}
+	}
+	family := match value[1] {
+		wire_family_ipv4 {
+			netaddr.Family.ipv4
+		}
+		wire_family_ipv6 {
+			netaddr.Family.ipv6
+		}
+		else {
+			return DecodeError{
+				reason: .bad_value
+				detail: 'unknown address family 0x${value[1].hex()}'
+			}
+		}
+	}
+	want := family.octet_len()
+	if value.len != 4 + want {
+		return DecodeError{
+			reason: .bad_value
+			detail: '${family} address attribute is ${value.len} bytes, expected ${4 + want}'
+		}
+	}
+	port := (u16(value[2]) << 8) | u16(value[3])
+	ip := netaddr.IpAddr.from_octets(family, value[4..]) or {
+		return DecodeError{
+			reason: .bad_value
+			detail: err.msg()
+		}
+	}
+	return netaddr.SocketAddr{
+		ip:   ip
+		port: port
+	}
+}
