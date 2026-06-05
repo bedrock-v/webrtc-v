@@ -27,3 +27,11 @@ pub:
 	code   int
 	reason string
 }
+
+pub fn (e ErrorCode) msg() string {
+	return 'stun: ${e.code} ${e.reason}'
+}
+
+pub fn (e ErrorCode) code() int {
+	return e.code
+}
