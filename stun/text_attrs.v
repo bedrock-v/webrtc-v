@@ -90,3 +90,12 @@ fn is_valid_utf8(b []u8) bool {
 	}
 	return true
 }
+
+// username returns the USERNAME attribute. For ICE this is the concatenation
+// "remote-ufrag:local-ufrag" as seen by the sender.
+pub fn (m &Message) username() !string {
+	attr := m.get(attr_username) or { return AttributeNotFoundError{
+		typ: attr_username
+	} }
+	return decode_text(attr, max_username_bytes)!
+}
