@@ -20,3 +20,10 @@ pub const code_insufficient_capacity = 508
 
 // max_reason_bytes is the RFC 8489 limit on the reason phrase.
 pub const max_reason_bytes = 763
+
+// ErrorCode is a decoded ERROR-CODE attribute.
+pub struct ErrorCode {
+pub:
+	code   int
+	reason string
+}
