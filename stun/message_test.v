@@ -174,3 +174,21 @@ fn test_zero_length_attribute_round_trips() {
 	attr := decoded.get(attr_use_candidate)?
 	assert attr.value.len == 0
 }
+
+fn test_transaction_ids_are_unpredictable() {
+	mut seen := map[string]bool{}
+	for _ in 0 .. 128 {
+		msg := Message.new(.request, .binding)!
+		id := msg.transaction_id[..].hex()
+		assert id !in seen, 'transaction id repeated'
+		seen[id] = true
+	}
+}
+
+fn test_response_copies_transaction_id_and_method() {
+	req := Message.new(.request, .allocate)!
+	resp := Message.response(req, .error_response)
+	assert resp.transaction_id == req.transaction_id
+	assert resp.typ.method == .allocate
+	assert resp.typ.class == .error_response
+}
