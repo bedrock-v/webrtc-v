@@ -60,3 +60,11 @@ fn (m &Message) tiebreaker(typ u16) !u64 {
 	}
 	return v
 }
+
+// add_ice_controlling appends the ICE-CONTROLLING attribute with the agent's
+// tiebreaker value. Both agents include their role attribute on every check so
+// that a role conflict is detected on the first exchange rather than after a
+// timeout.
+pub fn (mut m Message) add_ice_controlling(tiebreaker u64) {
+	m.add(attr_ice_controlling, encode_u64(tiebreaker))
+}
