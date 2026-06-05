@@ -101,3 +101,37 @@ fn test_rfc5769_request_integrity_and_fingerprint() {
 	msg.check_message_integrity(key)!
 	msg.check_fingerprint()!
 }
+
+fn test_rfc5769_request_integrity_rejects_wrong_password() {
+	raw := hex.decode(vector_request)!
+	msg := Message.decode(raw)!
+
+	key := short_term_key('not the password')!
+	msg.check_message_integrity(key) or {
+		assert err is IntegrityError
+		if err is IntegrityError {
+			assert err.reason == .mismatch
+		}
+		return
+	}
+	assert false, 'integrity must fail with the wrong key'
+}
+
+fn test_rfc5769_request_reencodes() {
+	raw := hex.decode(vector_request)!
+	decoded := Message.decode(raw)!
+
+	// Rebuild the message from its semantic content and confirm the encoder
+	// reproduces the reference layout.
+	mut rebuilt := Message.with_transaction_id(.request, .binding, decoded.transaction_id)
+	rebuilt.add_software(vector_request_software)!
+	rebuilt.add_priority(0x6e0001ff)
+	rebuilt.add_ice_controlled(0x932ff9b151263b36)
+	rebuilt.add_username(vector_request_username)!
+
+	out := rebuilt.encode(
+		integrity_key: short_term_key(vector_request_password)!
+		fingerprint:   true
+	)!
+	assert_matches_reference(out, raw, vector_request_password)!
+}
