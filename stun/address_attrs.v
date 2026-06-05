@@ -143,3 +143,13 @@ pub fn (m &Message) reflexive_address() !netaddr.SocketAddr {
 	}
 	return m.mapped_address()
 }
+
+// xor_peer_address returns the TURN XOR-PEER-ADDRESS attribute.
+pub fn (m &Message) xor_peer_address() !netaddr.SocketAddr {
+	attr := m.get(attr_xor_peer_address) or {
+		return AttributeNotFoundError{
+			typ: attr_xor_peer_address
+		}
+	}
+	return decode_address(xor_address(attr.value, m.transaction_id))!
+}
