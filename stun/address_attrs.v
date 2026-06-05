@@ -164,3 +164,14 @@ pub fn (m &Message) xor_relayed_address() !netaddr.SocketAddr {
 	}
 	return decode_address(xor_address(attr.value, m.transaction_id))!
 }
+
+// alternate_server returns the ALTERNATE-SERVER attribute sent with a 300 error
+// to redirect a client.
+pub fn (m &Message) alternate_server() !netaddr.SocketAddr {
+	attr := m.get(attr_alternate_server) or {
+		return AttributeNotFoundError{
+			typ: attr_alternate_server
+		}
+	}
+	return decode_address(attr.value)!
+}
