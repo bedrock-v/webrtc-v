@@ -107,3 +107,11 @@ pub fn (m &Message) realm() !string {
 	} }
 	return decode_text(attr, max_realm_bytes)!
 }
+
+// nonce returns the NONCE attribute used by long-term credentials.
+pub fn (m &Message) nonce() !string {
+	attr := m.get(attr_nonce) or { return AttributeNotFoundError{
+		typ: attr_nonce
+	} }
+	return decode_text(attr, max_nonce_bytes)!
+}
