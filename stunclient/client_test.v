@@ -137,3 +137,24 @@ fn test_client_ignores_mismatched_transaction_id() {
 	}
 	assert false, 'a response with the wrong transaction id must not satisfy the request'
 }
+
+fn test_client_surfaces_error_response() {
+	mut server := start_test_server()!
+	server.reply_error = true
+	handle := spawn server.serve()
+	defer {
+		server.stop()
+		handle.wait()
+	}
+
+	mut client := Client.dial(server.addr, rto: 200 * time.millisecond, max_transmissions: 2)!
+	defer {
+		client.close()
+	}
+
+	client.binding() or {
+		assert err.code() == stun.code_bad_request, 'expected a 400, got ${err}'
+		return
+	}
+	assert false, 'an error response must be surfaced as an error'
+}
