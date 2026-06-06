@@ -123,3 +123,8 @@ pub fn (mut m Message) add_channel_number(channel u16) {
 pub fn (mut m Message) add_dont_fragment() {
 	m.add(attr_dont_fragment, []u8{})
 }
+
+// has_dont_fragment reports whether the attribute is present.
+pub fn (m &Message) has_dont_fragment() bool {
+	return m.get(attr_dont_fragment) != none
+}
