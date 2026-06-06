@@ -108,3 +108,12 @@ pub fn (m &Message) channel_number() !u16 {
 	mut r := codec.Reader.new(attr.value)
 	return r.u16('CHANNEL-NUMBER')!
 }
+
+// add_channel_number sets the channel for a ChannelBind. The trailing two bytes
+// are reserved and must be zero.
+pub fn (mut m Message) add_channel_number(channel u16) {
+	mut w := codec.Writer.with_capacity(4)
+	w.u16(channel)
+	w.u16(0)
+	m.add(attr_channel_number, w.buf)
+}
