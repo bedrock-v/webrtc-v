@@ -116,3 +116,24 @@ fn test_client_retransmits_until_answered() {
 	addr := client.binding()!
 	assert addr.ip.is_loopback()
 }
+
+fn test_client_ignores_mismatched_transaction_id() {
+	mut server := start_test_server()!
+	server.reply_wrong_tid = true
+	handle := spawn server.serve()
+	defer {
+		server.stop()
+		handle.wait()
+	}
+
+	mut client := Client.dial(server.addr, rto: 60 * time.millisecond, max_transmissions: 2)!
+	defer {
+		client.close()
+	}
+
+	client.binding() or {
+		assert err is TimeoutError, 'expected a timeout, got ${err}'
+		return
+	}
+	assert false, 'a response with the wrong transaction id must not satisfy the request'
+}
