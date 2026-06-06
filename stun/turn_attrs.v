@@ -44,3 +44,20 @@ pub fn (mut m Message) add_lifetime(seconds u32) {
 	w.u32(seconds)
 	m.add(attr_lifetime, w.buf)
 }
+
+// requested_transport returns the transport an ALLOCATE asks the relay to use
+// towards peers.
+pub fn (m &Message) requested_transport() !u8 {
+	attr := m.get(attr_requested_transport) or {
+		return AttributeNotFoundError{
+			typ: attr_requested_transport
+		}
+	}
+	if attr.value.len != 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'REQUESTED-TRANSPORT is ${attr.value.len} bytes, expected 4'
+		}
+	}
+	return attr.value[0]
+}
