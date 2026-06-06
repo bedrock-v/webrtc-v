@@ -37,3 +37,10 @@ pub fn (m &Message) lifetime() !u32 {
 	mut r := codec.Reader.new(attr.value)
 	return r.u32('LIFETIME')!
 }
+
+// add_lifetime sets the requested lifetime. Zero is what deletes an allocation.
+pub fn (mut m Message) add_lifetime(seconds u32) {
+	mut w := codec.Writer.with_capacity(4)
+	w.u32(seconds)
+	m.add(attr_lifetime, w.buf)
+}
