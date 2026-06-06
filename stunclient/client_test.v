@@ -158,3 +158,32 @@ fn test_client_surfaces_error_response() {
 	}
 	assert false, 'an error response must be surfaced as an error'
 }
+
+fn test_client_times_out_against_a_silent_server() {
+	// A socket nobody is listening on: the request goes nowhere.
+	mut conn := net.listen_udp(':0')!
+	port := transport.local_addr(conn)!.port
+	conn.close()!
+
+	started := time.now()
+	mut client := Client.dial('127.0.0.1:${port}',
+		rto:               50 * time.millisecond
+		max_transmissions: 3
+	)!
+	defer {
+		client.close()
+	}
+
+	client.binding() or {
+		assert err is TimeoutError
+		if err is TimeoutError {
+			assert err.transmissions == 3
+		}
+		// 50 + 100 + 200 ms of backoff; allow generous slack for slow CI.
+		elapsed := time.now() - started
+		assert elapsed >= 300 * time.millisecond
+		assert elapsed < 10 * time.second
+		return
+	}
+	assert false, 'expected a timeout'
+}
