@@ -172,3 +172,17 @@ pub fn (mut c Client) transact(mut req stun.Message, opts stun.EncodeOptions) !s
 		elapsed:       time.now() - started
 	}
 }
+
+// discover performs a single Binding transaction against server and returns the
+// reflexive address, opening and closing its own socket.
+//
+// This is the convenience entry point for "what does the outside world see my
+// address as". ICE gathering does not use it, because the answer is only
+// meaningful for the socket that asked.
+pub fn discover(server string, config ClientConfig) !netaddr.SocketAddr {
+	mut client := Client.dial(server, config)!
+	defer {
+		client.close()
+	}
+	return client.binding()!
+}
