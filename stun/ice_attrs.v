@@ -68,3 +68,8 @@ fn (m &Message) tiebreaker(typ u16) !u64 {
 pub fn (mut m Message) add_ice_controlling(tiebreaker u64) {
 	m.add(attr_ice_controlling, encode_u64(tiebreaker))
 }
+
+// add_ice_controlled appends the ICE-CONTROLLED attribute.
+pub fn (mut m Message) add_ice_controlled(tiebreaker u64) {
+	m.add(attr_ice_controlled, encode_u64(tiebreaker))
+}
