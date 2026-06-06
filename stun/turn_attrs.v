@@ -81,3 +81,13 @@ pub fn (m &Message) data() ![]u8 {
 	}
 	return attr.value.clone()
 }
+
+// add_data attaches a payload to a Send indication.
+pub fn (mut m Message) add_data(payload []u8) ! {
+	if payload.len > max_turn_data {
+		return EncodeError{
+			detail: 'DATA is ${payload.len} bytes, over the ${max_turn_data}-byte limit'
+		}
+	}
+	m.add(attr_data, payload.clone())
+}
