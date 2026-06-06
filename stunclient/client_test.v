@@ -187,3 +187,28 @@ fn test_client_times_out_against_a_silent_server() {
 	}
 	assert false, 'expected a timeout'
 }
+
+fn test_client_rejects_invalid_config() {
+	Client.dial('127.0.0.1:1', max_transmissions: 0) or {
+		Client.dial('127.0.0.1:1', rto: 0) or { return }
+		assert false, 'a non-positive rto must be rejected'
+	}
+	assert false, 'a zero transmission count must be rejected'
+}
+
+fn test_close_is_idempotent() {
+	mut server := start_test_server()!
+	handle := spawn server.serve()
+	defer {
+		server.stop()
+		handle.wait()
+	}
+
+	mut client := Client.dial(server.addr)!
+	client.close()
+	client.close()
+
+	mut req := stun.Message.new(.request, .binding)!
+	client.transact(mut req) or { return }
+	assert false, 'a closed client must refuse new transactions'
+}
