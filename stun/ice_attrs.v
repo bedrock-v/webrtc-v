@@ -73,3 +73,11 @@ pub fn (mut m Message) add_ice_controlling(tiebreaker u64) {
 pub fn (mut m Message) add_ice_controlled(tiebreaker u64) {
 	m.add(attr_ice_controlled, encode_u64(tiebreaker))
 }
+
+fn encode_u64(v u64) []u8 {
+	mut out := []u8{len: 8}
+	for i in 0 .. 8 {
+		out[i] = u8(v >> (56 - i * 8))
+	}
+	return out
+}
