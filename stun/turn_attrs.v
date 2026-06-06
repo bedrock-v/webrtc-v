@@ -16,3 +16,8 @@ import webrtc.internal.codec
 // because a caller that raises the message limit should not silently raise how
 // much a relay can hand back in one datagram.
 pub const max_turn_data = 8192
+
+// transport_udp is the REQUESTED-TRANSPORT value for UDP (the IANA protocol
+// number). TURN over TCP to the peer is a different allocation type and is not
+// supported here.
+pub const transport_udp = u8(17)
