@@ -61,3 +61,9 @@ pub fn (m &Message) requested_transport() !u8 {
 	}
 	return attr.value[0]
 }
+
+// add_requested_transport sets the transport for an ALLOCATE. The last three
+// bytes are reserved and must be zero.
+pub fn (mut m Message) add_requested_transport(protocol u8) {
+	m.add(attr_requested_transport, [protocol, 0, 0, 0])
+}
