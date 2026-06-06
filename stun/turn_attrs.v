@@ -21,3 +21,19 @@ pub const max_turn_data = 8192
 // number). TURN over TCP to the peer is a different allocation type and is not
 // supported here.
 pub const transport_udp = u8(17)
+
+// lifetime returns the LIFETIME attribute in seconds: how long the server will
+// keep an allocation without a refresh.
+pub fn (m &Message) lifetime() !u32 {
+	attr := m.get(attr_lifetime) or { return AttributeNotFoundError{
+		typ: attr_lifetime
+	} }
+	if attr.value.len != 4 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'LIFETIME is ${attr.value.len} bytes, expected 4'
+		}
+	}
+	mut r := codec.Reader.new(attr.value)
+	return r.u32('LIFETIME')!
+}
