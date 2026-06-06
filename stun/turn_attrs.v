@@ -117,3 +117,9 @@ pub fn (mut m Message) add_channel_number(channel u16) {
 	w.u16(0)
 	m.add(attr_channel_number, w.buf)
 }
+
+// add_dont_fragment asks the relay to set the IP don't-fragment bit towards
+// peers. It has no value; its presence is the request.
+pub fn (mut m Message) add_dont_fragment() {
+	m.add(attr_dont_fragment, []u8{})
+}
