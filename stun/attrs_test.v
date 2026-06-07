@@ -77,3 +77,17 @@ fn test_unknown_attributes_rejects_odd_length() {
 	}
 	assert false, 'odd-length UNKNOWN-ATTRIBUTES must be rejected'
 }
+
+fn test_text_attributes_round_trip() {
+	mut msg := Message.new(.request, .allocate)!
+	msg.add_username('user:name')!
+	msg.add_realm('example.org')!
+	msg.add_nonce('f//49k954d6OL34oL9FSTvy64sA')!
+	msg.add_software('webrtc-v test')!
+
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.username()! == 'user:name'
+	assert decoded.realm()! == 'example.org'
+	assert decoded.nonce()! == 'f//49k954d6OL34oL9FSTvy64sA'
+	assert decoded.software()! == 'webrtc-v test'
+}
