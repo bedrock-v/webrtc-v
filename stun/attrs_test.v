@@ -134,3 +134,15 @@ fn test_text_attributes_accept_valid_utf8_boundaries() {
 		assert is_valid_utf8(s.bytes()), '${s.bytes().hex()} should be valid UTF-8'
 	}
 }
+
+fn test_text_attributes_enforce_length_limits() {
+	mut msg := Message.new(.request, .allocate)!
+	msg.add_username('x'.repeat(max_username_bytes + 1)) or {
+		msg.add_realm('x'.repeat(max_realm_bytes + 1)) or {
+			msg.add_software('x'.repeat(max_software_bytes + 1)) or { return }
+			assert false
+		}
+		assert false
+	}
+	assert false, 'over-long text attributes must be rejected'
+}
