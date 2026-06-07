@@ -177,3 +177,10 @@ fn test_ice_attributes_reject_wrong_length() {
 	}
 	assert false, 'short PRIORITY must be rejected'
 }
+
+fn test_short_term_key_is_the_password() {
+	key := short_term_key('VOkJxbRl1RmTxUk/WvJxBt')!
+	assert key == 'VOkJxbRl1RmTxUk/WvJxBt'.bytes()
+	// A space is printable ASCII and SASLprep leaves it alone.
+	assert short_term_key('a b')!.len == 3
+}
