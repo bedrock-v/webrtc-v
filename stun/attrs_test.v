@@ -57,3 +57,12 @@ fn test_error_code_absent() {
 	}
 	assert false, 'missing ERROR-CODE must be reported'
 }
+
+fn test_unknown_attributes_round_trip() {
+	mut msg := Message.new(.error_response, .binding)!
+	msg.add_error_code(code_unknown_attribute, '')!
+	msg.add_unknown_attributes([u16(0x0024), 0x0025, 0x7FFF])
+
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.unknown_attributes()! == [u16(0x0024), 0x0025, 0x7FFF]
+}
