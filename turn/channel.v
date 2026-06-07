@@ -66,3 +66,36 @@ pub fn (c ChannelData) encode() ![]u8 {
 	w.bytes(c.payload)
 	return w.buf
 }
+
+// decode_channel_data reads a framed datagram.
+pub fn decode_channel_data(b []u8) !ChannelData {
+	mut r := codec.Reader.new(b)
+	channel := r.u16('channel number') or {
+		return TurnError{
+			reason: .bad_message
+			detail: 'truncated channel data'
+		}
+	}
+	if channel < channel_min || channel > channel_max {
+		return TurnError{
+			reason: .bad_message
+			detail: 'channel ${channel} is outside the 0x4000-0x7FFF range'
+		}
+	}
+	length := r.u16('length') or {
+		return TurnError{
+			reason: .bad_message
+			detail: 'truncated channel data'
+		}
+	}
+	payload := r.bytes(int(length), 'payload') or {
+		return TurnError{
+			reason: .bad_message
+			detail: 'channel data claims ${length} bytes and carries ${b.len - channel_header_size}'
+		}
+	}
+	return ChannelData{
+		channel: channel
+		payload: payload
+	}
+}
