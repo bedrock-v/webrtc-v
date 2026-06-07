@@ -26,3 +26,24 @@ import webrtc.netaddr
 // range matters for demultiplexing: RFC 7983 relies on the first byte of a
 // datagram, and 0x40-0x7F is what identifies TURN channel data.
 pub const channel_min = u16(0x4000)
+pub const channel_max = u16(0x7FFF)
+
+// channel_header_size is the channel number and the length field.
+pub const channel_header_size = 4
+
+// is_channel_data reports whether a datagram is ChannelData rather than a STUN
+// message.
+@[inline]
+pub fn is_channel_data(b []u8) bool {
+	if b.len < channel_header_size {
+		return false
+	}
+	return b[0] >= 0x40 && b[0] <= 0x7f
+}
+
+// ChannelData is one framed datagram to or from a bound peer.
+pub struct ChannelData {
+pub:
+	channel u16
+	payload []u8
+}
