@@ -101,3 +101,23 @@ fn test_text_attributes_accept_utf8() {
 	decoded := Message.decode(msg.encode()!)!
 	assert decoded.username()! == name
 }
+
+fn test_text_attributes_reject_invalid_utf8() {
+	bad := [
+		[u8(0xff)], // never valid
+		[u8(0xc0), 0x80], // overlong encoding of NUL
+		[u8(0xe0), 0x80, 0x80], // overlong
+		[u8(0xed), 0xa0, 0x80], // UTF-16 surrogate half
+		[u8(0xf5), 0x80, 0x80, 0x80], // above U+10FFFF
+		[u8(0xc2)], // truncated two-byte sequence
+		[u8(0xe2), 0x82], // truncated three-byte sequence
+		[u8(0x41), 0xc2], // valid ASCII then a truncated sequence
+	]
+	for value in bad {
+		mut msg := Message.new(.request, .allocate)!
+		msg.add(attr_username, value)
+		decoded := Message.decode(msg.encode()!)!
+		decoded.username() or { continue }
+		assert false, 'expected ${value.hex()} to be rejected as UTF-8'
+	}
+}
