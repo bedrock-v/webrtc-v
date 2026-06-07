@@ -47,3 +47,22 @@ pub:
 	channel u16
 	payload []u8
 }
+
+// encode frames a payload for a channel.
+//
+// Over UDP the length field is redundant - the datagram boundary already says
+// how long the payload is - but it is what lets the same framing run over TCP,
+// and a server is entitled to check it.
+pub fn (c ChannelData) encode() ![]u8 {
+	if c.channel < channel_min || c.channel > channel_max {
+		return TurnError{
+			reason: .bad_message
+			detail: 'channel ${c.channel} is outside the 0x4000-0x7FFF range'
+		}
+	}
+	mut w := codec.Writer.with_capacity(channel_header_size + c.payload.len)
+	w.u16(c.channel)
+	w.u16(u16(c.payload.len))
+	w.bytes(c.payload)
+	return w.buf
+}
