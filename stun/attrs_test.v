@@ -164,3 +164,16 @@ fn test_ice_attributes_round_trip() {
 	}
 	assert false, 'ICE-CONTROLLED must be absent'
 }
+
+fn test_ice_attributes_reject_wrong_length() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add(attr_priority, [u8(1), 2, 3])
+	msg.add(attr_ice_controlling, [u8(1), 2, 3, 4])
+	decoded := Message.decode(msg.encode()!)!
+
+	decoded.priority() or {
+		decoded.ice_controlling() or { return }
+		assert false, 'short ICE-CONTROLLING must be rejected'
+	}
+	assert false, 'short PRIORITY must be rejected'
+}
