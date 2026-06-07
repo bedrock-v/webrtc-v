@@ -66,3 +66,14 @@ fn test_unknown_attributes_round_trip() {
 	decoded := Message.decode(msg.encode()!)!
 	assert decoded.unknown_attributes()! == [u16(0x0024), 0x0025, 0x7FFF]
 }
+
+fn test_unknown_attributes_rejects_odd_length() {
+	mut msg := Message.new(.error_response, .binding)!
+	msg.add(attr_unknown_attributes, [u8(0x00), 0x24, 0x00])
+	decoded := Message.decode(msg.encode()!)!
+	decoded.unknown_attributes() or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'odd-length UNKNOWN-ATTRIBUTES must be rejected'
+}
