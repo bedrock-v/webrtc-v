@@ -99,3 +99,17 @@ pub fn decode_channel_data(b []u8) !ChannelData {
 		payload: payload
 	}
 }
+
+// binding is one peer address bound to a channel number.
+struct Binding {
+mut:
+	peer    netaddr.SocketAddr
+	channel u16
+	// confirmed marks a binding the server has acknowledged. Until then the
+	// payload has to go out as a Send indication, because the server would
+	// discard channel data for a channel it has not bound.
+	confirmed bool
+	// refresh_at is when the binding has to be renewed. A channel binding lasts
+	// ten minutes and cannot be deleted, only allowed to expire.
+	refresh_at i64
+}
