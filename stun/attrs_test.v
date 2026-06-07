@@ -91,3 +91,13 @@ fn test_text_attributes_round_trip() {
 	assert decoded.nonce()! == 'f//49k954d6OL34oL9FSTvy64sA'
 	assert decoded.software()! == 'webrtc-v test'
 }
+
+fn test_text_attributes_accept_utf8() {
+	// RFC 5769 section 2.4 uses a Japanese username, so multi-byte text must
+	// survive the round trip unchanged.
+	name := 'マトリックス'
+	mut msg := Message.new(.request, .allocate)!
+	msg.add_username(name)!
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.username()! == name
+}
