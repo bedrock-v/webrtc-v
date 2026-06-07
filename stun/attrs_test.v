@@ -48,3 +48,12 @@ fn test_error_code_rejects_malformed_wire_value() {
 		assert false, 'expected ${value.hex()} to be rejected'
 	}
 }
+
+fn test_error_code_absent() {
+	msg := Message.new(.error_response, .binding)!
+	msg.error_code() or {
+		assert err is AttributeNotFoundError
+		return
+	}
+	assert false, 'missing ERROR-CODE must be reported'
+}
