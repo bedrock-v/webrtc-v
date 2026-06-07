@@ -22,3 +22,11 @@ fn test_error_code_custom_reason() {
 	assert got.str() == '487 Role Conflict'
 	assert got.msg() == 'stun: 487 Role Conflict'
 }
+
+fn test_error_code_rejects_out_of_range() {
+	for code in [0, 99, 299, 700, -1] {
+		mut msg := Message.new(.error_response, .binding)!
+		msg.add_error_code(code, 'x') or { continue }
+		assert false, 'code ${code} must be rejected'
+	}
+}
