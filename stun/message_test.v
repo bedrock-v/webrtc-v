@@ -95,3 +95,23 @@ fn test_is_message_demultiplexing() {
 	assert !is_message(no_cookie)
 	assert !is_message([]u8{})
 }
+
+fn test_decode_rejects_short_and_malformed_headers() {
+	cases := {
+		'empty':                    ''
+		'partial header':           '000100002112a442b7e7a701bc34d6'
+		'no magic cookie':          '0001000000000000b7e7a701bc34d686fa87dfae'
+		'leading bits set':         '4001000021 12a442b7e7a701bc34d686fa87dfae'.replace(' ', '')
+		'length not multiple of 4': '000100022112a442b7e7a701bc34d686fa87dfae0000'
+		'length longer than data':  '000100202112a442b7e7a701bc34d686fa87dfae'
+		'length shorter than data': '000100002112a442b7e7a701bc34d686fa87dfae00060004deadbeef'
+	}
+	for name, encoded in cases {
+		raw := hex.decode(encoded)!
+		if _ := Message.decode(raw) {
+			assert false, 'expected ${name} to be rejected'
+		} else {
+			assert err is DecodeError, '${name} produced ${err}'
+		}
+	}
+}
