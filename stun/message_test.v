@@ -221,3 +221,26 @@ fn test_encode_rejects_caller_supplied_digests() {
 		assert false, 'encoding ${attr_name(typ)} as a plain attribute must be rejected'
 	}
 }
+
+fn test_integrity_sha256_round_trip() {
+	key := 'a-long-term-key'.bytes()
+	mut msg := Message.new(.request, .binding)!
+	msg.add_username('user')!
+
+	raw := msg.encode(integrity_key: key, integrity_algorithm: .sha256, fingerprint: true)!
+	decoded := Message.decode(raw)!
+
+	decoded.check_message_integrity_sha256(key)!
+	decoded.check_fingerprint()!
+
+	// The SHA-1 attribute is absent, and asking for it must say so rather than
+	// silently succeeding.
+	decoded.check_message_integrity(key) or {
+		assert err is IntegrityError
+		if err is IntegrityError {
+			assert err.reason == .missing
+		}
+		return
+	}
+	assert false, 'missing MESSAGE-INTEGRITY must be reported'
+}
