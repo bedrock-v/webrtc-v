@@ -179,3 +179,51 @@ fn (mut c Client) attach_credentials(mut message stun.Message, realm string, non
 		detail: err.msg()
 	} }
 }
+
+// transact sends a request and waits for its response, retransmitting on the
+// RFC 8489 schedule.
+fn (mut c Client) transact(mut request stun.Message, opts stun.EncodeOptions) !stun.Message {
+	if c.is_closed() {
+		return TurnError{
+			reason: .closed
+			detail: 'the client is closed'
+		}
+	}
+	raw := request.encode(opts) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+
+	key := hex.encode(request.transaction_id[..])
+	replies := chan stun.Message{cap: 1}
+	c.mu.lock()
+	c.pending[key] = replies
+	c.mu.unlock()
+	defer {
+		c.mu.lock()
+		c.pending.delete(key)
+		c.mu.unlock()
+	}
+
+	mut rto := c.config.rto
+	for attempt in 0 .. c.config.max_transmissions {
+		c.write(raw)!
+		select {
+			response := <-replies {
+				return response
+			}
+			rto {
+				c.log.debug('${request.typ.method} attempt ${attempt + 1} timed out, retrying in ${(rto * 2).milliseconds()}ms')
+			}
+		}
+		// RFC 8489 section 6.2.1: double the timeout after each retransmission.
+		rto = rto * 2
+	}
+
+	return TurnError{
+		reason: .timed_out
+		detail: 'the relay did not answer a ${request.typ.method} after ${c.config.max_transmissions} attempts'
+	}
+}
