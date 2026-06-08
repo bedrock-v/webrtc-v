@@ -128,3 +128,20 @@ fn test_decode_rejects_attribute_running_past_end() {
 	}
 	assert false, 'attribute overrunning the body must be rejected'
 }
+
+fn test_decode_enforces_size_limit() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add(attr_data, []u8{len: 1000})
+	raw := msg.encode()!
+
+	Message.decode(raw, max_message_size: 256) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .too_large
+		}
+		// The same bytes decode fine under the default limit.
+		Message.decode(raw)!
+		return
+	}
+	assert false, 'oversized message must be rejected'
+}
