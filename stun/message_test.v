@@ -280,3 +280,19 @@ fn test_integrity_allows_fingerprint_after_it() {
 	decoded.check_message_integrity(key)!
 	decoded.check_fingerprint()!
 }
+
+fn test_integrity_rejects_empty_key_and_wrong_length() {
+	key := 'secret'.bytes()
+	mut msg := Message.new(.request, .binding)!
+	raw := msg.encode(integrity_key: key)!
+	decoded := Message.decode(raw)!
+
+	decoded.check_message_integrity([]u8{}) or {
+		assert err is IntegrityError
+		if err is IntegrityError {
+			assert err.reason == .malformed
+		}
+		return
+	}
+	assert false, 'empty key must be rejected'
+}
