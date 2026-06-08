@@ -30,3 +30,31 @@ fn test_message_type_round_trip_over_all_classes_and_methods() {
 		}
 	}
 }
+
+fn test_message_type_known_wire_values() {
+	// Values a WebRTC endpoint sees on the wire, from RFC 8489 section 5.
+	assert MessageType{
+		method: .binding
+		class:  .request
+	}.value() == 0x0001
+	assert MessageType{
+		method: .binding
+		class:  .indication
+	}.value() == 0x0011
+	assert MessageType{
+		method: .binding
+		class:  .success_response
+	}.value() == 0x0101
+	assert MessageType{
+		method: .binding
+		class:  .error_response
+	}.value() == 0x0111
+	assert MessageType{
+		method: .allocate
+		class:  .request
+	}.value() == 0x0003
+	assert MessageType{
+		method: .allocate
+		class:  .error_response
+	}.value() == 0x0113
+}
