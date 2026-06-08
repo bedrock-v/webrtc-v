@@ -379,3 +379,42 @@ fn test_str_does_not_panic_on_any_message() {
 	assert msg.str().contains('data')
 	assert msg.str().contains('0xc0de')
 }
+
+fn test_decode_survives_arbitrary_input() {
+	// Structured malformed input: valid header, then random attribute headers.
+	// Nothing here may panic; every case must be an error or a clean decode.
+	base := hex.decode('000100002112a442b7e7a701bc34d686fa87dfae')!
+	mut seed := u32(0x12345678)
+	for _ in 0 .. 2000 {
+		mut raw := base.clone()
+		seed = seed * 1103515245 + 12345
+		count := int(seed >> 28)
+		for _ in 0 .. count {
+			seed = seed * 1103515245 + 12345
+			raw << u8(seed >> 24)
+			raw << u8(seed >> 16)
+			raw << u8(seed >> 8)
+			raw << u8(seed)
+		}
+		body := raw.len - header_size
+		raw[2] = u8(body >> 8)
+		raw[3] = u8(body)
+
+		msg := Message.decode(raw) or { continue }
+		// Every typed accessor must tolerate whatever survived decoding.
+		msg.xor_mapped_address() or {}
+		msg.mapped_address() or {}
+		msg.username() or {}
+		msg.realm() or {}
+		msg.nonce() or {}
+		msg.software() or {}
+		msg.error_code() or {}
+		msg.unknown_attributes() or {}
+		msg.priority() or {}
+		msg.ice_controlling() or {}
+		msg.ice_controlled() or {}
+		msg.check_fingerprint() or {}
+		msg.check_message_integrity('k'.bytes()) or {}
+		msg.str()
+	}
+}
