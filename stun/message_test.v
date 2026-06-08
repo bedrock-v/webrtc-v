@@ -244,3 +244,30 @@ fn test_integrity_sha256_round_trip() {
 	}
 	assert false, 'missing MESSAGE-INTEGRITY must be reported'
 }
+
+fn test_integrity_rejects_appended_attribute() {
+	// An attacker who appends an attribute after MESSAGE-INTEGRITY adds content
+	// the digest does not cover. Ignoring it is not enough: the message must be
+	// rejected.
+	key := 'secret'.bytes()
+	mut msg := Message.new(.request, .binding)!
+	msg.add_username('user')!
+	raw := msg.encode(integrity_key: key)!
+
+	mut tampered := raw.clone()
+	// Append a 4-byte PRIORITY attribute and grow the declared body length.
+	tampered << [u8(0x00), 0x24, 0x00, 0x04, 0xff, 0xff, 0xff, 0xff]
+	body := tampered.len - header_size
+	tampered[2] = u8(body >> 8)
+	tampered[3] = u8(body)
+
+	decoded := Message.decode(tampered)!
+	decoded.check_message_integrity(key) or {
+		assert err is IntegrityError
+		if err is IntegrityError {
+			assert err.reason == .not_last
+		}
+		return
+	}
+	assert false, 'attribute appended after MESSAGE-INTEGRITY must be rejected'
+}
