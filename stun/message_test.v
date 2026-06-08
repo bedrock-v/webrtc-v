@@ -65,3 +65,33 @@ fn test_message_type_preserves_unknown_methods() {
 	typ := MessageType.from_value(0x0FFF)
 	assert typ.value() == 0x0FFF
 }
+
+fn test_is_message_demultiplexing() {
+	valid := hex.decode(sample_request)!
+	assert is_message(valid)
+
+	// Too short for a header.
+	assert !is_message(valid[..19])
+
+	// RFC 7983 assigns first-byte ranges to each protocol on the port. A DTLS
+	// handshake record starts with 22, which has the same top two bits as STUN,
+	// so a check that only masks those bits would misroute it.
+	for first, name in {
+		u8(0x14): 'DTLS change_cipher_spec'
+		u8(0x16): 'DTLS handshake'
+		u8(0x17): 'DTLS application_data'
+		u8(0x40): 'TURN channel'
+		u8(0x80): 'RTP'
+		u8(0xC8): 'RTCP sender report'
+	} {
+		mut other := valid.clone()
+		other[0] = first
+		assert !is_message(other), '${name} must not be classified as STUN'
+	}
+
+	// Right leading byte, wrong cookie.
+	mut no_cookie := valid.clone()
+	no_cookie[4] = 0x00
+	assert !is_message(no_cookie)
+	assert !is_message([]u8{})
+}
