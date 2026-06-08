@@ -115,3 +115,16 @@ fn test_decode_rejects_short_and_malformed_headers() {
 		}
 	}
 }
+
+fn test_decode_rejects_attribute_running_past_end() {
+	// Header declares a 8-byte body; the attribute inside declares 32 bytes.
+	raw := hex.decode('000100082112a442b7e7a701bc34d686fa87dfae00060020deadbeef')!
+	Message.decode(raw) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .bad_length || err.reason == .bad_attribute
+		}
+		return
+	}
+	assert false, 'attribute overrunning the body must be rejected'
+}
