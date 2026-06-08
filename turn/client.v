@@ -32,3 +32,26 @@ pub:
 	from netaddr.SocketAddr
 	data []u8
 }
+
+@[params]
+pub struct ClientConfig {
+pub:
+	// username and password are the long-term credentials. A TURN server that
+	// hands out allocations without them is an open relay, so they are required.
+	username string
+	password string
+	// realm, when set, is used before the server has said which realm it wants.
+	// Leaving it empty is normal: the first request is answered with a 401 that
+	// names the realm, and the credentials are then derived for it.
+	realm string
+	// lifetime is the allocation lifetime to request, in seconds.
+	lifetime u32 = default_lifetime
+	// rto and max_transmissions are the retransmission schedule for a
+	// transaction, matching RFC 8489 section 6.2.1.
+	rto               time.Duration = 500 * time.millisecond
+	max_transmissions int           = 7
+	// software, when set, is advertised. Empty by default: naming the
+	// implementation to every relay is a needless disclosure.
+	software string
+	logger   logging.Logger = logging.nop()
+}
