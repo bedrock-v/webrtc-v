@@ -231,3 +231,14 @@ fn test_the_turn_attributes_round_trip() {
 	assert decoded.has_dont_fragment()
 	assert decoded.data()! == [u8(1), 2, 3, 4]
 }
+
+fn test_a_malformed_turn_attribute_is_refused() {
+	mut message := Message.new(.request, .allocate)!
+	// A three-byte LIFETIME is not a truncated integer to be guessed at.
+	message.add(attr_lifetime, [u8(0), 0, 1])
+	encoded := message.encode()!
+	decoded := Message.decode(encoded)!
+	if _ := decoded.lifetime() {
+		assert false, 'a short LIFETIME should be refused'
+	}
+}
