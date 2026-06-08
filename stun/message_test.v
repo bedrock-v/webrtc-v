@@ -162,3 +162,15 @@ fn test_decode_enforces_attribute_limit() {
 	}
 	assert false, 'attribute flood must be rejected'
 }
+
+fn test_zero_length_attribute_round_trips() {
+	// USE-CANDIDATE is a flag: present with no value.
+	mut msg := Message.new(.request, .binding)!
+	msg.add_use_candidate()
+	raw := msg.encode()!
+
+	decoded := Message.decode(raw)!
+	assert decoded.has_use_candidate()
+	attr := decoded.get(attr_use_candidate)?
+	assert attr.value.len == 0
+}
