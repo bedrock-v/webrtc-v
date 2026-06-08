@@ -242,3 +242,19 @@ fn test_a_malformed_turn_attribute_is_refused() {
 		assert false, 'a short LIFETIME should be refused'
 	}
 }
+
+fn test_an_oversized_data_attribute_is_refused() {
+	mut message := Message.new(.indication, .send)!
+	if _ := message.add_data([]u8{len: max_turn_data + 1}) {
+		assert false, 'an oversized DATA attribute should be refused'
+	}
+
+	// A DATA attribute cannot exceed the limit without the message exceeding the
+	// STUN message limit first, so the outer bound is what a peer runs into.
+	mut oversized := Message.new(.indication, .data)!
+	oversized.add(attr_data, []u8{len: max_turn_data + 1})
+	encoded := oversized.encode()!
+	if _ := Message.decode(encoded) {
+		assert false, 'an oversized message should not decode'
+	}
+}
