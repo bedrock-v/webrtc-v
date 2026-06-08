@@ -213,3 +213,21 @@ fn test_long_term_key_rejects_ambiguous_input() {
 	}
 	assert false, 'empty username must be rejected'
 }
+
+fn test_the_turn_attributes_round_trip() {
+	mut message := Message.new(.request, .allocate)!
+	message.add_lifetime(600)
+	message.add_requested_transport(transport_udp)
+	message.add_channel_number(0x4001)
+	message.add_dont_fragment()
+	message.add_data([u8(1), 2, 3, 4])!
+
+	encoded := message.encode()!
+	decoded := Message.decode(encoded)!
+
+	assert decoded.lifetime()! == 600
+	assert decoded.requested_transport()! == transport_udp
+	assert decoded.channel_number()! == 0x4001
+	assert decoded.has_dont_fragment()
+	assert decoded.data()! == [u8(1), 2, 3, 4]
+}
