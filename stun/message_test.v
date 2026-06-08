@@ -145,3 +145,20 @@ fn test_decode_enforces_size_limit() {
 	}
 	assert false, 'oversized message must be rejected'
 }
+
+fn test_decode_enforces_attribute_limit() {
+	mut msg := Message.new(.request, .binding)!
+	for i in 0 .. 40 {
+		msg.add(attr_padding, [u8(i), 0, 0, 0])
+	}
+	raw := msg.encode()!
+
+	Message.decode(raw, max_attributes: 10) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .too_many_attributes
+		}
+		return
+	}
+	assert false, 'attribute flood must be rejected'
+}
