@@ -194,3 +194,11 @@ fn test_short_term_key_rejects_unprepped_input() {
 		assert false, 'expected ${password} to be rejected'
 	}
 }
+
+fn test_long_term_key_matches_rfc_definition() {
+	// MD5("user:realm:pass"), the definition from RFC 8489 section 9.2.2. The
+	// expected digest is what `printf 'user:realm:pass' | md5sum` produces.
+	key := long_term_key('user', 'realm', 'pass')!
+	assert key.len == 16
+	assert key.hex() == '8493fbc53ba582fb4c044c456bdc40eb'
+}
