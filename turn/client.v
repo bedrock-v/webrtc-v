@@ -381,3 +381,34 @@ pub fn (mut c Client) send_to(peer netaddr.SocketAddr, data []u8) !int {
 	c.write(raw)!
 	return data.len
 }
+
+// recv returns the next datagram a peer sent through the relay.
+pub fn (mut c Client) recv(timeout time.Duration) !Packet {
+	if c.is_closed() {
+		return TurnError{
+			reason: .closed
+			detail: 'the client is closed'
+		}
+	}
+	select {
+		packet := <-c.inbound {
+			if packet.data.len == 0 && c.is_closed() {
+				return TurnError{
+					reason: .closed
+					detail: 'the client is closed'
+				}
+			}
+			return packet
+		}
+		timeout {
+			return TurnError{
+				reason: .timed_out
+				detail: 'nothing relayed within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return TurnError{
+		reason: .closed
+		detail: 'the client is closed'
+	}
+}
