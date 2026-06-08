@@ -296,3 +296,24 @@ fn test_integrity_rejects_empty_key_and_wrong_length() {
 	}
 	assert false, 'empty key must be rejected'
 }
+
+fn test_fingerprint_must_be_last() {
+	mut msg := Message.new(.request, .binding)!
+	raw := msg.encode(fingerprint: true)!
+
+	mut tampered := raw.clone()
+	tampered << [u8(0x00), 0x24, 0x00, 0x04, 0x00, 0x00, 0x00, 0x01]
+	body := tampered.len - header_size
+	tampered[2] = u8(body >> 8)
+	tampered[3] = u8(body)
+
+	decoded := Message.decode(tampered)!
+	decoded.check_fingerprint() or {
+		assert err is IntegrityError
+		if err is IntegrityError {
+			assert err.reason == .not_last
+		}
+		return
+	}
+	assert false, 'FINGERPRINT must be the final attribute'
+}
