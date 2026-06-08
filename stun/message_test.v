@@ -317,3 +317,14 @@ fn test_fingerprint_must_be_last() {
 	}
 	assert false, 'FINGERPRINT must be the final attribute'
 }
+
+fn test_missing_fingerprint_is_reported() {
+	mut msg := Message.new(.request, .binding)!
+	raw := msg.encode()!
+	decoded := Message.decode(raw)!
+	decoded.check_fingerprint() or {
+		assert err is IntegrityError
+		return
+	}
+	assert false, 'missing FINGERPRINT must be reported'
+}
