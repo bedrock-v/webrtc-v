@@ -207,3 +207,17 @@ fn test_get_and_get_all() {
 	assert !msg.has(attr_realm)
 	assert msg.get(attr_realm) == none
 }
+
+fn test_encode_rejects_caller_supplied_digests() {
+	// Accepting a caller-supplied MESSAGE-INTEGRITY would let a stale or forged
+	// digest be transmitted as though the library had computed it.
+	for typ in [attr_message_integrity, attr_message_integrity_sha256, attr_fingerprint] {
+		mut msg := Message.new(.request, .binding)!
+		msg.add(typ, []u8{len: 20})
+		msg.encode() or {
+			assert err is EncodeError
+			continue
+		}
+		assert false, 'encoding ${attr_name(typ)} as a plain attribute must be rejected'
+	}
+}
