@@ -58,3 +58,10 @@ fn test_message_type_known_wire_values() {
 		class:  .error_response
 	}.value() == 0x0113
 }
+
+fn test_message_type_preserves_unknown_methods() {
+	// A server must be able to answer an unsupported method with an error
+	// response that names the same method, so unknown values round-trip.
+	typ := MessageType.from_value(0x0FFF)
+	assert typ.value() == 0x0FFF
+}
