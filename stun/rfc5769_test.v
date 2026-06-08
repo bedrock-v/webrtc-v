@@ -23,3 +23,12 @@ const vector_request_software = 'STUN test client'
 const vector_response_v4 = '0101003c2112a442b7e7a701bc34d686fa87dfae' + '8022000b' +
 	'74657374207665' + '63746f7220' + '00200008' + '0001a147e112a643' + '00080014' +
 	'2b91f599fd9e90c38c7489f92af9ba53f06be7d7' + '80280004' + 'c07d4c96'
+
+// Section 2.3: sample IPv6 success response.
+const vector_response_v6 = '010100482112a442b7e7a701bc34d686fa87dfae' + '8022000b' +
+	'74657374207665' + '63746f7220' + '00200014' +
+	'0002a14701 13a9faa5d3f179bc25f4b5bed2b9d9'.replace(' ', '') + '00080014' +
+	'a38295 4e4be67bf11784c97c8292c275bfe3ed41'.replace(' ', '') + '80280004' + 'c8fb0b4c'
+
+const vector_response_password = 'VOkJxbRl1RmTxUk/WvJxBt'
+const vector_response_software = 'test vector'
