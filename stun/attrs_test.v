@@ -258,3 +258,12 @@ fn test_an_oversized_data_attribute_is_refused() {
 		assert false, 'an oversized message should not decode'
 	}
 }
+
+fn test_a_missing_turn_attribute_reports_which_one() {
+	message := Message.new(.request, .allocate)!
+	if _ := message.lifetime() {
+		assert false, 'there is no LIFETIME to return'
+	} else {
+		assert err is AttributeNotFoundError
+	}
+}
