@@ -55,3 +55,45 @@ pub:
 	software string
 	logger   logging.Logger = logging.nop()
 }
+
+// Client is a TURN allocation on one relay.
+pub struct Client {
+mut:
+	conn &net.UdpConn
+	// destination is the relay's address in the form sendto wants. The socket
+	// is not connected, so that a datagram from anywhere else is still received
+	// and can be discarded here rather than by the kernel.
+	destination net.Addr
+	config      ClientConfig
+	log         logging.Logger
+	mu          &sync.Mutex = sync.new_mutex()
+
+	// realm, nonce and key are the long-term credential state. The key is
+	// derived once per realm; the nonce changes whenever the server says so.
+	realm string
+	nonce string
+	key   []u8
+
+	relayed ?netaddr.SocketAddr
+	mapped  ?netaddr.SocketAddr
+	// lifetime is what the server granted, and refresh_at is when to renew. An
+	// allocation that is not refreshed is silently deleted, and the first sign
+	// of it is traffic disappearing.
+	lifetime   u32
+	refresh_at time.Time
+
+	// permissions and bindings are per peer address. A permission lets a peer's
+	// traffic through; a channel makes the framing cheap.
+	permissions  map[string]time.Time
+	bindings     map[string]Binding
+	next_channel u16 = channel_min
+
+	// pending routes a response to whoever is waiting for that transaction.
+	pending map[string]chan stun.Message
+	inbound chan Packet = chan Packet{cap: 256}
+
+	closed  bool
+	threads []thread
+pub:
+	server netaddr.SocketAddr
+}
