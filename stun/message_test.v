@@ -439,3 +439,12 @@ fn test_address_attributes_round_trip() {
 		assert decoded.reflexive_address()!.str() == text
 	}
 }
+
+fn test_xor_is_its_own_inverse() {
+	tid := [transaction_id_size]u8{init: u8(index * 7 + 3)}
+	original := hex.decode('000102030405060708090a0b0c0d0e0f10111213')!
+	once := xor_address(original, tid)
+	twice := xor_address(once, tid)
+	assert twice == original
+	assert once != original
+}
