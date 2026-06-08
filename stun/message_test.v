@@ -357,3 +357,18 @@ fn test_encode_rejects_oversized_attribute() {
 	}
 	assert false, 'attribute larger than the length field must be rejected'
 }
+
+fn test_round_trip_preserves_attribute_order() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add_username('alice:bob')!
+	msg.add_priority(0x7E0000FF)
+	msg.add_ice_controlling(0x0102030405060708)
+	msg.add_use_candidate()
+
+	raw := msg.encode(integrity_key: 'pw'.bytes(), fingerprint: true)!
+	decoded := Message.decode(raw)!
+
+	types := decoded.attributes.map(it.typ)
+	assert types == [attr_username, attr_priority, attr_ice_controlling, attr_use_candidate,
+		attr_message_integrity, attr_fingerprint]
+}
