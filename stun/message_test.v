@@ -418,3 +418,24 @@ fn test_decode_survives_arbitrary_input() {
 		msg.str()
 	}
 }
+
+fn test_address_attributes_round_trip() {
+	addrs := ['1.2.3.4:5000', '[2001:db8::1]:3478', '0.0.0.0:0', '[::]:65535']
+	for text in addrs {
+		addr := netaddr.SocketAddr.parse(text)!
+		mut msg := Message.new(.success_response, .binding)!
+		msg.add_xor_mapped_address(addr)!
+		msg.add_mapped_address(addr)!
+		msg.add_xor_peer_address(addr)!
+		msg.add_xor_relayed_address(addr)!
+		msg.add_alternate_server(addr)!
+
+		decoded := Message.decode(msg.encode()!)!
+		assert decoded.xor_mapped_address()!.str() == text
+		assert decoded.mapped_address()!.str() == text
+		assert decoded.xor_peer_address()!.str() == text
+		assert decoded.xor_relayed_address()!.str() == text
+		assert decoded.alternate_server()!.str() == text
+		assert decoded.reflexive_address()!.str() == text
+	}
+}
