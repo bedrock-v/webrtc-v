@@ -412,3 +412,16 @@ pub fn (mut c Client) recv(timeout time.Duration) !Packet {
 		detail: 'the client is closed'
 	}
 }
+
+// try_recv returns a datagram if one is already queued.
+pub fn (mut c Client) try_recv() ?Packet {
+	select {
+		packet := <-c.inbound {
+			return packet
+		}
+		else {
+			return none
+		}
+	}
+	return none
+}
