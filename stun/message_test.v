@@ -372,3 +372,10 @@ fn test_round_trip_preserves_attribute_order() {
 	assert types == [attr_username, attr_priority, attr_ice_controlling, attr_use_candidate,
 		attr_message_integrity, attr_fingerprint]
 }
+
+fn test_str_does_not_panic_on_any_message() {
+	mut msg := Message.new(.indication, .data)!
+	msg.add(0xC0DE, [u8(0xff)])
+	assert msg.str().contains('data')
+	assert msg.str().contains('0xc0de')
+}
