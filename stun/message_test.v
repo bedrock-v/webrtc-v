@@ -184,3 +184,11 @@ fn test_transaction_ids_are_unpredictable() {
 		seen[id] = true
 	}
 }
+
+fn test_response_copies_transaction_id_and_method() {
+	req := Message.new(.request, .allocate)!
+	resp := Message.response(req, .error_response)
+	assert resp.transaction_id == req.transaction_id
+	assert resp.typ.method == .allocate
+	assert resp.typ.class == .error_response
+}
