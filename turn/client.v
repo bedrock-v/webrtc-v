@@ -264,3 +264,60 @@ pub fn (mut c Client) create_permission(peer netaddr.SocketAddr) ! {
 	c.mu.unlock()
 	c.log.debug('permission installed for ${peer}')
 }
+
+// bind_channel binds a peer to a channel number, so its traffic carries a
+// four-byte header instead of a thirty-six byte one.
+//
+// A channel binding also installs a permission, so a caller that binds does not
+// need to create one separately.
+pub fn (mut c Client) bind_channel(peer netaddr.SocketAddr) !u16 {
+	key := peer.str()
+	c.mu.lock()
+	if existing := c.bindings[key] {
+		if existing.confirmed && time.now().unix() < existing.refresh_at {
+			c.mu.unlock()
+			return existing.channel
+		}
+	}
+	channel := c.allocate_channel(key) or {
+		c.mu.unlock()
+		return TurnError{
+			reason: .refused
+			detail: 'no channel number is available'
+		}
+	}
+	c.bindings[key] = Binding{
+		peer:    peer
+		channel: channel
+	}
+	c.mu.unlock()
+
+	mut request := stun.Message.new(.request, .channel_bind) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	request.add_channel_number(channel)
+	request.add_xor_peer_address(peer) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	c.transact_authenticated(mut request)!
+
+	c.mu.lock()
+	c.bindings[key] = Binding{
+		peer:       peer
+		channel:    channel
+		confirmed:  true
+		refresh_at: time.now().add(channel_refresh_interval).unix()
+	}
+	// A channel binding installs a permission as a side effect, so recording it
+	// keeps the maintenance loop from installing a redundant one.
+	c.permissions[key] = time.now().add(permission_lifetime)
+	c.mu.unlock()
+	c.log.debug('bound ${peer} to channel ${channel}')
+	return channel
+}
