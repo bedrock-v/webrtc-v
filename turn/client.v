@@ -500,3 +500,26 @@ fn (mut c Client) allocate_channel(key string) ?u16 {
 	}
 	return none
 }
+
+// refresh_time is when to renew an allocation the server granted for this long.
+//
+// Halfway through, with a floor, so a short lifetime does not turn into a
+// refresh storm and a lost refresh still has time for a retry.
+fn refresh_time(lifetime u32) time.Time {
+	mut seconds := i64(lifetime) / 2
+	if seconds < 30 {
+		seconds = 30
+	}
+	return time.now().add(seconds * time.second)
+}
+
+// permission_lifetime is what RFC 8656 section 9 fixes: five minutes, not
+// negotiable.
+const permission_lifetime = 5 * time.minute
+
+// permission_refresh_interval renews well before expiry, because a permission
+// that lapses drops the peer's traffic silently.
+const permission_refresh_interval = 4 * time.minute
+
+// channel_refresh_interval renews a binding before its ten-minute expiry.
+const channel_refresh_interval = 8 * time.minute
