@@ -341,3 +341,9 @@ fn test_unknown_comprehension_required_detection() {
 	assert is_comprehension_required(0x7FFF)
 	assert !is_comprehension_required(0x8000)
 }
+
+fn test_attribute_names() {
+	assert attr_name(attr_xor_mapped_address) == 'XOR-MAPPED-ADDRESS'
+	assert attr_name(attr_ice_controlling) == 'ICE-CONTROLLING'
+	assert attr_name(0x9999) == '0x9999'
+}
