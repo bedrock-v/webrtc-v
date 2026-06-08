@@ -32,3 +32,27 @@ const vector_response_v6 = '010100482112a442b7e7a701bc34d686fa87dfae' + '8022000
 
 const vector_response_password = 'VOkJxbRl1RmTxUk/WvJxBt'
 const vector_response_software = 'test vector'
+
+// RFC 5769 predates RFC 8489 and pads attribute values with spaces. RFC 8489
+// section 14 requires the padding to be zero on send, which is what this
+// implementation emits. The digests cover the padding, so a re-encoded message
+// cannot be byte-identical to the reference and the comparison is split in two:
+// the bytes up to MESSAGE-INTEGRITY must match once padding is normalised, and
+// the digests must then verify against the same password.
+fn zero_attribute_padding(raw []u8) ![]u8 {
+	mut out := raw.clone()
+	mut pos := header_size
+	for pos + 4 <= out.len {
+		value_len := int((u16(out[pos + 2]) << 8) | u16(out[pos + 3]))
+		pad := padded_size(value_len) - value_len
+		start := pos + 4 + value_len
+		if start + pad > out.len {
+			return error('attribute at ${pos} runs past the message')
+		}
+		for i in 0 .. pad {
+			out[start + i] = 0
+		}
+		pos = start + pad
+	}
+	return out
+}
