@@ -56,3 +56,26 @@ fn zero_attribute_padding(raw []u8) ![]u8 {
 	}
 	return out
 }
+
+// assert_matches_reference checks a freshly encoded message against a reference
+// from the RFC: identical bytes up to MESSAGE-INTEGRITY, then both digests
+// verifying under the published password.
+fn assert_matches_reference(encoded []u8, reference []u8, password string) ! {
+	mine := Message.decode(encoded)!
+	theirs := Message.decode(reference)!
+
+	mi := mine.get(attr_message_integrity) or { return error('encoded message has no integrity') }
+	ref_mi := theirs.get(attr_message_integrity) or {
+		return error('reference message has no integrity')
+	}
+	assert mi.offset == ref_mi.offset, 'MESSAGE-INTEGRITY landed at a different offset'
+
+	mine_prefix := zero_attribute_padding(encoded)![..mi.offset]
+	ref_prefix := zero_attribute_padding(reference)![..ref_mi.offset]
+	assert mine_prefix.hex() == ref_prefix.hex()
+
+	key := short_term_key(password)!
+	mine.check_message_integrity(key)!
+	mine.check_fingerprint()!
+	assert encoded.len == reference.len
+}
