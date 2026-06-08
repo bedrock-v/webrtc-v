@@ -425,3 +425,35 @@ pub fn (mut c Client) try_recv() ?Packet {
 	}
 	return none
 }
+
+// close deletes the allocation and shuts the client down. It is safe to call
+// more than once.
+pub fn (mut c Client) close() {
+	c.mu.lock()
+	if c.closed {
+		c.mu.unlock()
+		return
+	}
+	has_allocation := c.relayed != none
+	c.mu.unlock()
+
+	if has_allocation {
+		// Politeness with a purpose: releasing the allocation now frees the
+		// relay's port and quota rather than leaving them held until the
+		// lifetime expires.
+		c.refresh(0) or { c.log.debug('could not release the allocation: ${err.msg()}') }
+	}
+
+	c.mu.lock()
+	c.closed = true
+	c.mu.unlock()
+
+	c.conn.close() or {}
+	c.inbound.close()
+	for handle in c.threads {
+		handle.wait()
+	}
+	c.mu.lock()
+	c.threads.clear()
+	c.mu.unlock()
+}
