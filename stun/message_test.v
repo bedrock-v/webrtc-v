@@ -448,3 +448,21 @@ fn test_xor_is_its_own_inverse() {
 	assert twice == original
 	assert once != original
 }
+
+fn test_address_attribute_rejects_bad_family_and_length() {
+	tid := [transaction_id_size]u8{}
+	cases := [
+		[u8(0), 0x03, 0, 0, 1, 2, 3, 4], // unknown family
+		[u8(0), 0x01, 0, 0, 1, 2, 3], // IPv4 too short
+		[u8(0), 0x01, 0, 0, 1, 2, 3, 4, 5], // IPv4 too long
+		[u8(0), 0x02, 0, 0, 1, 2, 3, 4], // IPv6 too short
+		[u8(0), 0x01], // truncated header
+	]
+	for value in cases {
+		mut msg := Message.with_transaction_id(.success_response, .binding, tid)
+		msg.add(attr_mapped_address, value)
+		decoded := Message.decode(msg.encode()!)!
+		decoded.mapped_address() or { continue }
+		assert false, 'expected ${value.hex()} to be rejected'
+	}
+}
