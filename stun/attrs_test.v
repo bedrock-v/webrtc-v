@@ -202,3 +202,14 @@ fn test_long_term_key_matches_rfc_definition() {
 	assert key.len == 16
 	assert key.hex() == '8493fbc53ba582fb4c044c456bdc40eb'
 }
+
+fn test_long_term_key_rejects_ambiguous_input() {
+	long_term_key('', 'realm', 'p') or {
+		long_term_key('u', '', 'p') or {
+			long_term_key('u:v', 'realm', 'p') or { return }
+			assert false, 'colon in username must be rejected'
+		}
+		assert false, 'empty realm must be rejected'
+	}
+	assert false, 'empty username must be rejected'
+}
