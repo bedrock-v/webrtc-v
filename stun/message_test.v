@@ -192,3 +192,18 @@ fn test_response_copies_transaction_id_and_method() {
 	assert resp.typ.method == .allocate
 	assert resp.typ.class == .error_response
 }
+
+fn test_get_and_get_all() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add(attr_xor_peer_address, [u8(1)])
+	msg.add(attr_xor_peer_address, [u8(2)])
+	msg.add(attr_priority, [u8(0), 0, 0, 1])
+
+	first := msg.get(attr_xor_peer_address)?
+	assert first.value == [u8(1)]
+	assert msg.get_all(attr_xor_peer_address).len == 2
+	assert msg.get_all(attr_lifetime).len == 0
+	assert msg.has(attr_priority)
+	assert !msg.has(attr_realm)
+	assert msg.get(attr_realm) == none
+}
