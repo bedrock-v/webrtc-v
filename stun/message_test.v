@@ -347,3 +347,13 @@ fn test_attribute_names() {
 	assert attr_name(attr_ice_controlling) == 'ICE-CONTROLLING'
 	assert attr_name(0x9999) == '0x9999'
 }
+
+fn test_encode_rejects_oversized_attribute() {
+	mut msg := Message.new(.request, .binding)!
+	msg.add(attr_data, []u8{len: 0x10000})
+	msg.encode() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'attribute larger than the length field must be rejected'
+}
