@@ -466,3 +466,14 @@ fn test_address_attribute_rejects_bad_family_and_length() {
 		assert false, 'expected ${value.hex()} to be rejected'
 	}
 }
+
+fn test_reflexive_address_prefers_xor_form() {
+	xor_addr := netaddr.SocketAddr.parse('1.1.1.1:1111')!
+	plain_addr := netaddr.SocketAddr.parse('2.2.2.2:2222')!
+	mut msg := Message.new(.success_response, .binding)!
+	msg.add_mapped_address(plain_addr)!
+	msg.add_xor_mapped_address(xor_addr)!
+
+	decoded := Message.decode(msg.encode()!)!
+	assert decoded.reflexive_address()!.str() == '1.1.1.1:1111'
+}
