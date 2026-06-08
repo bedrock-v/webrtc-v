@@ -79,3 +79,16 @@ fn assert_matches_reference(encoded []u8, reference []u8, password string) ! {
 	mine.check_fingerprint()!
 	assert encoded.len == reference.len
 }
+
+fn test_rfc5769_request_decodes() {
+	raw := hex.decode(vector_request)!
+	msg := Message.decode(raw)!
+
+	assert msg.typ.class == .request
+	assert msg.typ.method == .binding
+	assert msg.transaction_id[..].hex() == 'b7e7a701bc34d686fa87dfae'
+	assert msg.software()! == vector_request_software
+	assert msg.priority()! == 0x6e0001ff
+	assert msg.ice_controlled()! == 0x932ff9b151263b36
+	assert msg.username()! == vector_request_username
+}
