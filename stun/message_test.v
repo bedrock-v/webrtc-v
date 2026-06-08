@@ -174,3 +174,13 @@ fn test_zero_length_attribute_round_trips() {
 	attr := decoded.get(attr_use_candidate)?
 	assert attr.value.len == 0
 }
+
+fn test_transaction_ids_are_unpredictable() {
+	mut seen := map[string]bool{}
+	for _ in 0 .. 128 {
+		msg := Message.new(.request, .binding)!
+		id := msg.transaction_id[..].hex()
+		assert id !in seen, 'transaction id repeated'
+		seen[id] = true
+	}
+}
