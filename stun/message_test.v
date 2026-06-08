@@ -271,3 +271,12 @@ fn test_integrity_rejects_appended_attribute() {
 	}
 	assert false, 'attribute appended after MESSAGE-INTEGRITY must be rejected'
 }
+
+fn test_integrity_allows_fingerprint_after_it() {
+	key := 'secret'.bytes()
+	mut msg := Message.new(.request, .binding)!
+	raw := msg.encode(integrity_key: key, fingerprint: true)!
+	decoded := Message.decode(raw)!
+	decoded.check_message_integrity(key)!
+	decoded.check_fingerprint()!
+}
