@@ -151,3 +151,16 @@ fn test_rfc5769_ipv4_response() {
 	msg.check_message_integrity(short_term_key(vector_response_password)!)!
 	msg.check_fingerprint()!
 }
+
+fn test_rfc5769_ipv6_response() {
+	raw := hex.decode(vector_response_v6)!
+	msg := Message.decode(raw)!
+
+	assert msg.typ.class == .success_response
+	addr := msg.xor_mapped_address()!
+	assert addr.ip.family == .ipv6
+	assert addr.str() == '[2001:db8:1234:5678:11:2233:4455:6677]:32853'
+
+	msg.check_message_integrity(short_term_key(vector_response_password)!)!
+	msg.check_fingerprint()!
+}
