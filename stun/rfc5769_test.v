@@ -101,3 +101,18 @@ fn test_rfc5769_request_integrity_and_fingerprint() {
 	msg.check_message_integrity(key)!
 	msg.check_fingerprint()!
 }
+
+fn test_rfc5769_request_integrity_rejects_wrong_password() {
+	raw := hex.decode(vector_request)!
+	msg := Message.decode(raw)!
+
+	key := short_term_key('not the password')!
+	msg.check_message_integrity(key) or {
+		assert err is IntegrityError
+		if err is IntegrityError {
+			assert err.reason == .mismatch
+		}
+		return
+	}
+	assert false, 'integrity must fail with the wrong key'
+}
