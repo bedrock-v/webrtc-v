@@ -11,3 +11,8 @@ import time
 import webrtc.logging
 import webrtc.netaddr
 import webrtc.stun
+
+// max_datagram is the largest datagram the client will read. STUN messages are
+// far smaller; the ceiling exists so a hostile server cannot make the client
+// allocate an arbitrary buffer.
+const max_datagram = 1500
