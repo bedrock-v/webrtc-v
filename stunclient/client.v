@@ -5,3 +5,9 @@
 // link a socket implementation. This package adds the socket, the timers and the
 // retransmission schedule.
 module stunclient
+
+import net
+import time
+import webrtc.logging
+import webrtc.netaddr
+import webrtc.stun
