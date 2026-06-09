@@ -35,3 +35,11 @@ pub:
 	software string
 	logger   logging.Logger = logging.nop()
 }
+
+// TimeoutError is returned when no valid response arrived within the
+// retransmission schedule.
+pub struct TimeoutError {
+pub:
+	transmissions int
+	elapsed       time.Duration
+}
