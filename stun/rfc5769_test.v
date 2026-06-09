@@ -194,3 +194,21 @@ fn test_rfc5769_ipv6_response_reencodes() {
 	)!
 	assert_matches_reference(out, raw, vector_response_password)!
 }
+
+fn test_rfc5769_flipping_any_byte_breaks_a_check() {
+	// Every byte of the message is covered by either MESSAGE-INTEGRITY or
+	// FINGERPRINT, so no single-byte edit can survive both checks.
+	raw := hex.decode(vector_request)!
+	key := short_term_key(vector_request_password)!
+
+	for i in 0 .. raw.len {
+		mut tampered := raw.clone()
+		tampered[i] ^= 0x01
+
+		msg := Message.decode(tampered) or { continue }
+		mut passed_both := true
+		msg.check_message_integrity(key) or { passed_both = false }
+		msg.check_fingerprint() or { passed_both = false }
+		assert !passed_both, 'flipping byte ${i} left both checks passing'
+	}
+}
