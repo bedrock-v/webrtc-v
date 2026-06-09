@@ -16,3 +16,22 @@ import webrtc.stun
 // far smaller; the ceiling exists so a hostile server cannot make the client
 // allocate an arbitrary buffer.
 const max_datagram = 1500
+
+// ClientConfig tunes the retransmission behaviour described in RFC 8489
+// section 6.2.1.
+//
+// The defaults follow the RFC: a 500 ms initial timeout doubling on each retry,
+// seven transmissions in total. That is deliberately patient - it is meant for
+// a standalone binding lookup. An ICE agent does not use this schedule; it
+// paces its own checks and treats each one as a single transmission.
+@[params]
+pub struct ClientConfig {
+pub:
+	rto               time.Duration = 500 * time.millisecond
+	max_transmissions int           = 7
+	// software, when set, is advertised in a SOFTWARE attribute. It is empty by
+	// default because naming the implementation and version to every server on
+	// the path is a needless disclosure.
+	software string
+	logger   logging.Logger = logging.nop()
+}
