@@ -150,3 +150,26 @@ pub fn resolve(name string, timeout time.Duration) !netaddr.IpAddr {
 		detail: 'no answer for "${name}" within ${timeout.milliseconds()}ms'
 	}
 }
+
+// encode_query builds a query for both address families.
+fn encode_query(name string) ![]u8 {
+	mut w := codec.Writer.new()
+	// A transaction id of zero: multicast DNS matches on the question, not on
+	// the id, and RFC 6762 section 18.1 says a querier sets it to zero.
+	w.u16(0)
+	w.u16(0) // flags: a standard query
+	w.u16(2) // two questions, one per family
+	w.u16(0) // no answers
+	w.u16(0) // no authority records
+	w.u16(0) // no additional records
+
+	encoded := encode_name(name)!
+	w.bytes(encoded)
+	w.u16(type_a)
+	w.u16(class_in | unicast_response_bit)
+
+	w.bytes(encoded)
+	w.u16(type_aaaa)
+	w.u16(class_in | unicast_response_bit)
+	return w.buf
+}
