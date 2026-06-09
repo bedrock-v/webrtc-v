@@ -26,3 +26,32 @@ pub const multicast_group_v6 = '[ff02::fb]:5353'
 // carrying an address is a few hundred bytes; anything much larger is either
 // not for us or is trying to make us do work.
 pub const max_response = 4096
+
+// max_name_labels bounds how many labels a name may have, and
+// max_pointer_hops bounds how many compression pointers are followed. Both stop
+// a crafted response from making the parser loop: a pointer that points at
+// itself is the classic decompression bomb.
+const max_name_labels = 128
+const max_pointer_hops = 16
+
+// record types and classes, the only ones this resolver uses.
+const type_a = u16(1)
+const type_aaaa = u16(28)
+const class_in = u16(1)
+
+// unicast_response_bit asks the responder to answer directly to the querier's
+// port rather than to the multicast group.
+//
+// Without it the answer goes to the group on port 5353, which can only be read
+// by a socket bound to that port - and on most machines that port already
+// belongs to the system responder. Setting it is what lets this work as an
+// ordinary client. A responder that ignores the bit will not be heard, which is
+// the known limit of this approach.
+const unicast_response_bit = u16(0x8000)
+
+// MdnsError is returned when a name cannot be resolved.
+pub struct MdnsError {
+pub:
+	reason MdnsErrorReason
+	detail string
+}
