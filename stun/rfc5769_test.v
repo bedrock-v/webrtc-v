@@ -92,3 +92,12 @@ fn test_rfc5769_request_decodes() {
 	assert msg.ice_controlled()! == 0x932ff9b151263b36
 	assert msg.username()! == vector_request_username
 }
+
+fn test_rfc5769_request_integrity_and_fingerprint() {
+	raw := hex.decode(vector_request)!
+	msg := Message.decode(raw)!
+
+	key := short_term_key(vector_request_password)!
+	msg.check_message_integrity(key)!
+	msg.check_fingerprint()!
+}
