@@ -55,3 +55,31 @@ pub:
 	reason MdnsErrorReason
 	detail string
 }
+
+pub enum MdnsErrorReason {
+	// not_local: the name is not a .local name, so this resolver is the wrong
+	// tool rather than having failed.
+	not_local
+	// bad_name: the name is malformed or too long to encode.
+	bad_name
+	// transport: a socket operation failed.
+	transport
+	// timed_out: nothing answered.
+	timed_out
+	// bad_response: something answered with a message that does not decode.
+	bad_response
+}
+
+pub fn (e MdnsError) msg() string {
+	return 'mdns: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e MdnsError) code() int {
+	return int(e.reason) + 80
+}
+
+// is_local_name reports whether a host is one this resolver handles.
+pub fn is_local_name(host string) bool {
+	lower := host.to_lower()
+	return lower.ends_with('.local') || lower.ends_with('.local.')
+}
