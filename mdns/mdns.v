@@ -204,3 +204,52 @@ fn encode_name(name string) ![]u8 {
 	}
 	return w.buf
 }
+
+// answer_for pulls the address for name out of a response, if it is there.
+//
+// Anything unexpected returns none rather than an error: on a multicast group
+// every response to every query on the network arrives here, and the ones that
+// are not ours are the normal case, not a fault.
+fn answer_for(datagram []u8, name string) ?netaddr.IpAddr {
+	mut r := codec.Reader.new(datagram)
+	_ := r.u16('transaction id') or { return none }
+	flags := r.u16('flags') or { return none }
+	// The response bit. A query looping back to us is not an answer.
+	if flags & 0x8000 == 0 {
+		return none
+	}
+	questions := r.u16('question count') or { return none }
+	answers := r.u16('answer count') or { return none }
+	_ := r.u16('authority count') or { return none }
+	additional := r.u16('additional count') or { return none }
+
+	for _ in 0 .. questions {
+		skip_name(mut r) or { return none }
+		r.u16('question type') or { return none }
+		r.u16('question class') or { return none }
+	}
+
+	wanted := name.trim_right('.').to_lower()
+	// Additional records are searched too: a responder often puts the AAAA
+	// there when the question asked for an A.
+	total := int(answers) + int(additional)
+	for _ in 0 .. total {
+		record_name := read_name(mut r) or { return none }
+		record_type := r.u16('record type') or { return none }
+		r.u16('record class') or { return none }
+		r.u32('time to live') or { return none }
+		length := r.u16('record length') or { return none }
+		body := r.bytes(int(length), 'record data') or { return none }
+
+		if record_name.trim_right('.').to_lower() != wanted {
+			continue
+		}
+		if record_type == type_a && body.len == 4 {
+			return netaddr.IpAddr.from_octets(.ipv4, body) or { continue }
+		}
+		if record_type == type_aaaa && body.len == 16 {
+			return netaddr.IpAddr.from_octets(.ipv6, body) or { continue }
+		}
+	}
+	return none
+}
