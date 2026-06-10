@@ -86,3 +86,28 @@ fn test_an_ipv6_answer_is_read() {
 	assert address.family == .ipv6
 	assert address.str() == 'fe80::1'
 }
+
+fn test_an_answer_for_another_name_is_ignored() {
+	// Every response to every query on the segment arrives here.
+	response := build_response('somebody-else.local', type_a, [u8(10), 0, 0, 1])!
+	assert answer_for(response, 'abc.local') == none
+}
+
+fn test_a_query_is_not_mistaken_for_an_answer() {
+	query := encode_query('abc.local')!
+	assert answer_for(query, 'abc.local') == none
+}
+
+fn test_a_record_of_the_wrong_length_is_ignored() {
+	// A four-byte AAAA or a sixteen-byte A is not an address to be salvaged.
+	short := build_response('abc.local', type_aaaa, [u8(1), 2, 3, 4])!
+	assert answer_for(short, 'abc.local') == none
+}
+
+fn test_a_truncated_response_is_ignored() {
+	full := build_response('abc.local', type_a, [u8(192), 168, 1, 42])!
+	for length in 1 .. full.len {
+		// Every prefix must be handled without reading past the end.
+		answer_for(full[..length], 'abc.local') or { continue }
+	}
+}
