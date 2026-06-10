@@ -30,3 +30,13 @@ pub const channel_max = u16(0x7FFF)
 
 // channel_header_size is the channel number and the length field.
 pub const channel_header_size = 4
+
+// is_channel_data reports whether a datagram is ChannelData rather than a STUN
+// message.
+@[inline]
+pub fn is_channel_data(b []u8) bool {
+	if b.len < channel_header_size {
+		return false
+	}
+	return b[0] >= 0x40 && b[0] <= 0x7f
+}
