@@ -21,3 +21,42 @@ pub enum Direction {
 	recvonly
 	inactive
 }
+
+// str returns the SDP attribute name for a direction.
+//
+// The unspecified variant has no attribute name - it means no direction line
+// was present - and renders as "unspecified" rather than as an empty string, so
+// that interpolating it into a description produces something obviously wrong
+// instead of something silently missing. Callers building SDP must check for it
+// rather than emitting it.
+pub fn (d Direction) str() string {
+	return match d {
+		.unspecified { 'unspecified' }
+		.sendrecv { 'sendrecv' }
+		.sendonly { 'sendonly' }
+		.recvonly { 'recvonly' }
+		.inactive { 'inactive' }
+	}
+}
+
+// direction_from_string parses a direction attribute name.
+pub fn direction_from_string(s string) ?Direction {
+	return match s {
+		'sendrecv' { Direction.sendrecv }
+		'sendonly' { Direction.sendonly }
+		'recvonly' { Direction.recvonly }
+		'inactive' { Direction.inactive }
+		else { none }
+	}
+}
+
+// reverse returns the direction a peer must adopt to match this one. An offer
+// of sendonly is answered with recvonly, and the symmetric directions map to
+// themselves.
+pub fn (d Direction) reverse() Direction {
+	return match d {
+		.sendonly { Direction.recvonly }
+		.recvonly { Direction.sendonly }
+		else { d }
+	}
+}
