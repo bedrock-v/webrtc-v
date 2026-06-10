@@ -40,3 +40,10 @@ pub fn is_channel_data(b []u8) bool {
 	}
 	return b[0] >= 0x40 && b[0] <= 0x7f
 }
+
+// ChannelData is one framed datagram to or from a bound peer.
+pub struct ChannelData {
+pub:
+	channel u16
+	payload []u8
+}
