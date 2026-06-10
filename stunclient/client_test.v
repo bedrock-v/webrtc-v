@@ -195,3 +195,20 @@ fn test_client_rejects_invalid_config() {
 	}
 	assert false, 'a zero transmission count must be rejected'
 }
+
+fn test_close_is_idempotent() {
+	mut server := start_test_server()!
+	handle := spawn server.serve()
+	defer {
+		server.stop()
+		handle.wait()
+	}
+
+	mut client := Client.dial(server.addr)!
+	client.close()
+	client.close()
+
+	mut req := stun.Message.new(.request, .binding)!
+	client.transact(mut req) or { return }
+	assert false, 'a closed client must refuse new transactions'
+}
