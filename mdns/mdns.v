@@ -298,3 +298,19 @@ fn read_name(mut r codec.Reader) ?string {
 	}
 	return labels.join('.')
 }
+
+// skip_name walks past a name without decoding it.
+fn skip_name(mut r codec.Reader) ? {
+	for _ in 0 .. max_name_labels {
+		length := r.u8('label length') or { return none }
+		if length == 0 {
+			return
+		}
+		if length & 0xc0 == 0xc0 {
+			r.u8('pointer') or { return none }
+			return
+		}
+		r.skip(int(length), 'label') or { return none }
+	}
+	return none
+}
