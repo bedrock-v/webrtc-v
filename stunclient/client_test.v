@@ -85,3 +85,16 @@ fn (mut s TestServer) stop() {
 	s.mu.unlock()
 	s.conn.close() or {}
 }
+
+fn test_client_binding_against_live_server() {
+	mut server := start_test_server()!
+	handle := spawn server.serve()
+	defer {
+		server.stop()
+		handle.wait()
+	}
+
+	addr := discover(server.addr, rto: 200 * time.millisecond, max_transmissions: 3)!
+	assert addr.ip.is_loopback()
+	assert addr.port != 0
+}
