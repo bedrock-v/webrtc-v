@@ -113,3 +113,62 @@ pub fn (mut c Client) binding() !netaddr.SocketAddr {
 	}
 	return resp.reflexive_address()!
 }
+
+// transact sends a request and returns the matching response, retransmitting on
+// the configured schedule until one arrives.
+pub fn (mut c Client) transact(mut req stun.Message, opts stun.EncodeOptions) !stun.Message {
+	if c.closed {
+		return error('stun: client is closed')
+	}
+	raw := req.encode(opts)!
+	started := time.now()
+	mut rto := c.config.rto
+
+	for attempt in 0 .. c.config.max_transmissions {
+		c.conn.write(raw)!
+		c.config.logger.debug('sent ${req.typ} to ${c.server}, attempt ${attempt + 1}/${c.config.max_transmissions}')
+
+		deadline := time.now().add(rto)
+		for {
+			remaining := deadline - time.now()
+			if remaining <= 0 {
+				break
+			}
+			c.conn.set_read_timeout(remaining)
+			mut buf := []u8{len: max_datagram}
+			n, _ := c.conn.read(mut buf) or { break }
+
+			resp := stun.Message.decode(buf[..n]) or {
+				// Anything that is not a STUN message on this socket is noise
+				// or an attack; keep waiting for the real response.
+				c.config.logger.debug('discarded ${n} bytes that did not decode as STUN: ${err.msg()}')
+				continue
+			}
+			if resp.transaction_id != req.transaction_id {
+				// An off-path attacker would have to guess 96 random bits to
+				// get past this.
+				c.config.logger.debug('discarded a response with a mismatched transaction id')
+				continue
+			}
+			if resp.typ.method != req.typ.method {
+				c.config.logger.debug('discarded a ${resp.typ.method} response to a ${req.typ.method} request')
+				continue
+			}
+			if resp.has(stun.attr_fingerprint) {
+				resp.check_fingerprint() or {
+					c.config.logger.debug('discarded a response with a bad FINGERPRINT')
+					continue
+				}
+			}
+			return resp
+		}
+
+		// RFC 8489 section 6.2.1: double the timeout after each retransmission.
+		rto = rto * 2
+	}
+
+	return TimeoutError{
+		transmissions: c.config.max_transmissions
+		elapsed:       time.now() - started
+	}
+}
