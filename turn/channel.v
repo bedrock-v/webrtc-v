@@ -10,3 +10,6 @@
 // different concerns (quotas, abuse, accounting) and does not belong in a
 // library that dials out.
 module turn
+
+import webrtc.internal.codec
+import webrtc.netaddr
