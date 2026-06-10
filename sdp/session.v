@@ -79,3 +79,30 @@ pub fn (a Attribute) str() string {
 	}
 	return '${a.key}:${a.value}'
 }
+
+// Origin is the `o=` line, which identifies the session.
+pub struct Origin {
+pub mut:
+	username        string = '-'
+	session_id      u64
+	session_version u64
+	network_type    string = 'IN'
+	address_type    string = 'IP4'
+	unicast_address string = '127.0.0.1'
+}
+
+pub fn (o Origin) str() string {
+	return '${o.username} ${o.session_id} ${o.session_version} ${o.network_type} ${o.address_type} ${o.unicast_address}'
+}
+
+// ConnectionData is the `c=` line.
+pub struct ConnectionData {
+pub mut:
+	network_type string = 'IN'
+	address_type string = 'IP4'
+	address      string = '0.0.0.0'
+	// ttl and range are the optional suffixes on a multicast address. WebRTC
+	// never uses them, but they are preserved so a description round-trips.
+	ttl   int
+	range int
+}
