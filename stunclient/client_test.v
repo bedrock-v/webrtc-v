@@ -34,3 +34,47 @@ fn start_test_server() !&TestServer {
 		addr: '127.0.0.1:${bound.port}'
 	}
 }
+
+fn (mut s TestServer) serve() {
+	for {
+		s.mu.lock()
+		if s.stopped {
+			s.mu.unlock()
+			return
+		}
+		s.mu.unlock()
+
+		s.conn.set_read_timeout(50 * time.millisecond)
+		mut buf := []u8{len: 1500}
+		n, peer := s.conn.read(mut buf) or { continue }
+
+		req := stun.Message.decode(buf[..n]) or { continue }
+
+		s.mu.lock()
+		if s.drop_first > 0 {
+			s.drop_first--
+			s.mu.unlock()
+			continue
+		}
+		wrong_tid := s.reply_wrong_tid
+		as_error := s.reply_error
+		s.mu.unlock()
+
+		source := transport.socket_addr_from_net(peer) or { continue }
+		mut resp := if wrong_tid {
+			stun.Message.new(.success_response, .binding) or { continue }
+		} else if as_error {
+			stun.Message.response(req, .error_response)
+		} else {
+			stun.Message.response(req, .success_response)
+		}
+
+		if as_error {
+			resp.add_error_code(stun.code_bad_request, '') or { continue }
+		} else {
+			resp.add_xor_mapped_address(source) or { continue }
+		}
+		raw := resp.encode(fingerprint: true) or { continue }
+		s.conn.write_to(peer, raw) or { continue }
+	}
+}
