@@ -177,3 +177,30 @@ fn test_an_answer_in_the_additional_section_is_read() {
 	}
 	assert address.str() == '10.1.2.3'
 }
+
+fn test_a_response_echoing_the_question_is_read() {
+	// The usual shape: the question is repeated before the answer.
+	name := 'abc.local'
+	mut w := codec.Writer.new()
+	w.u16(0)
+	w.u16(0x8400)
+	w.u16(1) // the question, echoed
+	w.u16(1)
+	w.u16(0)
+	w.u16(0)
+	w.bytes(encode_name(name)!)
+	w.u16(type_a)
+	w.u16(class_in)
+	w.bytes(encode_name(name)!)
+	w.u16(type_a)
+	w.u16(class_in)
+	w.u32(120)
+	w.u16(4)
+	w.bytes([u8(172), 16, 0, 9])
+
+	address := answer_for(w.buf, name) or {
+		assert false, 'the answer follows the echoed question'
+		return
+	}
+	assert address.str() == '172.16.0.9'
+}
