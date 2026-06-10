@@ -92,3 +92,24 @@ pub fn (mut c Client) close() {
 	c.closed = true
 	c.conn.close() or {}
 }
+
+// binding performs a Binding request and returns the reflexive transport
+// address the server observed.
+pub fn (mut c Client) binding() !netaddr.SocketAddr {
+	mut req := stun.Message.new(.request, .binding)!
+	if c.config.software != '' {
+		req.add_software(c.config.software)!
+	}
+	// FINGERPRINT is not required for a plain Binding request, but it makes the
+	// response easy to tell apart from anything else that might arrive on the
+	// socket, and costs four bytes.
+	resp := c.transact(mut req, fingerprint: true)!
+
+	if resp.typ.class == .error_response {
+		return resp.error_code()!
+	}
+	if resp.typ.class != .success_response {
+		return error('stun: expected a success response, got a ${resp.typ.class}')
+	}
+	return resp.reflexive_address()!
+}
