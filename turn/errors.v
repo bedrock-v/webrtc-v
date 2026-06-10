@@ -39,3 +39,7 @@ pub fn (e TurnError) msg() string {
 	}
 	return 'turn: ${e.reason}: ${e.detail}'
 }
+
+pub fn (e TurnError) code() int {
+	return int(e.reason) + 60
+}
