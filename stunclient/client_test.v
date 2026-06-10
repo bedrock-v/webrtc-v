@@ -25,3 +25,12 @@ mut:
 pub:
 	addr string
 }
+
+fn start_test_server() !&TestServer {
+	mut conn := net.listen_udp(':0')!
+	bound := transport.local_addr(conn)!
+	return &TestServer{
+		conn: conn
+		addr: '127.0.0.1:${bound.port}'
+	}
+}
