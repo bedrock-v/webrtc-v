@@ -204,3 +204,36 @@ fn test_a_response_echoing_the_question_is_read() {
 	}
 	assert address.str() == '172.16.0.9'
 }
+
+// build_response assembles a minimal response carrying one record.
+fn build_response(name string, record_type u16, body []u8) ![]u8 {
+	mut w := codec.Writer.new()
+	w.u16(0)
+	w.u16(0x8400) // a response, authoritative
+	w.u16(0) // no questions echoed
+	w.u16(1) // one answer
+	w.u16(0)
+	w.u16(0)
+	w.bytes(encode_name(name)!)
+	w.u16(record_type)
+	w.u16(class_in)
+	w.u32(120)
+	w.u16(u16(body.len))
+	w.bytes(body)
+	return w.buf
+}
+
+fn test_the_resolver_reports_a_timeout_rather_than_hanging() {
+	// Nothing on the group answers for this name. What matters is that it comes
+	// back at all, and says why.
+	if _ := resolve('nothing-answers-for-this.local', 150 * 1000000) {
+		// A machine on this network answering for that name would be a
+		// surprise, but it is not a failure of the resolver.
+		return
+	} else {
+		assert err is MdnsError
+		if err is MdnsError {
+			assert err.reason == .timed_out || err.reason == .transport
+		}
+	}
+}
