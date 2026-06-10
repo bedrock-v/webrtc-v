@@ -237,3 +237,20 @@ fn test_the_resolver_reports_a_timeout_rather_than_hanging() {
 		}
 	}
 }
+
+fn test_an_address_survives_the_round_trip() {
+	for text in ['192.168.1.1', '10.0.0.255', 'fe80::1', '2001:db8::1'] {
+		parsed := netaddr.IpAddr.parse(text)!
+		record_type := if parsed.family == .ipv4 { type_a } else { type_aaaa }
+		response := build_response('abc.local', record_type, parsed.octets[..if parsed.family == .ipv4 {
+			4
+		} else {
+			16
+		}])!
+		address := answer_for(response, 'abc.local') or {
+			assert false, 'the answer for ${text} should have been found'
+			return
+		}
+		assert address.str() == text
+	}
+}
