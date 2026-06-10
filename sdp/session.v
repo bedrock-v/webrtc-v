@@ -60,3 +60,22 @@ pub fn (d Direction) reverse() Direction {
 		else { d }
 	}
 }
+
+// Attribute is one `a=` line: a key, and a value for the `a=key:value` form.
+//
+// A flag attribute such as `a=rtcp-mux` has an empty value. The distinction
+// between `a=key` and `a=key:` is not preserved, because nothing in WebRTC
+// depends on it and treating them alike removes a whole class of parsing edge
+// case.
+pub struct Attribute {
+pub:
+	key   string
+	value string
+}
+
+pub fn (a Attribute) str() string {
+	if a.value == '' {
+		return a.key
+	}
+	return '${a.key}:${a.value}'
+}
