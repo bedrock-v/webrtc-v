@@ -12,3 +12,23 @@ pub:
 	// retrying is sensible.
 	code int
 }
+
+pub enum TurnErrorReason {
+	// closed: the client has been closed.
+	closed
+	// transport: a socket operation failed.
+	transport
+	// timed_out: the server did not answer.
+	timed_out
+	// unauthorized: the server rejected the credentials.
+	unauthorized
+	// refused: the server understood the request and declined it.
+	refused
+	// bad_message: the server sent something that does not decode, or a caller
+	// supplied something that cannot be encoded.
+	bad_message
+	// no_allocation: the operation needs an allocation and there is none.
+	no_allocation
+	// unsupported: the server offered only something this client does not do.
+	unsupported
+}
