@@ -78,3 +78,10 @@ fn (mut s TestServer) serve() {
 		s.conn.write_to(peer, raw) or { continue }
 	}
 }
+
+fn (mut s TestServer) stop() {
+	s.mu.lock()
+	s.stopped = true
+	s.mu.unlock()
+	s.conn.close() or {}
+}
