@@ -43,3 +43,11 @@ pub:
 	transmissions int
 	elapsed       time.Duration
 }
+
+pub fn (e TimeoutError) msg() string {
+	return 'stun: no response after ${e.transmissions} transmissions over ${e.elapsed.milliseconds()}ms'
+}
+
+pub fn (e TimeoutError) code() int {
+	return 500
+}
