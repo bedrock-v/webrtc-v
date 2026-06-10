@@ -51,3 +51,38 @@ fn test_the_query_asks_for_both_families() {
 	assert class_field & unicast_response_bit != 0, 'without the unicast bit the answer goes to a port we cannot read'
 	assert class_field & 0x7fff == class_in
 }
+
+fn test_a_name_with_a_bad_label_is_refused() {
+	if _ := encode_name('a..local') {
+		assert false, 'an empty label is not encodable'
+	}
+	long := 'x'.repeat(64)
+	if _ := encode_name('${long}.local') {
+		assert false, 'a label over 63 bytes is not encodable'
+	}
+}
+
+fn test_an_answer_is_read() {
+	name := 'abc.local'
+	response := build_response(name, type_a, [u8(192), 168, 1, 42])!
+	address := answer_for(response, name) or {
+		assert false, 'the answer should have been found'
+		return
+	}
+	assert address.str() == '192.168.1.42'
+}
+
+fn test_an_ipv6_answer_is_read() {
+	name := 'abc.local'
+	mut body := []u8{len: 16}
+	body[0] = 0xfe
+	body[1] = 0x80
+	body[15] = 0x01
+	response := build_response(name, type_aaaa, body)!
+	address := answer_for(response, name) or {
+		assert false, 'the AAAA answer should have been found'
+		return
+	}
+	assert address.family == .ipv6
+	assert address.str() == 'fe80::1'
+}
