@@ -32,3 +32,10 @@ pub enum TurnErrorReason {
 	// unsupported: the server offered only something this client does not do.
 	unsupported
 }
+
+pub fn (e TurnError) msg() string {
+	if e.code != 0 {
+		return 'turn: ${e.reason}: ${e.detail} (server code ${e.code})'
+	}
+	return 'turn: ${e.reason}: ${e.detail}'
+}
