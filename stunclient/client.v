@@ -83,3 +83,12 @@ pub fn Client.dial(server string, config ClientConfig) !&Client {
 		server: server
 	}
 }
+
+// close releases the socket. It is safe to call more than once.
+pub fn (mut c Client) close() {
+	if c.closed {
+		return
+	}
+	c.closed = true
+	c.conn.close() or {}
+}
