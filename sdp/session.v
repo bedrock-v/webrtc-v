@@ -106,3 +106,41 @@ pub mut:
 	ttl   int
 	range int
 }
+
+pub fn (c ConnectionData) str() string {
+	mut addr := c.address
+	if c.ttl > 0 {
+		addr += '/${c.ttl}'
+		if c.range > 0 {
+			addr += '/${c.range}'
+		}
+	}
+	return '${c.network_type} ${c.address_type} ${addr}'
+}
+
+// Bandwidth is a `b=` line.
+pub struct Bandwidth {
+pub mut:
+	typ   string
+	value u64
+}
+
+pub fn (b Bandwidth) str() string {
+	return '${b.typ}:${b.value}'
+}
+
+// TimeDescription is a `t=` line and its `r=` repeats.
+pub struct TimeDescription {
+pub mut:
+	start_time u64
+	stop_time  u64
+	repeats    []Repeat
+}
+
+// Repeat is an `r=` line.
+pub struct Repeat {
+pub mut:
+	interval u64
+	active   u64
+	offsets  []u64
+}
