@@ -98,3 +98,21 @@ fn test_client_binding_against_live_server() {
 	assert addr.ip.is_loopback()
 	assert addr.port != 0
 }
+
+fn test_client_retransmits_until_answered() {
+	mut server := start_test_server()!
+	server.drop_first = 2
+	handle := spawn server.serve()
+	defer {
+		server.stop()
+		handle.wait()
+	}
+
+	mut client := Client.dial(server.addr, rto: 100 * time.millisecond, max_transmissions: 5)!
+	defer {
+		client.close()
+	}
+
+	addr := client.binding()!
+	assert addr.ip.is_loopback()
+}
