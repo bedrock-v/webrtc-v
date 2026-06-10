@@ -187,3 +187,11 @@ fn test_client_times_out_against_a_silent_server() {
 	}
 	assert false, 'expected a timeout'
 }
+
+fn test_client_rejects_invalid_config() {
+	Client.dial('127.0.0.1:1', max_transmissions: 0) or {
+		Client.dial('127.0.0.1:1', rto: 0) or { return }
+		assert false, 'a non-positive rto must be rejected'
+	}
+	assert false, 'a zero transmission count must be rejected'
+}
