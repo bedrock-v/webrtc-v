@@ -51,3 +51,19 @@ pub fn (e TimeoutError) msg() string {
 pub fn (e TimeoutError) code() int {
 	return 500
 }
+
+// Client performs STUN transactions over a connected UDP socket.
+//
+// One client owns one socket. That matters for ICE: the mapping a NAT creates
+// is per source port, so a server-reflexive candidate is only valid for the
+// socket that discovered it. Callers that need a candidate for an existing
+// socket should drive transactions on that socket themselves rather than
+// letting this type open its own.
+pub struct Client {
+mut:
+	conn   &net.UdpConn
+	config ClientConfig
+	closed bool
+pub:
+	server string
+}
