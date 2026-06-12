@@ -311,3 +311,32 @@ fn truncate(s string, n int) string {
 	}
 	return s[..n] + '...'
 }
+
+fn parse_attribute(value string) Attribute {
+	if idx := value.index(':') {
+		return Attribute{
+			key:   value[..idx]
+			value: value[idx + 1..]
+		}
+	}
+	return Attribute{
+		key: value
+	}
+}
+
+fn parse_origin(value string) !Origin {
+	fields := value.split(' ')
+	if fields.len != 6 {
+		return error('o= line has ${fields.len} fields, expected 6')
+	}
+	return Origin{
+		username:        fields[0]
+		session_id:      parse_u64(fields[1]) or { return error('bad session id: ${err.msg()}') }
+		session_version: parse_u64(fields[2]) or {
+			return error('bad session version: ${err.msg()}')
+		}
+		network_type:    fields[3]
+		address_type:    fields[4]
+		unicast_address: fields[5]
+	}
+}
