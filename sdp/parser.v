@@ -365,3 +365,41 @@ fn parse_connection(value string) !ConnectionData {
 	}
 	return conn
 }
+
+fn parse_bandwidth(value string) !Bandwidth {
+	idx := value.index(':') or { return error('b= line is missing a colon') }
+	typ := value[..idx]
+	if typ == '' {
+		return error('b= line has an empty bandwidth type')
+	}
+	return Bandwidth{
+		typ:   typ
+		value: parse_u64(value[idx + 1..]) or { return error('bad bandwidth value: ${err.msg()}') }
+	}
+}
+
+fn parse_time(value string) !TimeDescription {
+	fields := value.split(' ')
+	if fields.len != 2 {
+		return error('t= line has ${fields.len} fields, expected 2')
+	}
+	return TimeDescription{
+		start_time: parse_u64(fields[0]) or { return error('bad start time: ${err.msg()}') }
+		stop_time:  parse_u64(fields[1]) or { return error('bad stop time: ${err.msg()}') }
+	}
+}
+
+fn parse_repeat(value string) !Repeat {
+	fields := value.split(' ')
+	if fields.len < 3 {
+		return error('r= line has ${fields.len} fields, expected at least 3')
+	}
+	mut repeat := Repeat{
+		interval: parse_typed_time(fields[0])!
+		active:   parse_typed_time(fields[1])!
+	}
+	for field in fields[2..] {
+		repeat.offsets << parse_typed_time(field)!
+	}
+	return repeat
+}
