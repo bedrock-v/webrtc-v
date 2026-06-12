@@ -164,3 +164,52 @@ pub fn (mut c Client) mapped_address() ?netaddr.SocketAddr {
 	}
 	return c.mapped
 }
+
+// allocate asks the relay for an address.
+//
+// The first request goes out without credentials on purpose. That is not an
+// optimism about open relays: RFC 8489 section 9.2 has the server answer with
+// the realm and a nonce, and the credentials cannot be computed until it does.
+pub fn (mut c Client) allocate() !netaddr.SocketAddr {
+	if c.is_closed() {
+		return TurnError{
+			reason: .closed
+			detail: 'the client is closed'
+		}
+	}
+
+	mut request := stun.Message.new(.request, .allocate) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	request.add_requested_transport(stun.transport_udp)
+	request.add_lifetime(c.config.lifetime)
+	if c.config.software != '' {
+		request.add_software(c.config.software) or {}
+	}
+
+	response := c.transact_authenticated(mut request)!
+
+	relayed := response.xor_relayed_address() or {
+		return TurnError{
+			reason: .bad_message
+			detail: 'the allocation response carries no relayed address'
+		}
+	}
+	granted := response.lifetime() or { c.config.lifetime }
+
+	c.mu.lock()
+	c.relayed = relayed
+	if mapped := response.xor_mapped_address() {
+		c.mapped = mapped
+	}
+	c.lifetime = granted
+	c.refresh_at = refresh_time(granted)
+	c.mu.unlock()
+
+	c.log.info('allocated ${relayed} on ${c.server}, lifetime ${granted}s')
+	c.threads << spawn c.maintain()
+	return relayed
+}
