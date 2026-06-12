@@ -65,3 +65,42 @@ pub:
 pub fn (f Fingerprint) str() string {
 	return '${f.algorithm} ${f.value}'
 }
+
+// RtpMap is an `a=rtpmap` value binding a payload type to a codec.
+pub struct RtpMap {
+pub:
+	payload_type    u8
+	encoding_name   string
+	clock_rate      u32
+	encoding_params string
+}
+
+pub fn (r RtpMap) str() string {
+	mut s := '${r.payload_type} ${r.encoding_name}/${r.clock_rate}'
+	if r.encoding_params != '' {
+		s += '/${r.encoding_params}'
+	}
+	return s
+}
+
+// Fmtp is an `a=fmtp` value: format-specific parameters for a payload type.
+pub struct Fmtp {
+pub:
+	payload_type u8
+	parameters   string
+}
+
+pub fn (f Fmtp) str() string {
+	return '${f.payload_type} ${f.parameters}'
+}
+
+// RtcpFeedback is an `a=rtcp-fb` value.
+pub struct RtcpFeedback {
+pub:
+	// payload_type is the type the feedback applies to; wildcard is true when
+	// the attribute used '*' to mean all of them.
+	payload_type u8
+	wildcard     bool
+	typ          string
+	parameter    string
+}
