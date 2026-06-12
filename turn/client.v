@@ -321,3 +321,63 @@ pub fn (mut c Client) bind_channel(peer netaddr.SocketAddr) !u16 {
 	c.log.debug('bound ${peer} to channel ${channel}')
 	return channel
 }
+
+// send_to relays a datagram to a peer.
+//
+// It uses the channel binding when there is a confirmed one and a Send
+// indication otherwise, so a caller can send immediately and the framing gets
+// cheaper once the binding completes.
+pub fn (mut c Client) send_to(peer netaddr.SocketAddr, data []u8) !int {
+	if c.is_closed() {
+		return TurnError{
+			reason: .closed
+			detail: 'the client is closed'
+		}
+	}
+	c.mu.lock()
+	if c.relayed == none {
+		c.mu.unlock()
+		return TurnError{
+			reason: .no_allocation
+			detail: 'there is no allocation to send through'
+		}
+	}
+	binding := c.bindings[peer.str()] or { Binding{} }
+	c.mu.unlock()
+
+	if binding.confirmed {
+		framed := ChannelData{
+			channel: binding.channel
+			payload: data
+		}.encode()!
+		return c.write(framed)
+	}
+
+	mut indication := stun.Message.new(.indication, .send) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	indication.add_xor_peer_address(peer) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	indication.add_data(data) or { return TurnError{
+		reason: .bad_message
+		detail: err.msg()
+	} }
+	// An indication carries no MESSAGE-INTEGRITY: it is not a transaction, and
+	// RFC 8656 section 11.1 says the server accepts it on the strength of the
+	// allocation the five-tuple belongs to.
+	raw := indication.encode() or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	c.write(raw)!
+	return data.len
+}
