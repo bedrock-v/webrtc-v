@@ -520,3 +520,6 @@ const permission_lifetime = 5 * time.minute
 // permission_refresh_interval renews well before expiry, because a permission
 // that lapses drops the peer's traffic silently.
 const permission_refresh_interval = 4 * time.minute
+
+// channel_refresh_interval renews a binding before its ten-minute expiry.
+const channel_refresh_interval = 8 * time.minute
