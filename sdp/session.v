@@ -282,3 +282,17 @@ pub fn (s &SessionDescription) marshal() string {
 
 	return sb.str()
 }
+
+pub fn (s &SessionDescription) str() string {
+	return s.marshal()
+}
+
+// write_line emits one `<type>=<value>` line. RFC 8866 specifies CRLF, and
+// while the parser accepts a bare LF, the serialiser always emits both.
+@[inline]
+fn write_line(mut sb strings.Builder, typ string, value string) {
+	sb.write_string(typ)
+	sb.write_string('=')
+	sb.write_string(value)
+	sb.write_string('\r\n')
+}
