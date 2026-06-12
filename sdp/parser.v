@@ -340,3 +340,28 @@ fn parse_origin(value string) !Origin {
 		unicast_address: fields[5]
 	}
 }
+
+fn parse_connection(value string) !ConnectionData {
+	fields := value.split(' ')
+	if fields.len != 3 {
+		return error('c= line has ${fields.len} fields, expected 3')
+	}
+	parts := fields[2].split('/')
+	mut conn := ConnectionData{
+		network_type: fields[0]
+		address_type: fields[1]
+		address:      parts[0]
+	}
+	if parts.len > 1 {
+		conn.ttl = int(parse_u32(parts[1]) or { return error('bad connection TTL: ${err.msg()}') })
+	}
+	if parts.len > 2 {
+		conn.range = int(parse_u32(parts[2]) or {
+			return error('bad connection range: ${err.msg()}')
+		})
+	}
+	if parts.len > 3 {
+		return error('c= address has ${parts.len} slash-separated parts, expected at most 3')
+	}
+	return conn
+}
