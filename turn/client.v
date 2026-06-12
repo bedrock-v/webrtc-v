@@ -154,3 +154,13 @@ pub fn (mut c Client) relayed_address() ?netaddr.SocketAddr {
 	}
 	return c.relayed
 }
+
+// mapped_address is what the relay saw this client coming from, which is a
+// server-reflexive candidate obtained for free by allocating.
+pub fn (mut c Client) mapped_address() ?netaddr.SocketAddr {
+	c.mu.lock()
+	defer {
+		c.mu.unlock()
+	}
+	return c.mapped
+}
