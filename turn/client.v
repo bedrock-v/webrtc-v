@@ -238,3 +238,29 @@ pub fn (mut c Client) refresh(lifetime u32) ! {
 	c.mu.unlock()
 	c.log.debug('allocation refreshed for ${granted}s')
 }
+
+// create_permission lets a peer's traffic reach the allocation.
+//
+// Without it the relay drops what the peer sends, which is what stops an
+// allocation from being a service for anyone who finds its address. A
+// permission lasts five minutes and is refreshed by sending again.
+pub fn (mut c Client) create_permission(peer netaddr.SocketAddr) ! {
+	mut request := stun.Message.new(.request, .create_permission) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	request.add_xor_peer_address(peer) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	c.transact_authenticated(mut request)!
+
+	c.mu.lock()
+	c.permissions[peer.str()] = time.now().add(permission_lifetime)
+	c.mu.unlock()
+	c.log.debug('permission installed for ${peer}')
+}
