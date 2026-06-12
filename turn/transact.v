@@ -141,3 +141,24 @@ fn (mut c Client) transact_authenticated(mut request stun.Message) !stun.Message
 	}
 	return final
 }
+
+// server_error turns a STUN error code into a typed failure, separating the
+// ones worth retrying from the ones that never will be.
+fn (c &Client) server_error(code stun.ErrorCode) TurnError {
+	reason := match code.code {
+		stun.code_unauthenticated, stun.code_wrong_credentials, stun.code_stale_nonce {
+			TurnErrorReason.unauthorized
+		}
+		stun.code_unsupported_transport_protocol, stun.code_address_family_not_supported {
+			TurnErrorReason.unsupported
+		}
+		else {
+			TurnErrorReason.refused
+		}
+	}
+	return TurnError{
+		reason: reason
+		detail: if code.reason != '' { code.reason } else { 'the server refused the request' }
+		code:   code.code
+	}
+}
