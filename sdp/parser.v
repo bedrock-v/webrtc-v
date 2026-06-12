@@ -27,3 +27,253 @@ pub:
 	max_media_descriptions int = 128
 	max_line_length        int = 8192
 }
+
+// parse decodes an SDP document.
+//
+// The parser is strict about structure - a description whose lines are out of
+// order, or whose required lines are missing, is rejected - and permissive
+// about content, keeping unknown attributes verbatim so that a description can
+// be re-serialised without losing information the local implementation happens
+// not to understand.
+pub fn parse(input string, opts ParseOptions) !SessionDescription {
+	mut session := SessionDescription{}
+	mut lines := split_lines(input)
+	if lines.len > opts.max_lines {
+		return ParseError{
+			line:   opts.max_lines
+			detail: 'description has ${lines.len} lines, over the ${opts.max_lines} limit'
+		}
+	}
+
+	mut index := 0
+	mut line_no := 0
+	mut seen_version := false
+	mut seen_origin := false
+	mut seen_name := false
+
+	// Session-level section.
+	for index < lines.len {
+		line := lines[index]
+		line_no = index + 1
+		if line.len > opts.max_line_length {
+			return ParseError{
+				line:   line_no
+				detail: 'line is ${line.len} bytes, over the ${opts.max_line_length} limit'
+			}
+		}
+		typ, value := split_line(line) or {
+			return ParseError{
+				line:   line_no
+				detail: err.msg()
+			}
+		}
+		if typ == `m` {
+			break
+		}
+		index++
+
+		match typ {
+			`v` {
+				if seen_version {
+					return ParseError{
+						line:   line_no
+						detail: 'duplicate v= line'
+					}
+				}
+				seen_version = true
+				session.version = parse_u32(value) or {
+					return ParseError{
+						line:   line_no
+						detail: 'bad protocol version: ${err.msg()}'
+					}
+				}
+				if session.version != 0 {
+					return ParseError{
+						line:   line_no
+						detail: 'unsupported SDP version ${session.version}'
+					}
+				}
+			}
+			`o` {
+				if !seen_version {
+					return ParseError{
+						line:   line_no
+						detail: 'o= line before v='
+					}
+				}
+				seen_origin = true
+				session.origin = parse_origin(value) or {
+					return ParseError{
+						line:   line_no
+						detail: err.msg()
+					}
+				}
+			}
+			`s` {
+				if !seen_origin {
+					return ParseError{
+						line:   line_no
+						detail: 's= line before o='
+					}
+				}
+				seen_name = true
+				session.session_name = value
+			}
+			`i` {
+				session.session_information = value
+			}
+			`u` {
+				session.uri = value
+			}
+			`e` {
+				session.emails << value
+			}
+			`p` {
+				session.phones << value
+			}
+			`c` {
+				session.connection = parse_connection(value) or {
+					return ParseError{
+						line:   line_no
+						detail: err.msg()
+					}
+				}
+			}
+			`b` {
+				session.bandwidth << parse_bandwidth(value) or {
+					return ParseError{
+						line:   line_no
+						detail: err.msg()
+					}
+				}
+			}
+			`t` {
+				session.time_descriptions << parse_time(value) or {
+					return ParseError{
+						line:   line_no
+						detail: err.msg()
+					}
+				}
+			}
+			`r` {
+				if session.time_descriptions.len == 0 {
+					return ParseError{
+						line:   line_no
+						detail: 'r= line without a preceding t= line'
+					}
+				}
+				repeat := parse_repeat(value) or {
+					return ParseError{
+						line:   line_no
+						detail: err.msg()
+					}
+				}
+				session.time_descriptions[session.time_descriptions.len - 1].repeats << repeat
+			}
+			`z` {
+				session.timezones = value
+			}
+			`k` {
+				session.encryption_key = value
+			}
+			`a` {
+				session.attributes << parse_attribute(value)
+			}
+			else {
+				return ParseError{
+					line:   line_no
+					detail: 'unknown line type "${rune(typ)}" at session level'
+				}
+			}
+		}
+	}
+
+	if !seen_version || !seen_origin || !seen_name {
+		return ParseError{
+			line:   line_no
+			detail: 'description is missing one of the required v=, o= or s= lines'
+		}
+	}
+
+	// Media sections.
+	for index < lines.len {
+		line_no = index + 1
+		typ, value := split_line(lines[index]) or {
+			return ParseError{
+				line:   line_no
+				detail: err.msg()
+			}
+		}
+		if typ != `m` {
+			return ParseError{
+				line:   line_no
+				detail: 'expected an m= line, found "${rune(typ)}="'
+			}
+		}
+		index++
+
+		if session.media_descriptions.len >= opts.max_media_descriptions {
+			return ParseError{
+				line:   line_no
+				detail: 'more than ${opts.max_media_descriptions} media sections'
+			}
+		}
+		mut media := parse_media_line(value) or {
+			return ParseError{
+				line:   line_no
+				detail: err.msg()
+			}
+		}
+
+		for index < lines.len {
+			inner_no := index + 1
+			inner_typ, inner_value := split_line(lines[index]) or {
+				return ParseError{
+					line:   inner_no
+					detail: err.msg()
+				}
+			}
+			if inner_typ == `m` {
+				break
+			}
+			index++
+
+			match inner_typ {
+				`i` {
+					media.title = inner_value
+				}
+				`c` {
+					media.connection = parse_connection(inner_value) or {
+						return ParseError{
+							line:   inner_no
+							detail: err.msg()
+						}
+					}
+				}
+				`b` {
+					media.bandwidth << parse_bandwidth(inner_value) or {
+						return ParseError{
+							line:   inner_no
+							detail: err.msg()
+						}
+					}
+				}
+				`k` {
+					media.encryption_key = inner_value
+				}
+				`a` {
+					media.attributes << parse_attribute(inner_value)
+				}
+				else {
+					return ParseError{
+						line:   inner_no
+						detail: 'line type "${rune(inner_typ)}" is not allowed in a media section'
+					}
+				}
+			}
+		}
+		session.media_descriptions << media
+	}
+
+	return session
+}
