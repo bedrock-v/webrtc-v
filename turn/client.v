@@ -475,3 +475,28 @@ fn (mut c Client) write(data []u8) !int {
 	}
 	return sent
 }
+
+// allocate_channel picks an unused channel number. The caller must hold the
+// mutex.
+fn (mut c Client) allocate_channel(key string) ?u16 {
+	if existing := c.bindings[key] {
+		if existing.channel >= channel_min {
+			return existing.channel
+		}
+	}
+	for _ in 0 .. int(channel_max - channel_min) + 1 {
+		candidate := c.next_channel
+		c.next_channel = if candidate >= channel_max { channel_min } else { candidate + 1 }
+		mut taken := false
+		for _, binding in c.bindings {
+			if binding.channel == candidate {
+				taken = true
+				break
+			}
+		}
+		if !taken {
+			return candidate
+		}
+	}
+	return none
+}
