@@ -144,3 +144,13 @@ pub fn Client.new(server string, config ClientConfig) !&Client {
 	client.threads << spawn client.read_loop()
 	return client
 }
+
+// relayed_address is the address the relay allocated, which is what a peer
+// sends to. It is none until allocate succeeds.
+pub fn (mut c Client) relayed_address() ?netaddr.SocketAddr {
+	c.mu.lock()
+	defer {
+		c.mu.unlock()
+	}
+	return c.relayed
+}
