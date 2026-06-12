@@ -465,3 +465,13 @@ fn (mut c Client) is_closed() bool {
 	}
 	return c.closed
 }
+
+fn (mut c Client) write(data []u8) !int {
+	sent := c.conn.write_to(c.destination, data) or {
+		return TurnError{
+			reason: .transport
+			detail: 'sending to ${c.server}: ${err.msg()}'
+		}
+	}
+	return sent
+}
