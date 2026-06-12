@@ -199,3 +199,86 @@ pub mut:
 	attributes          []Attribute
 	media_descriptions  []MediaDescription
 }
+
+// marshal serialises the description.
+//
+// Lines are emitted in the order RFC 8866 section 5 requires; a receiver is
+// entitled to reject a description whose lines are out of order, and several
+// deployed stacks do.
+pub fn (s &SessionDescription) marshal() string {
+	mut sb := strings.new_builder(1024)
+
+	write_line(mut sb, 'v', s.version.str())
+	write_line(mut sb, 'o', s.origin.str())
+	write_line(mut sb, 's', if s.session_name == '' { '-' } else { s.session_name })
+	if s.session_information != '' {
+		write_line(mut sb, 'i', s.session_information)
+	}
+	if s.uri != '' {
+		write_line(mut sb, 'u', s.uri)
+	}
+	for email in s.emails {
+		write_line(mut sb, 'e', email)
+	}
+	for phone in s.phones {
+		write_line(mut sb, 'p', phone)
+	}
+	if conn := s.connection {
+		write_line(mut sb, 'c', conn.str())
+	}
+	for bw in s.bandwidth {
+		write_line(mut sb, 'b', bw.str())
+	}
+	if s.time_descriptions.len == 0 {
+		// A description must carry at least one time line; the WebRTC value is
+		// always "0 0", meaning permanent.
+		write_line(mut sb, 't', '0 0')
+	}
+	for td in s.time_descriptions {
+		write_line(mut sb, 't', '${td.start_time} ${td.stop_time}')
+		for repeat in td.repeats {
+			mut parts := [repeat.interval.str(), repeat.active.str()]
+			for offset in repeat.offsets {
+				parts << offset.str()
+			}
+			write_line(mut sb, 'r', parts.join(' '))
+		}
+	}
+	if s.timezones != '' {
+		write_line(mut sb, 'z', s.timezones)
+	}
+	if s.encryption_key != '' {
+		write_line(mut sb, 'k', s.encryption_key)
+	}
+	for attr in s.attributes {
+		write_line(mut sb, 'a', attr.str())
+	}
+
+	for media in s.media_descriptions {
+		mut port := media.port.str()
+		if media.port_count > 0 {
+			port += '/${media.port_count}'
+		}
+		mut fields := [media.media, port, media.proto()]
+		fields << media.formats
+		write_line(mut sb, 'm', fields.join(' '))
+
+		if media.title != '' {
+			write_line(mut sb, 'i', media.title)
+		}
+		if conn := media.connection {
+			write_line(mut sb, 'c', conn.str())
+		}
+		for bw in media.bandwidth {
+			write_line(mut sb, 'b', bw.str())
+		}
+		if media.encryption_key != '' {
+			write_line(mut sb, 'k', media.encryption_key)
+		}
+		for attr in media.attributes {
+			write_line(mut sb, 'a', attr.str())
+		}
+	}
+
+	return sb.str()
+}
