@@ -277,3 +277,45 @@ fn (mut c Client) handle_channel_data(datagram []u8) {
 		data: framed.payload
 	})
 }
+
+fn (mut c Client) handle_stun(datagram []u8) {
+	message := stun.Message.decode(datagram) or {
+		c.log.debug('discarded ${datagram.len} bytes that are neither STUN nor channel data')
+		return
+	}
+
+	if message.typ.class == .indication {
+		if message.typ.method != .data {
+			return
+		}
+		peer := message.xor_peer_address() or {
+			c.log.debug('a Data indication with no peer address')
+			return
+		}
+		payload := message.data() or {
+			c.log.debug('a Data indication with no usable DATA: ${err.msg()}')
+			return
+		}
+		c.deliver(Packet{
+			from: peer
+			data: payload
+		})
+		return
+	}
+
+	key := hex.encode(message.transaction_id[..])
+	c.mu.lock()
+	waiting := c.pending[key] or {
+		c.mu.unlock()
+		// A response to a transaction nobody is waiting for: a late
+		// retransmission, or an attacker who guessed 96 bits.
+		c.log.debug('discarded a ${message.typ.method} response with no pending transaction')
+		return
+	}
+	c.mu.unlock()
+
+	select {
+		waiting <- message {}
+		else {}
+	}
+}
