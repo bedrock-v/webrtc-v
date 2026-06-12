@@ -512,3 +512,11 @@ fn refresh_time(lifetime u32) time.Time {
 	}
 	return time.now().add(seconds * time.second)
 }
+
+// permission_lifetime is what RFC 8656 section 9 fixes: five minutes, not
+// negotiable.
+const permission_lifetime = 5 * time.minute
+
+// permission_refresh_interval renews well before expiry, because a permission
+// that lapses drops the peer's traffic silently.
+const permission_refresh_interval = 4 * time.minute
