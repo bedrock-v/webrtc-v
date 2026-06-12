@@ -25,3 +25,10 @@ const max_datagram = 9216
 // server may return less, and the refresh schedule follows what it returns
 // rather than what was asked.
 pub const default_lifetime = u32(600)
+
+// Packet is one datagram relayed from a peer.
+pub struct Packet {
+pub:
+	from netaddr.SocketAddr
+	data []u8
+}
