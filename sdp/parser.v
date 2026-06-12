@@ -427,3 +427,41 @@ fn parse_typed_time(field string) !u64 {
 	}
 	return base * multiplier
 }
+
+fn parse_media_line(value string) !MediaDescription {
+	fields := value.split(' ')
+	if fields.len < 3 {
+		return error('m= line has ${fields.len} fields, expected at least 3')
+	}
+	if fields[0] == '' {
+		return error('m= line has an empty media type')
+	}
+
+	port_parts := fields[1].split('/')
+	port := int(parse_u32(port_parts[0]) or { return error('bad media port: ${err.msg()}') })
+	if port > 65535 {
+		return error('media port ${port} is out of range')
+	}
+	mut port_count := 0
+	if port_parts.len > 1 {
+		port_count = int(parse_u32(port_parts[1]) or {
+			return error('bad media port count: ${err.msg()}')
+		})
+	}
+	if port_parts.len > 2 {
+		return error('m= port field has ${port_parts.len} slash-separated parts, expected at most 2')
+	}
+
+	protos := fields[2].split('/')
+	if protos.len == 0 || fields[2] == '' {
+		return error('m= line has an empty transport protocol')
+	}
+
+	return MediaDescription{
+		media:      fields[0]
+		port:       port
+		port_count: port_count
+		protos:     protos
+		formats:    fields[3..].filter(it != '')
+	}
+}
