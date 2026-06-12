@@ -500,3 +500,15 @@ fn (mut c Client) allocate_channel(key string) ?u16 {
 	}
 	return none
 }
+
+// refresh_time is when to renew an allocation the server granted for this long.
+//
+// Halfway through, with a floor, so a short lifetime does not turn into a
+// refresh storm and a lost refresh still has time for a retry.
+fn refresh_time(lifetime u32) time.Time {
+	mut seconds := i64(lifetime) / 2
+	if seconds < 30 {
+		seconds = 30
+	}
+	return time.now().add(seconds * time.second)
+}
