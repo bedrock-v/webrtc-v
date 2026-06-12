@@ -249,3 +249,31 @@ fn (mut c Client) read_loop() {
 		c.handle_stun(datagram)
 	}
 }
+
+fn (mut c Client) handle_channel_data(datagram []u8) {
+	framed := decode_channel_data(datagram) or {
+		c.log.debug('discarded malformed channel data: ${err.msg()}')
+		return
+	}
+	c.mu.lock()
+	mut from := ?netaddr.SocketAddr(none)
+	for _, binding in c.bindings {
+		if binding.channel == framed.channel {
+			from = binding.peer
+			break
+		}
+	}
+	c.mu.unlock()
+
+	peer := from or {
+		// Data on a channel we never bound. There is no address to attribute it
+		// to, so there is nothing safe to do with it.
+		c.log.debug('discarded data on unbound channel ${framed.channel}')
+		return
+	}
+
+	c.deliver(Packet{
+		from: peer
+		data: framed.payload
+	})
+}
