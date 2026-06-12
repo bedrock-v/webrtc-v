@@ -227,3 +227,25 @@ fn (mut c Client) transact(mut request stun.Message, opts stun.EncodeOptions) !s
 		detail: 'the relay did not answer a ${request.typ.method} after ${c.config.max_transmissions} attempts'
 	}
 }
+
+// read_loop owns the socket and sorts everything that arrives on it.
+fn (mut c Client) read_loop() {
+	for {
+		if c.is_closed() {
+			return
+		}
+		c.conn.set_read_timeout(200 * time.millisecond)
+		mut buf := []u8{len: max_datagram}
+		n, _ := c.conn.read(mut buf) or { continue }
+		if n <= 0 {
+			continue
+		}
+		datagram := buf[..n].clone()
+
+		if is_channel_data(datagram) {
+			c.handle_channel_data(datagram)
+			continue
+		}
+		c.handle_stun(datagram)
+	}
+}
