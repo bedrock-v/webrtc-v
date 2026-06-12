@@ -168,3 +168,34 @@ pub mut:
 	encryption_key string
 	attributes     []Attribute
 }
+
+// proto returns the transport protocol as it appears on the wire.
+pub fn (m &MediaDescription) proto() string {
+	return m.protos.join('/')
+}
+
+// is_rejected reports whether the section has been rejected by setting its port
+// to zero (RFC 8866 section 5.14 and JSEP section 5.3.1).
+@[inline]
+pub fn (m &MediaDescription) is_rejected() bool {
+	return m.port == 0
+}
+
+// SessionDescription is a complete SDP document.
+pub struct SessionDescription {
+pub mut:
+	version             u32
+	origin              Origin
+	session_name        string = '-'
+	session_information string
+	uri                 string
+	emails              []string
+	phones              []string
+	connection          ?ConnectionData
+	bandwidth           []Bandwidth
+	time_descriptions   []TimeDescription
+	timezones           string
+	encryption_key      string
+	attributes          []Attribute
+	media_descriptions  []MediaDescription
+}
