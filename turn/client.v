@@ -20,3 +20,8 @@ import webrtc.transport
 // max_datagram is the largest datagram read from the relay. A relayed payload
 // is bounded by the DATA attribute limit, and the framing adds a little.
 const max_datagram = 9216
+
+// default_lifetime is the allocation lifetime to ask for. RFC 8656 says a
+// server may return less, and the refresh schedule follows what it returns
+// rather than what was asked.
+pub const default_lifetime = u32(600)
