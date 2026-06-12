@@ -213,3 +213,28 @@ pub fn (mut c Client) allocate() !netaddr.SocketAddr {
 	c.threads << spawn c.maintain()
 	return relayed
 }
+
+// refresh renews the allocation. A lifetime of zero deletes it.
+pub fn (mut c Client) refresh(lifetime u32) ! {
+	mut request := stun.Message.new(.request, .refresh) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	request.add_lifetime(lifetime)
+	response := c.transact_authenticated(mut request)!
+
+	if lifetime == 0 {
+		c.mu.lock()
+		c.relayed = none
+		c.mu.unlock()
+		return
+	}
+	granted := response.lifetime() or { lifetime }
+	c.mu.lock()
+	c.lifetime = granted
+	c.refresh_at = refresh_time(granted)
+	c.mu.unlock()
+	c.log.debug('allocation refreshed for ${granted}s')
+}
