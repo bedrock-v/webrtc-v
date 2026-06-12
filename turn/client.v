@@ -97,3 +97,50 @@ mut:
 pub:
 	server netaddr.SocketAddr
 }
+
+// Client.new opens a socket to the relay. Nothing is allocated until allocate
+// is called.
+pub fn Client.new(server string, config ClientConfig) !&Client {
+	if config.username == '' || config.password == '' {
+		// A relay that allocates without credentials is an open relay, and the
+		// RFC requires the long-term mechanism for exactly that reason.
+		return TurnError{
+			reason: .unauthorized
+			detail: 'a TURN server needs a username and a password'
+		}
+	}
+	address := netaddr.SocketAddr.parse(server) or {
+		return TurnError{
+			reason: .transport
+			detail: 'bad TURN server address "${server}": ${err.msg()}'
+		}
+	}
+
+	// Binding to the unspecified address of the server's family, so a v6 relay
+	// is reached over v6.
+	bind_target := if address.ip.family == .ipv6 { '[::]:0' } else { '0.0.0.0:0' }
+	mut conn := net.listen_udp(bind_target) or {
+		return TurnError{
+			reason: .transport
+			detail: 'binding a local socket: ${err.msg()}'
+		}
+	}
+	destination := transport.socket_addr_to_net(address) or {
+		conn.close() or {}
+		return TurnError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+
+	mut client := &Client{
+		conn:        conn
+		destination: destination
+		config:      config
+		log:         config.logger.with_scope('turn')
+		realm:       config.realm
+		server:      address
+	}
+	client.threads << spawn client.read_loop()
+	return client
+}
