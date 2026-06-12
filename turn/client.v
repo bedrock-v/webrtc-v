@@ -457,3 +457,11 @@ pub fn (mut c Client) close() {
 	c.threads.clear()
 	c.mu.unlock()
 }
+
+fn (mut c Client) is_closed() bool {
+	c.mu.lock()
+	defer {
+		c.mu.unlock()
+	}
+	return c.closed
+}
