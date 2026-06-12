@@ -162,3 +162,20 @@ fn (c &Client) server_error(code stun.ErrorCode) TurnError {
 		code:   code.code
 	}
 }
+
+fn (mut c Client) attach_credentials(mut message stun.Message, realm string, nonce string) ! {
+	message.add_username(c.config.username) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	message.add_realm(realm) or { return TurnError{
+		reason: .bad_message
+		detail: err.msg()
+	} }
+	message.add_nonce(nonce) or { return TurnError{
+		reason: .bad_message
+		detail: err.msg()
+	} }
+}
