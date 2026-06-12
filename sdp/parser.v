@@ -277,3 +277,37 @@ pub fn parse(input string, opts ParseOptions) !SessionDescription {
 
 	return session
 }
+
+// split_lines breaks the input on CRLF or LF and drops a trailing empty line.
+// RFC 8866 mandates CRLF, but bare LF is common enough in the wild - and in
+// hand-written test fixtures - that rejecting it would help nobody.
+fn split_lines(input string) []string {
+	mut out := []string{}
+	for raw in input.split('\n') {
+		line := raw.trim_right('\r')
+		if line == '' {
+			continue
+		}
+		out << line
+	}
+	return out
+}
+
+// split_line splits `<type>=<value>`.
+fn split_line(line string) !(u8, string) {
+	if line.len < 2 || line[1] != `=` {
+		return error('malformed line "${truncate(line, 40)}", expected <type>=<value>')
+	}
+	typ := line[0]
+	if !((typ >= `a` && typ <= `z`) || (typ >= `A` && typ <= `Z`)) {
+		return error('line type must be a letter, found byte 0x${typ.hex()}')
+	}
+	return typ, line[2..]
+}
+
+fn truncate(s string, n int) string {
+	if s.len <= n {
+		return s
+	}
+	return s[..n] + '...'
+}
