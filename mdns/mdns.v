@@ -173,3 +173,34 @@ fn encode_query(name string) ![]u8 {
 	w.u16(class_in | unicast_response_bit)
 	return w.buf
 }
+
+// encode_name writes a name in the wire format: each label length-prefixed,
+// terminated by a zero length.
+fn encode_name(name string) ![]u8 {
+	trimmed := name.trim_right('.')
+	mut w := codec.Writer.new()
+	for label in trimmed.split('.') {
+		if label.len == 0 {
+			return MdnsError{
+				reason: .bad_name
+				detail: 'an empty label in "${name}"'
+			}
+		}
+		if label.len > 63 {
+			return MdnsError{
+				reason: .bad_name
+				detail: 'the label "${label}" is longer than 63 bytes'
+			}
+		}
+		w.u8(u8(label.len))
+		w.bytes(label.bytes())
+	}
+	w.u8(0)
+	if w.buf.len > 255 {
+		return MdnsError{
+			reason: .bad_name
+			detail: 'the encoded name is ${w.buf.len} bytes, over the 255-byte limit'
+		}
+	}
+	return w.buf
+}
