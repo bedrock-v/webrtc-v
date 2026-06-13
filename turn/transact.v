@@ -319,3 +319,15 @@ fn (mut c Client) handle_stun(datagram []u8) {
 		else {}
 	}
 }
+
+fn (mut c Client) deliver(packet Packet) {
+	select {
+		c.inbound <- packet {}
+		else {
+			// The application is not reading. Dropping is what a relayed
+			// datagram would suffer on any congested path, and blocking here
+			// would stall the transactions that share this thread.
+			c.log.warn('the inbound queue is full; dropped ${packet.data.len} bytes from ${packet.from}')
+		}
+	}
+}
