@@ -26,3 +26,9 @@ pub const multicast_group_v6 = '[ff02::fb]:5353'
 // carrying an address is a few hundred bytes; anything much larger is either
 // not for us or is trying to make us do work.
 pub const max_response = 4096
+
+// max_name_labels bounds how many labels a name may have, and
+// max_pointer_hops bounds how many compression pointers are followed. Both stop
+// a crafted response from making the parser loop: a pointer that points at
+// itself is the classic decompression bomb.
+const max_name_labels = 128
