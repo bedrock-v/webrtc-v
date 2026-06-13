@@ -21,3 +21,8 @@ import webrtc.transport
 // link-local, so a query never leaves the network segment.
 pub const multicast_group_v4 = '224.0.0.251:5353'
 pub const multicast_group_v6 = '[ff02::fb]:5353'
+
+// max_response is the largest response accepted. A multicast DNS response
+// carrying an address is a few hundred bytes; anything much larger is either
+// not for us or is trying to make us do work.
+pub const max_response = 4096
