@@ -384,3 +384,13 @@ fn (mut c Client) maintain() {
 pub fn (c &Client) server_address() netaddr.SocketAddr {
 	return c.server
 }
+
+// local_address is the address of the socket facing the relay.
+pub fn (c &Client) local_address() !netaddr.SocketAddr {
+	return transport.local_addr(c.conn) or {
+		return TurnError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+}
