@@ -83,3 +83,70 @@ pub fn is_local_name(host string) bool {
 	lower := host.to_lower()
 	return lower.ends_with('.local') || lower.ends_with('.local.')
 }
+
+// resolve looks up the address for a .local name.
+//
+// Both families are asked for in one query round: an ICE candidate names one
+// address, and which family it is cannot be known in advance.
+pub fn resolve(name string, timeout time.Duration) !netaddr.IpAddr {
+	if !is_local_name(name) {
+		return MdnsError{
+			reason: .not_local
+			detail: '"${name}" is not a .local name'
+		}
+	}
+
+	question := encode_query(name)!
+	mut conn := net.listen_udp('0.0.0.0:0') or {
+		return MdnsError{
+			reason: .transport
+			detail: 'binding a query socket: ${err.msg()}'
+		}
+	}
+	defer {
+		conn.close() or {}
+	}
+
+	// The group address is a literal, so it is built directly rather than
+	// resolved: a name lookup here would be a DNS query to answer a DNS query.
+	group_address := netaddr.SocketAddr.parse(multicast_group_v4) or {
+		return MdnsError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+	group := transport.socket_addr_to_net(group_address) or {
+		return MdnsError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+	conn.write_to(group, question) or {
+		return MdnsError{
+			reason: .transport
+			detail: 'sending the query: ${err.msg()}'
+		}
+	}
+
+	deadline := time.now().add(timeout)
+	for {
+		remaining := deadline - time.now()
+		if remaining <= 0 {
+			break
+		}
+		conn.set_read_timeout(remaining)
+		mut buf := []u8{len: max_response}
+		n, _ := conn.read(mut buf) or { break }
+		if n <= 0 {
+			continue
+		}
+		if address := answer_for(buf[..n], name) {
+			return address
+		}
+	}
+
+	return MdnsError{
+		reason: .timed_out
+		detail: 'no answer for "${name}" within ${timeout.milliseconds()}ms'
+	}
+}
