@@ -369,3 +369,37 @@ pub fn (m &MediaDescription) rtpmaps() []RtpMap {
 	}
 	return out
 }
+
+// rtpmap returns the codec bound to a payload type.
+pub fn (m &MediaDescription) rtpmap(payload_type u8) ?RtpMap {
+	for entry in m.rtpmaps() {
+		if entry.payload_type == payload_type {
+			return entry
+		}
+	}
+	return none
+}
+
+// fmtps returns the parsed `a=fmtp` lines.
+pub fn (m &MediaDescription) fmtps() []Fmtp {
+	mut out := []Fmtp{}
+	for value in attribute_values(m.attributes, 'fmtp') {
+		space := value.index(' ') or { continue }
+		pt := parse_payload_type(value[..space]) or { continue }
+		out << Fmtp{
+			payload_type: pt
+			parameters:   value[space + 1..]
+		}
+	}
+	return out
+}
+
+// fmtp returns the format parameters for a payload type.
+pub fn (m &MediaDescription) fmtp(payload_type u8) ?string {
+	for entry in m.fmtps() {
+		if entry.payload_type == payload_type {
+			return entry.parameters
+		}
+	}
+	return none
+}
