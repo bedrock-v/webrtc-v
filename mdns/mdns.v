@@ -10,3 +10,9 @@
 // answering queries for it, which is what the privacy half of RFC 8828 needs;
 // it is not implemented, so this end's own candidates carry addresses.
 module mdns
+
+import net
+import time
+import webrtc.internal.codec
+import webrtc.netaddr
+import webrtc.transport
