@@ -69,3 +69,11 @@ pub enum MdnsErrorReason {
 	// bad_response: something answered with a message that does not decode.
 	bad_response
 }
+
+pub fn (e MdnsError) msg() string {
+	return 'mdns: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e MdnsError) code() int {
+	return int(e.reason) + 80
+}
