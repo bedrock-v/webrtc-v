@@ -32,3 +32,9 @@ pub const max_response = 4096
 // a crafted response from making the parser loop: a pointer that points at
 // itself is the classic decompression bomb.
 const max_name_labels = 128
+const max_pointer_hops = 16
+
+// record types and classes, the only ones this resolver uses.
+const type_a = u16(1)
+const type_aaaa = u16(28)
+const class_in = u16(1)
