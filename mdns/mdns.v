@@ -55,3 +55,17 @@ pub:
 	reason MdnsErrorReason
 	detail string
 }
+
+pub enum MdnsErrorReason {
+	// not_local: the name is not a .local name, so this resolver is the wrong
+	// tool rather than having failed.
+	not_local
+	// bad_name: the name is malformed or too long to encode.
+	bad_name
+	// transport: a socket operation failed.
+	transport
+	// timed_out: nothing answered.
+	timed_out
+	// bad_response: something answered with a message that does not decode.
+	bad_response
+}
