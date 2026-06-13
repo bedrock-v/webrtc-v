@@ -253,3 +253,48 @@ fn answer_for(datagram []u8, name string) ?netaddr.IpAddr {
 	}
 	return none
 }
+
+// read_name decodes a name, following compression pointers.
+fn read_name(mut r codec.Reader) ?string {
+	mut labels := []string{}
+	mut hops := 0
+	mut cursor := r
+	mut jumped := false
+
+	for _ in 0 .. max_name_labels {
+		length := cursor.u8('label length') or { return none }
+		if length == 0 {
+			break
+		}
+		if length & 0xc0 == 0xc0 {
+			// A compression pointer: the low fourteen bits are an offset from
+			// the start of the message.
+			low := cursor.u8('pointer') or { return none }
+			offset := int((u32(length & 0x3f) << 8) | u32(low))
+			hops++
+			if hops > max_pointer_hops {
+				// A pointer chain this long is a loop, not a message.
+				return none
+			}
+			if !jumped {
+				// The outer reader continues after the pointer; only the
+				// decoding follows it.
+				r = cursor
+				jumped = true
+			}
+			if offset >= r.data.len {
+				return none
+			}
+			cursor = codec.Reader.new(r.data)
+			cursor.skip(offset, 'compression pointer') or { return none }
+			continue
+		}
+		label := cursor.bytes(int(length), 'label') or { return none }
+		labels << label.bytestr()
+	}
+
+	if !jumped {
+		r = cursor
+	}
+	return labels.join('.')
+}
