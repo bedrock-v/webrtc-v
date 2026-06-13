@@ -263,3 +263,29 @@ pub fn (m &MediaDescription) direction() Direction {
 	}
 	return .unspecified
 }
+
+// ice_ufrag returns the `a=ice-ufrag` value, checking the media section first
+// and falling back to the session level, as RFC 8839 section 5.4 allows.
+pub fn (s &SessionDescription) ice_ufrag(media &MediaDescription) ?string {
+	if v := attribute(media.attributes, 'ice-ufrag') {
+		return v
+	}
+	return attribute(s.attributes, 'ice-ufrag')
+}
+
+// ice_pwd returns the `a=ice-pwd` value with the same fallback as ice_ufrag.
+pub fn (s &SessionDescription) ice_pwd(media &MediaDescription) ?string {
+	if v := attribute(media.attributes, 'ice-pwd') {
+		return v
+	}
+	return attribute(s.attributes, 'ice-pwd')
+}
+
+// ice_options returns the tokens of the `a=ice-options` attribute, at either
+// level. "trickle" here means the peer will send candidates incrementally.
+pub fn (s &SessionDescription) ice_options(media &MediaDescription) []string {
+	mut raw := attribute(media.attributes, 'ice-options') or {
+		attribute(s.attributes, 'ice-options') or { return [] }
+	}
+	return raw.split(' ').filter(it != '')
+}
