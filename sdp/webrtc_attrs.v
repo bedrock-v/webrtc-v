@@ -313,3 +313,36 @@ pub fn (s &SessionDescription) fingerprints(media &MediaDescription) []Fingerpri
 	}
 	return out
 }
+
+// setup returns the `a=setup` role of a section, falling back to the session
+// level.
+pub fn (s &SessionDescription) setup(media &MediaDescription) ?Setup {
+	raw := attribute(media.attributes, 'setup') or {
+		attribute(s.attributes, 'setup') or { return none }
+	}
+	return setup_from_string(raw)
+}
+
+// candidates returns the raw `a=candidate` values. Parsing them belongs to the
+// ICE layer, which owns the candidate grammar.
+pub fn (m &MediaDescription) candidates() []string {
+	return attribute_values(m.attributes, 'candidate')
+}
+
+// has_end_of_candidates reports whether the peer has signalled that its
+// gathering is complete (RFC 8840).
+pub fn (m &MediaDescription) has_end_of_candidates() bool {
+	return has_attribute(m.attributes, 'end-of-candidates')
+}
+
+// uses_rtcp_mux reports whether RTP and RTCP share one port. WebRTC endpoints
+// always do; the attribute is checked rather than assumed because a peer that
+// omits it needs a second port.
+pub fn (m &MediaDescription) uses_rtcp_mux() bool {
+	return has_attribute(m.attributes, 'rtcp-mux')
+}
+
+// uses_rtcp_rsize reports whether reduced-size RTCP is permitted (RFC 5506).
+pub fn (m &MediaDescription) uses_rtcp_rsize() bool {
+	return has_attribute(m.attributes, 'rtcp-rsize')
+}
