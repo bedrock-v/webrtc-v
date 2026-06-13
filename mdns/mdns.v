@@ -48,3 +48,10 @@ const class_in = u16(1)
 // ordinary client. A responder that ignores the bit will not be heard, which is
 // the known limit of this approach.
 const unicast_response_bit = u16(0x8000)
+
+// MdnsError is returned when a name cannot be resolved.
+pub struct MdnsError {
+pub:
+	reason MdnsErrorReason
+	detail string
+}
