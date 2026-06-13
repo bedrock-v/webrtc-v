@@ -150,3 +150,38 @@ pub:
 	semantics string
 	ssrcs     []u32
 }
+
+// Msid is an `a=msid` value tying a track to a media stream (RFC 8830).
+pub struct Msid {
+pub:
+	stream_id string
+	track_id  string
+}
+
+pub fn (m Msid) str() string {
+	if m.track_id == '' {
+		return m.stream_id
+	}
+	return '${m.stream_id} ${m.track_id}'
+}
+
+// attribute returns the value of the first attribute with the given key.
+pub fn attribute(attrs []Attribute, key string) ?string {
+	for attr in attrs {
+		if attr.key == key {
+			return attr.value
+		}
+	}
+	return none
+}
+
+// attribute_values returns the values of every attribute with the given key.
+pub fn attribute_values(attrs []Attribute, key string) []string {
+	mut out := []string{}
+	for attr in attrs {
+		if attr.key == key {
+			out << attr.value
+		}
+	}
+	return out
+}
