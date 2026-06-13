@@ -16,3 +16,8 @@ import time
 import webrtc.internal.codec
 import webrtc.netaddr
 import webrtc.transport
+
+// multicast_group_v4 and multicast_group_v6 are where a query goes. Both are
+// link-local, so a query never leaves the network segment.
+pub const multicast_group_v4 = '224.0.0.251:5353'
+pub const multicast_group_v6 = '[ff02::fb]:5353'
