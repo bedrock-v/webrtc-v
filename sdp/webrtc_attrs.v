@@ -346,3 +346,26 @@ pub fn (m &MediaDescription) uses_rtcp_mux() bool {
 pub fn (m &MediaDescription) uses_rtcp_rsize() bool {
 	return has_attribute(m.attributes, 'rtcp-rsize')
 }
+
+// rtpmaps returns the parsed `a=rtpmap` lines. Malformed entries are skipped
+// rather than failing the whole description: an unusable codec line should cost
+// that codec, not the session.
+pub fn (m &MediaDescription) rtpmaps() []RtpMap {
+	mut out := []RtpMap{}
+	for value in attribute_values(m.attributes, 'rtpmap') {
+		space := value.index(' ') or { continue }
+		pt := parse_payload_type(value[..space]) or { continue }
+		parts := value[space + 1..].split('/')
+		if parts.len < 2 || parts[0] == '' {
+			continue
+		}
+		clock := parse_u32(parts[1]) or { continue }
+		out << RtpMap{
+			payload_type:    pt
+			encoding_name:   parts[0]
+			clock_rate:      clock
+			encoding_params: if parts.len > 2 { parts[2] } else { '' }
+		}
+	}
+	return out
+}
