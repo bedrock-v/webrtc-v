@@ -331,3 +331,50 @@ fn (mut c Client) deliver(packet Packet) {
 		}
 	}
 }
+
+// maintain keeps the allocation, its permissions and its channels alive.
+//
+// All three expire, and all three expire silently: the first sign of a lapsed
+// permission is traffic that stops arriving, with nothing in any log.
+fn (mut c Client) maintain() {
+	for {
+		if c.is_closed() {
+			return
+		}
+		time.sleep(1 * time.second)
+		if c.is_closed() {
+			return
+		}
+
+		c.mu.lock()
+		due := c.relayed != none && time.now() >= c.refresh_at
+		lifetime := if c.config.lifetime > 0 { c.config.lifetime } else { default_lifetime }
+		mut stale_permissions := []netaddr.SocketAddr{}
+		for key, expiry in c.permissions {
+			if time.now().add(permission_lifetime - permission_refresh_interval) >= expiry {
+				stale_permissions << netaddr.SocketAddr.parse(key) or { continue }
+			}
+		}
+		mut stale_bindings := []netaddr.SocketAddr{}
+		for _, binding in c.bindings {
+			if binding.confirmed && time.now().unix() >= binding.refresh_at {
+				stale_bindings << binding.peer
+			}
+		}
+		c.mu.unlock()
+
+		if due {
+			c.refresh(lifetime) or { c.log.warn('refreshing the allocation failed: ${err.msg()}') }
+		}
+		for peer in stale_permissions {
+			c.create_permission(peer) or {
+				c.log.warn('refreshing the permission for ${peer} failed: ${err.msg()}')
+			}
+		}
+		for peer in stale_bindings {
+			c.bind_channel(peer) or {
+				c.log.warn('refreshing the channel for ${peer} failed: ${err.msg()}')
+			}
+		}
+	}
+}
