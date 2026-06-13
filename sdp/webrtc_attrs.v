@@ -104,3 +104,21 @@ pub:
 	typ          string
 	parameter    string
 }
+
+pub fn (f RtcpFeedback) str() string {
+	pt := if f.wildcard { '*' } else { f.payload_type.str() }
+	if f.parameter == '' {
+		return '${pt} ${f.typ}'
+	}
+	return '${pt} ${f.typ} ${f.parameter}'
+}
+
+// ExtMap is an `a=extmap` value declaring an RTP header extension (RFC 8285).
+pub struct ExtMap {
+pub:
+	id        u16
+	direction Direction
+	uri       string
+	// attributes carries any extension-specific suffix.
+	attributes string
+}
