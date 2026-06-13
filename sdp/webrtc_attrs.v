@@ -227,3 +227,39 @@ pub fn (s &SessionDescription) media_description(mid string) ?MediaDescription {
 	}
 	return none
 }
+
+// bundle_groups returns the `a=group:BUNDLE` mid lists. Every section named in
+// one shares a single ICE and DTLS transport.
+pub fn (s &SessionDescription) bundle_groups() [][]string {
+	mut out := [][]string{}
+	for value in attribute_values(s.attributes, 'group') {
+		fields := value.split(' ').filter(it != '')
+		if fields.len < 1 || fields[0] != 'BUNDLE' {
+			continue
+		}
+		out << fields[1..].clone()
+	}
+	return out
+}
+
+// mid returns the `a=mid` identifier of a media section.
+pub fn (m &MediaDescription) mid() ?string {
+	value := attribute(m.attributes, 'mid')?
+	if value == '' {
+		return none
+	}
+	return value
+}
+
+// direction returns the media direction of a section.
+pub fn (m &MediaDescription) direction() Direction {
+	for attr in m.attributes {
+		if attr.value != '' {
+			continue
+		}
+		if d := direction_from_string(attr.key) {
+			return d
+		}
+	}
+	return .unspecified
+}
