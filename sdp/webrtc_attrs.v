@@ -122,3 +122,31 @@ pub:
 	// attributes carries any extension-specific suffix.
 	attributes string
 }
+
+pub fn (e ExtMap) str() string {
+	mut s := e.id.str()
+	if e.direction != .unspecified {
+		s += '/${e.direction}'
+	}
+	s += ' ${e.uri}'
+	if e.attributes != '' {
+		s += ' ${e.attributes}'
+	}
+	return s
+}
+
+// SsrcAttribute is an `a=ssrc` value: a per-source attribute such as cname.
+pub struct SsrcAttribute {
+pub:
+	ssrc      u32
+	attribute string
+	value     string
+}
+
+// SsrcGroup is an `a=ssrc-group` value, for example FID pairing a media stream
+// with its retransmission stream.
+pub struct SsrcGroup {
+pub:
+	semantics string
+	ssrcs     []u32
+}
