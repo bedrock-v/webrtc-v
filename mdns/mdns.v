@@ -38,3 +38,13 @@ const max_pointer_hops = 16
 const type_a = u16(1)
 const type_aaaa = u16(28)
 const class_in = u16(1)
+
+// unicast_response_bit asks the responder to answer directly to the querier's
+// port rather than to the multicast group.
+//
+// Without it the answer goes to the group on port 5353, which can only be read
+// by a socket bound to that port - and on most machines that port already
+// belongs to the system responder. Setting it is what lets this work as an
+// ordinary client. A responder that ignores the bit will not be heard, which is
+// the known limit of this approach.
+const unicast_response_bit = u16(0x8000)
