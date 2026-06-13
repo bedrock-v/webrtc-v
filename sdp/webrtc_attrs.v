@@ -185,3 +185,21 @@ pub fn attribute_values(attrs []Attribute, key string) []string {
 	}
 	return out
 }
+
+// has_attribute reports whether a flag attribute is present.
+pub fn has_attribute(attrs []Attribute, key string) bool {
+	for attr in attrs {
+		if attr.key == key {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (s &SessionDescription) attribute(key string) ?string {
+	return attribute(s.attributes, key)
+}
+
+pub fn (s &SessionDescription) has_attribute(key string) bool {
+	return has_attribute(s.attributes, key)
+}
