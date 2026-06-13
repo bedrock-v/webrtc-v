@@ -378,3 +378,9 @@ fn (mut c Client) maintain() {
 		}
 	}
 }
+
+// server_address is the relay this client talks to, as a socket address the
+// transport layer can use.
+pub fn (c &Client) server_address() netaddr.SocketAddr {
+	return c.server
+}
