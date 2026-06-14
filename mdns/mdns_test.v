@@ -153,3 +153,27 @@ fn test_a_pointer_past_the_end_is_ignored() {
 
 	assert answer_for(w.buf, 'abc.local') == none
 }
+
+fn test_an_answer_in_the_additional_section_is_read() {
+	// A responder asked for an A often puts the AAAA in the additional section.
+	name := 'abc.local'
+	mut w := codec.Writer.new()
+	w.u16(0)
+	w.u16(0x8400)
+	w.u16(0)
+	w.u16(0) // nothing in the answer section
+	w.u16(0)
+	w.u16(1) // one additional record
+	w.bytes(encode_name(name)!)
+	w.u16(type_a)
+	w.u16(class_in)
+	w.u32(120)
+	w.u16(4)
+	w.bytes([u8(10), 1, 2, 3])
+
+	address := answer_for(w.buf, name) or {
+		assert false, 'the additional section is part of the answer'
+		return
+	}
+	assert address.str() == '10.1.2.3'
+}
