@@ -31,3 +31,23 @@ fn test_a_name_that_is_not_local_is_refused() {
 		}
 	}
 }
+
+fn test_the_query_asks_for_both_families() {
+	query := encode_query('abc.local')!
+	mut r := codec.Reader.new(query)
+	assert r.u16('id')! == 0
+	assert r.u16('flags')! == 0
+	assert r.u16('questions')! == 2
+
+	r.skip(6, 'the remaining counts')!
+	// First question: the name, then A, then IN with the unicast bit.
+	assert r.u8('label length')! == 3
+	assert r.bytes(3, 'label')!.bytestr() == 'abc'
+	assert r.u8('label length')! == 5
+	assert r.bytes(5, 'label')!.bytestr() == 'local'
+	assert r.u8('terminator')! == 0
+	assert r.u16('type')! == type_a
+	class_field := r.u16('class')!
+	assert class_field & unicast_response_bit != 0, 'without the unicast bit the answer goes to a port we cannot read'
+	assert class_field & 0x7fff == class_in
+}
