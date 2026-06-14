@@ -111,3 +111,26 @@ fn test_a_truncated_response_is_ignored() {
 		answer_for(full[..length], 'abc.local') or { continue }
 	}
 }
+
+fn test_a_compression_loop_terminates() {
+	// A pointer to itself is the classic decompression bomb: the parser has to
+	// give up rather than follow it forever.
+	mut w := codec.Writer.new()
+	w.u16(0)
+	w.u16(0x8400)
+	w.u16(0) // no questions
+	w.u16(1) // one answer
+	w.u16(0)
+	w.u16(0)
+	// The answer's name is a pointer to itself.
+	pointer_offset := w.buf.len
+	w.u8(u8(0xc0 | (pointer_offset >> 8)))
+	w.u8(u8(pointer_offset & 0xff))
+	w.u16(type_a)
+	w.u16(class_in)
+	w.u32(120)
+	w.u16(4)
+	w.bytes([u8(192), 168, 1, 1])
+
+	assert answer_for(w.buf, 'abc.local') == none
+}
