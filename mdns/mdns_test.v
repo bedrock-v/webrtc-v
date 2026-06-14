@@ -71,3 +71,18 @@ fn test_an_answer_is_read() {
 	}
 	assert address.str() == '192.168.1.42'
 }
+
+fn test_an_ipv6_answer_is_read() {
+	name := 'abc.local'
+	mut body := []u8{len: 16}
+	body[0] = 0xfe
+	body[1] = 0x80
+	body[15] = 0x01
+	response := build_response(name, type_aaaa, body)!
+	address := answer_for(response, name) or {
+		assert false, 'the AAAA answer should have been found'
+		return
+	}
+	assert address.family == .ipv6
+	assert address.str() == 'fe80::1'
+}
