@@ -481,3 +481,30 @@ pub fn (m &MediaDescription) ssrcs() []SsrcAttribute {
 	}
 	return out
 }
+
+// ssrc_groups returns the parsed `a=ssrc-group` lines.
+pub fn (m &MediaDescription) ssrc_groups() []SsrcGroup {
+	mut out := []SsrcGroup{}
+	for value in attribute_values(m.attributes, 'ssrc-group') {
+		fields := value.split(' ').filter(it != '')
+		if fields.len < 2 {
+			continue
+		}
+		mut ssrcs := []u32{cap: fields.len - 1}
+		mut ok := true
+		for field in fields[1..] {
+			ssrcs << parse_u32(field) or {
+				ok = false
+				break
+			}
+		}
+		if !ok {
+			continue
+		}
+		out << SsrcGroup{
+			semantics: fields[0]
+			ssrcs:     ssrcs
+		}
+	}
+	return out
+}
