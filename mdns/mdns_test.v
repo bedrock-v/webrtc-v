@@ -134,3 +134,22 @@ fn test_a_compression_loop_terminates() {
 
 	assert answer_for(w.buf, 'abc.local') == none
 }
+
+fn test_a_pointer_past_the_end_is_ignored() {
+	mut w := codec.Writer.new()
+	w.u16(0)
+	w.u16(0x8400)
+	w.u16(0)
+	w.u16(1)
+	w.u16(0)
+	w.u16(0)
+	w.u8(0xc0)
+	w.u8(0xff)
+	w.u16(type_a)
+	w.u16(class_in)
+	w.u32(120)
+	w.u16(4)
+	w.bytes([u8(192), 168, 1, 1])
+
+	assert answer_for(w.buf, 'abc.local') == none
+}
