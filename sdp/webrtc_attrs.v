@@ -508,3 +508,41 @@ pub fn (m &MediaDescription) ssrc_groups() []SsrcGroup {
 	}
 	return out
 }
+
+// msid returns the `a=msid` value of a section.
+pub fn (m &MediaDescription) msid() ?Msid {
+	value := attribute(m.attributes, 'msid')?
+	fields := value.split(' ').filter(it != '')
+	if fields.len == 0 {
+		return none
+	}
+	return Msid{
+		stream_id: fields[0]
+		track_id:  if fields.len > 1 { fields[1] } else { '' }
+	}
+}
+
+// sctp_port returns the `a=sctp-port` value of a data section (RFC 8841).
+pub fn (m &MediaDescription) sctp_port() ?u16 {
+	value := attribute(m.attributes, 'sctp-port')?
+	port := parse_u32(value) or { return none }
+	if port == 0 || port > 65535 {
+		return none
+	}
+	return u16(port)
+}
+
+// max_message_size returns the `a=max-message-size` value, the largest data
+// channel message the peer will accept.
+pub fn (m &MediaDescription) max_message_size() ?u32 {
+	value := attribute(m.attributes, 'max-message-size')?
+	return parse_u32(value) or { none }
+}
+
+fn parse_payload_type(s string) ?u8 {
+	v := parse_u32(s) or { return none }
+	if v > 127 {
+		return none
+	}
+	return u8(v)
+}
