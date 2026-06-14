@@ -92,3 +92,8 @@ fn test_an_answer_for_another_name_is_ignored() {
 	response := build_response('somebody-else.local', type_a, [u8(10), 0, 0, 1])!
 	assert answer_for(response, 'abc.local') == none
 }
+
+fn test_a_query_is_not_mistaken_for_an_answer() {
+	query := encode_query('abc.local')!
+	assert answer_for(query, 'abc.local') == none
+}
