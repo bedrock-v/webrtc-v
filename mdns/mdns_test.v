@@ -51,3 +51,13 @@ fn test_the_query_asks_for_both_families() {
 	assert class_field & unicast_response_bit != 0, 'without the unicast bit the answer goes to a port we cannot read'
 	assert class_field & 0x7fff == class_in
 }
+
+fn test_a_name_with_a_bad_label_is_refused() {
+	if _ := encode_name('a..local') {
+		assert false, 'an empty label is not encodable'
+	}
+	long := 'x'.repeat(64)
+	if _ := encode_name('${long}.local') {
+		assert false, 'a label over 63 bytes is not encodable'
+	}
+}
