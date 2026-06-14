@@ -97,3 +97,9 @@ fn test_a_query_is_not_mistaken_for_an_answer() {
 	query := encode_query('abc.local')!
 	assert answer_for(query, 'abc.local') == none
 }
+
+fn test_a_record_of_the_wrong_length_is_ignored() {
+	// A four-byte AAAA or a sixteen-byte A is not an address to be salvaged.
+	short := build_response('abc.local', type_aaaa, [u8(1), 2, 3, 4])!
+	assert answer_for(short, 'abc.local') == none
+}
