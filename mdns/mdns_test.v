@@ -103,3 +103,11 @@ fn test_a_record_of_the_wrong_length_is_ignored() {
 	short := build_response('abc.local', type_aaaa, [u8(1), 2, 3, 4])!
 	assert answer_for(short, 'abc.local') == none
 }
+
+fn test_a_truncated_response_is_ignored() {
+	full := build_response('abc.local', type_a, [u8(192), 168, 1, 42])!
+	for length in 1 .. full.len {
+		// Every prefix must be handled without reading past the end.
+		answer_for(full[..length], 'abc.local') or { continue }
+	}
+}
