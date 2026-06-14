@@ -86,3 +86,9 @@ fn test_an_ipv6_answer_is_read() {
 	assert address.family == .ipv6
 	assert address.str() == 'fe80::1'
 }
+
+fn test_an_answer_for_another_name_is_ignored() {
+	// Every response to every query on the segment arrives here.
+	response := build_response('somebody-else.local', type_a, [u8(10), 0, 0, 1])!
+	assert answer_for(response, 'abc.local') == none
+}
