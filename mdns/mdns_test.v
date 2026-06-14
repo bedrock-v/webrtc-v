@@ -61,3 +61,13 @@ fn test_a_name_with_a_bad_label_is_refused() {
 		assert false, 'a label over 63 bytes is not encodable'
 	}
 }
+
+fn test_an_answer_is_read() {
+	name := 'abc.local'
+	response := build_response(name, type_a, [u8(192), 168, 1, 42])!
+	address := answer_for(response, name) or {
+		assert false, 'the answer should have been found'
+		return
+	}
+	assert address.str() == '192.168.1.42'
+}
