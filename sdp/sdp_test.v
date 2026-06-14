@@ -72,3 +72,24 @@ const browser_offer_lines = [
 	'a=sctp-port:5000',
 	'a=max-message-size:262144',
 ]
+
+const browser_offer = browser_offer_lines.join('\r\n') + '\r\n'
+
+fn parse_offer() !SessionDescription {
+	return parse(browser_offer)!
+}
+
+fn test_parses_session_level_fields() {
+	s := parse_offer()!
+	assert s.version == 0
+	assert s.origin.username == '-'
+	assert s.origin.session_id == 4611731400430051336
+	assert s.origin.session_version == 2
+	assert s.origin.network_type == 'IN'
+	assert s.origin.address_type == 'IP4'
+	assert s.origin.unicast_address == '127.0.0.1'
+	assert s.session_name == '-'
+	assert s.time_descriptions.len == 1
+	assert s.time_descriptions[0].start_time == 0
+	assert s.time_descriptions[0].stop_time == 0
+}
