@@ -18,3 +18,16 @@ fn test_a_local_name_is_recognised() {
 	assert !is_local_name('192.168.1.1')
 	assert !is_local_name('localhost')
 }
+
+fn test_a_name_that_is_not_local_is_refused() {
+	// Not an error about the network: this resolver only speaks for .local, and
+	// saying so is more useful than timing out.
+	if _ := resolve('example.com', 10 * 1000000) {
+		assert false, 'only .local names belong here'
+	} else {
+		assert err is MdnsError
+		if err is MdnsError {
+			assert err.reason == .not_local
+		}
+	}
+}
