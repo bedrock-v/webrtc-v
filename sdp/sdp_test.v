@@ -323,3 +323,19 @@ fn test_round_trip_is_stable() {
 	assert once.contains('a=rtcp:9 IN IP4 0.0.0.0')
 	assert once.contains('a=end-of-candidates')
 }
+
+fn test_round_trip_preserves_unknown_attributes() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'a=x-vendor-session:something\r\n' + 'm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n' +
+		'a=x-vendor-media:other\r\n' + 'a=x-flag\r\n'
+	assert parse(doc)!.marshal() == doc
+}
+
+fn test_accepts_bare_lf_line_endings() {
+	lf := browser_offer.replace('\r\n', '\n')
+	s := parse(lf)!
+	assert s.media_descriptions.len == 3
+	// Output is always CRLF regardless of what came in.
+	assert s.marshal().contains('\r\n')
+	assert !s.marshal().replace('\r\n', '').contains('\n')
+}
