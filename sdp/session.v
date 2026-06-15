@@ -124,3 +124,7 @@ pub mut:
 	typ   string
 	value u64
 }
+
+pub fn (b Bandwidth) str() string {
+	return '${b.typ}:${b.value}'
+}
