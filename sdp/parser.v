@@ -292,3 +292,15 @@ fn split_lines(input string) []string {
 	}
 	return out
 }
+
+// split_line splits `<type>=<value>`.
+fn split_line(line string) !(u8, string) {
+	if line.len < 2 || line[1] != `=` {
+		return error('malformed line "${truncate(line, 40)}", expected <type>=<value>')
+	}
+	typ := line[0]
+	if !((typ >= `a` && typ <= `z`) || (typ >= `A` && typ <= `Z`)) {
+		return error('line type must be a letter, found byte 0x${typ.hex()}')
+	}
+	return typ, line[2..]
+}
