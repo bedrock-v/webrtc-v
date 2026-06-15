@@ -339,3 +339,32 @@ fn test_accepts_bare_lf_line_endings() {
 	assert s.marshal().contains('\r\n')
 	assert !s.marshal().replace('\r\n', '').contains('\n')
 }
+
+fn test_rejects_structurally_broken_documents() {
+	cases := {
+		'empty':                  ''
+		'no version':             'o=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n'
+		'version not zero':       'v=1\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n'
+		'origin before version':  'o=- 1 1 IN IP4 127.0.0.1\r\nv=0\r\ns=-\r\nt=0 0\r\n'
+		'missing session name':   'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\nt=0 0\r\n'
+		'short origin':           'v=0\r\no=- 1 1 IN IP4\r\ns=-\r\nt=0 0\r\n'
+		'non numeric session id': 'v=0\r\no=- abc 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n'
+		'no equals sign':         'v=0\r\no- 1 1 IN IP4 127.0.0.1\r\ns=-\r\n'
+		'unknown session line':   'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nq=what\r\nt=0 0\r\n'
+		'short media line':       'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9\r\n'
+		'bad media port':         'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio xyz UDP/TLS/RTP/SAVPF 0\r\n'
+		'media port too large':   'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 70000 UDP/TLS/RTP/SAVPF 0\r\n'
+		'session line in media':  'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 0\r\nv=0\r\n'
+		'bad connection':         'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nc=IN IP4\r\nt=0 0\r\n'
+		'bad bandwidth':          'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nb=AS\r\nt=0 0\r\n'
+		'repeat without time':    'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nr=7d 1h\r\nt=0 0\r\n'
+		'session id overflows':   'v=0\r\no=- 99999999999999999999999 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n'
+	}
+	for name, doc in cases {
+		if _ := parse(doc) {
+			assert false, 'expected "${name}" to be rejected'
+		} else {
+			assert err is ParseError, '"${name}" produced ${err}'
+		}
+	}
+}
