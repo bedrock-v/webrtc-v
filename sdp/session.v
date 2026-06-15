@@ -72,3 +72,10 @@ pub:
 	key   string
 	value string
 }
+
+pub fn (a Attribute) str() string {
+	if a.value == '' {
+		return a.key
+	}
+	return '${a.key}:${a.value}'
+}
