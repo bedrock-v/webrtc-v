@@ -368,3 +368,34 @@ fn test_rejects_structurally_broken_documents() {
 		}
 	}
 }
+
+fn test_enforces_limits() {
+	s := parse_offer()!
+	_ = s
+	parse(browser_offer, max_media_descriptions: 2) or {
+		parse(browser_offer, max_lines: 5) or {
+			parse(browser_offer, max_line_length: 10) or { return }
+			assert false, 'the line length limit must be enforced'
+		}
+		assert false, 'the line count limit must be enforced'
+	}
+	assert false, 'the media section limit must be enforced'
+}
+
+fn test_rejected_media_section() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=audio 0 UDP/TLS/RTP/SAVPF 111\r\n' + 'a=mid:0\r\n'
+	s := parse(doc)!
+	assert s.media_descriptions[0].is_rejected()
+}
+
+fn test_repeat_times_with_unit_suffixes() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=3034423619 3042462419\r\n' +
+		'r=7d 1h 0 25h\r\n'
+	s := parse(doc)!
+	repeat := s.time_descriptions[0].repeats[0]
+	assert repeat.interval == 7 * 86400
+	assert repeat.active == 3600
+	assert repeat.offsets == [u64(0), 25 * 3600]
+	assert s.marshal().contains('r=604800 3600 0 90000')
+}
