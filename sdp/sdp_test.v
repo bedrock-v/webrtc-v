@@ -226,3 +226,28 @@ fn test_rtcp_feedback() {
 	assert fb[3].parameter == 'fir'
 	assert fb[3].str() == '* ccm fir'
 }
+
+fn test_extmaps() {
+	s := parse_offer()!
+	audio_ext := s.media_descriptions[0].extmaps()
+	assert audio_ext.len == 2
+	assert audio_ext[0].id == 1
+	assert audio_ext[0].uri == 'urn:ietf:params:rtp-hdrext:ssrc-audio-level'
+	assert audio_ext[0].direction == .unspecified
+
+	video_ext := s.media_descriptions[1].extmaps()
+	assert video_ext[0].id == 2
+	assert video_ext[0].direction == .sendonly
+	assert video_ext[0].str() == '2/sendonly urn:ietf:params:rtp-hdrext:toffset'
+}
+
+fn test_extmap_rejects_invalid_ids() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n' + 'a=extmap:0 urn:zero\r\n' +
+		'a=extmap:256 urn:too-big\r\n' + 'a=extmap:not-a-number urn:bad\r\n' +
+		'a=extmap:5 urn:fine\r\n'
+	s := parse(doc)!
+	extmaps := s.media_descriptions[0].extmaps()
+	assert extmaps.len == 1
+	assert extmaps[0].id == 5
+}
