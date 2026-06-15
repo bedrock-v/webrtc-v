@@ -180,3 +180,22 @@ pub fn (m &MediaDescription) proto() string {
 pub fn (m &MediaDescription) is_rejected() bool {
 	return m.port == 0
 }
+
+// SessionDescription is a complete SDP document.
+pub struct SessionDescription {
+pub mut:
+	version             u32
+	origin              Origin
+	session_name        string = '-'
+	session_information string
+	uri                 string
+	emails              []string
+	phones              []string
+	connection          ?ConnectionData
+	bandwidth           []Bandwidth
+	time_descriptions   []TimeDescription
+	timezones           string
+	encryption_key      string
+	attributes          []Attribute
+	media_descriptions  []MediaDescription
+}
