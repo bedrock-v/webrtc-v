@@ -206,3 +206,23 @@ fn test_rtpmap_and_fmtp() {
 	video := s.media_descriptions[1]
 	assert video.fmtp(97)? == 'apt=96'
 }
+
+fn test_rtcp_feedback() {
+	s := parse_offer()!
+	video := s.media_descriptions[1]
+	fb := video.rtcp_feedback()
+	assert fb.len == 4
+
+	assert fb[0].payload_type == 96
+	assert fb[0].typ == 'goog-remb'
+	assert fb[0].parameter == ''
+	assert !fb[0].wildcard
+
+	assert fb[2].typ == 'nack'
+	assert fb[2].parameter == 'pli'
+
+	assert fb[3].wildcard
+	assert fb[3].typ == 'ccm'
+	assert fb[3].parameter == 'fir'
+	assert fb[3].str() == '* ccm fir'
+}
