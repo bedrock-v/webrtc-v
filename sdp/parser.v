@@ -277,3 +277,18 @@ pub fn parse(input string, opts ParseOptions) !SessionDescription {
 
 	return session
 }
+
+// split_lines breaks the input on CRLF or LF and drops a trailing empty line.
+// RFC 8866 mandates CRLF, but bare LF is common enough in the wild - and in
+// hand-written test fixtures - that rejecting it would help nobody.
+fn split_lines(input string) []string {
+	mut out := []string{}
+	for raw in input.split('\n') {
+		line := raw.trim_right('\r')
+		if line == '' {
+			continue
+		}
+		out << line
+	}
+	return out
+}
