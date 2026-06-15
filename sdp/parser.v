@@ -8,3 +8,11 @@ pub:
 	line   int
 	detail string
 }
+
+pub fn (e ParseError) msg() string {
+	return 'sdp: line ${e.line}: ${e.detail}'
+}
+
+pub fn (e ParseError) code() int {
+	return 1
+}
