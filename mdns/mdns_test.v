@@ -204,3 +204,21 @@ fn test_a_response_echoing_the_question_is_read() {
 	}
 	assert address.str() == '172.16.0.9'
 }
+
+// build_response assembles a minimal response carrying one record.
+fn build_response(name string, record_type u16, body []u8) ![]u8 {
+	mut w := codec.Writer.new()
+	w.u16(0)
+	w.u16(0x8400) // a response, authoritative
+	w.u16(0) // no questions echoed
+	w.u16(1) // one answer
+	w.u16(0)
+	w.u16(0)
+	w.bytes(encode_name(name)!)
+	w.u16(record_type)
+	w.u16(class_in)
+	w.u32(120)
+	w.u16(u16(body.len))
+	w.bytes(body)
+	return w.buf
+}
