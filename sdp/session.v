@@ -106,3 +106,14 @@ pub mut:
 	ttl   int
 	range int
 }
+
+pub fn (c ConnectionData) str() string {
+	mut addr := c.address
+	if c.ttl > 0 {
+		addr += '/${c.ttl}'
+		if c.range > 0 {
+			addr += '/${c.range}'
+		}
+	}
+	return '${c.network_type} ${c.address_type} ${addr}'
+}
