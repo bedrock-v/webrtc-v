@@ -6,3 +6,5 @@
 // access to the attributes that matter, but it does not decide what belongs in
 // an offer. That is the job of the peerconnection layer, which sits above it.
 module sdp
+
+import strings
