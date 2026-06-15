@@ -111,3 +111,34 @@ fn test_parses_media_sections() {
 	assert data.proto() == 'UDP/DTLS/SCTP'
 	assert data.formats == ['webrtc-datachannel']
 }
+
+fn test_bundle_group() {
+	s := parse_offer()!
+	groups := s.bundle_groups()
+	assert groups.len == 1
+	assert groups[0] == ['0', '1', '2']
+}
+
+fn test_mid_and_lookup() {
+	s := parse_offer()!
+	assert s.media_descriptions[0].mid()? == '0'
+	assert s.media_descriptions[1].mid()? == '1'
+	assert s.media_description('1')?.media == 'video'
+	assert s.media_description('nonexistent') == none
+}
+
+fn test_direction() {
+	s := parse_offer()!
+	assert s.media_descriptions[0].direction() == .sendrecv
+	assert s.media_descriptions[1].direction() == .sendonly
+	// The data section carries no direction attribute.
+	assert s.media_descriptions[2].direction() == .unspecified
+}
+
+fn test_direction_reverse() {
+	assert Direction.sendonly.reverse() == .recvonly
+	assert Direction.recvonly.reverse() == .sendonly
+	assert Direction.sendrecv.reverse() == .sendrecv
+	assert Direction.inactive.reverse() == .inactive
+	assert Direction.unspecified.reverse() == .unspecified
+}
