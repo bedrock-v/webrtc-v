@@ -90,3 +90,7 @@ pub mut:
 	address_type    string = 'IP4'
 	unicast_address string = '127.0.0.1'
 }
+
+pub fn (o Origin) str() string {
+	return '${o.username} ${o.session_id} ${o.session_version} ${o.network_type} ${o.address_type} ${o.unicast_address}'
+}
