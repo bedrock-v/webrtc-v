@@ -168,3 +168,8 @@ pub mut:
 	encryption_key string
 	attributes     []Attribute
 }
+
+// proto returns the transport protocol as it appears on the wire.
+pub fn (m &MediaDescription) proto() string {
+	return m.protos.join('/')
+}
