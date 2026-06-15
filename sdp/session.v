@@ -173,3 +173,10 @@ pub mut:
 pub fn (m &MediaDescription) proto() string {
 	return m.protos.join('/')
 }
+
+// is_rejected reports whether the section has been rejected by setting its port
+// to zero (RFC 8866 section 5.14 and JSEP section 5.3.1).
+@[inline]
+pub fn (m &MediaDescription) is_rejected() bool {
+	return m.port == 0
+}
