@@ -304,3 +304,10 @@ fn split_line(line string) !(u8, string) {
 	}
 	return typ, line[2..]
 }
+
+fn truncate(s string, n int) string {
+	if s.len <= n {
+		return s
+	}
+	return s[..n] + '...'
+}
