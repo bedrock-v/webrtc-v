@@ -8,3 +8,16 @@
 module sdp
 
 import strings
+
+// Direction is the media direction declared by a sendrecv, sendonly, recvonly
+// or inactive attribute (RFC 8866 section 6.7).
+pub enum Direction {
+	// unspecified means no direction attribute was present. RFC 8866 says the
+	// default is sendrecv, but "absent" and "explicitly sendrecv" are different
+	// facts and the distinction matters when re-offering, so it is preserved.
+	unspecified
+	sendrecv
+	sendonly
+	recvonly
+	inactive
+}
