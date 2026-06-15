@@ -16,3 +16,14 @@ pub fn (e ParseError) msg() string {
 pub fn (e ParseError) code() int {
 	return 1
 }
+
+// ParseOptions bounds what a single parse may allocate. A description arrives
+// over a signalling channel that the peer controls, so its size is not
+// inherently trustworthy.
+@[params]
+pub struct ParseOptions {
+pub:
+	max_lines              int = 4096
+	max_media_descriptions int = 128
+	max_line_length        int = 8192
+}
