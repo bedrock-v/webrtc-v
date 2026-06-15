@@ -311,3 +311,15 @@ fn truncate(s string, n int) string {
 	}
 	return s[..n] + '...'
 }
+
+fn parse_attribute(value string) Attribute {
+	if idx := value.index(':') {
+		return Attribute{
+			key:   value[..idx]
+			value: value[idx + 1..]
+		}
+	}
+	return Attribute{
+		key: value
+	}
+}
