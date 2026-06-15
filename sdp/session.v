@@ -128,3 +128,11 @@ pub mut:
 pub fn (b Bandwidth) str() string {
 	return '${b.typ}:${b.value}'
 }
+
+// TimeDescription is a `t=` line and its `r=` repeats.
+pub struct TimeDescription {
+pub mut:
+	start_time u64
+	stop_time  u64
+	repeats    []Repeat
+}
