@@ -94,3 +94,15 @@ pub mut:
 pub fn (o Origin) str() string {
 	return '${o.username} ${o.session_id} ${o.session_version} ${o.network_type} ${o.address_type} ${o.unicast_address}'
 }
+
+// ConnectionData is the `c=` line.
+pub struct ConnectionData {
+pub mut:
+	network_type string = 'IN'
+	address_type string = 'IP4'
+	address      string = '0.0.0.0'
+	// ttl and range are the optional suffixes on a multicast address. WebRTC
+	// never uses them, but they are preserved so a description round-trips.
+	ttl   int
+	range int
+}
