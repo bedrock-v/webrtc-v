@@ -282,3 +282,7 @@ pub fn (s &SessionDescription) marshal() string {
 
 	return sb.str()
 }
+
+pub fn (s &SessionDescription) str() string {
+	return s.marshal()
+}
