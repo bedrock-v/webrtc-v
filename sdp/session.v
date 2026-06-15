@@ -117,3 +117,10 @@ pub fn (c ConnectionData) str() string {
 	}
 	return '${c.network_type} ${c.address_type} ${addr}'
 }
+
+// Bandwidth is a `b=` line.
+pub struct Bandwidth {
+pub mut:
+	typ   string
+	value u64
+}
