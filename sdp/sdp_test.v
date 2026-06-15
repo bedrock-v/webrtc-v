@@ -251,3 +251,28 @@ fn test_extmap_rejects_invalid_ids() {
 	assert extmaps.len == 1
 	assert extmaps[0].id == 5
 }
+
+fn test_ssrcs_and_groups() {
+	s := parse_offer()!
+	audio_ssrcs := s.media_descriptions[0].ssrcs()
+	assert audio_ssrcs.len == 2
+	assert audio_ssrcs[0].ssrc == 1001
+	assert audio_ssrcs[0].attribute == 'cname'
+	assert audio_ssrcs[0].value == 'cname-value'
+	assert audio_ssrcs[1].attribute == 'msid'
+	assert audio_ssrcs[1].value == 'stream-id audio-track-id'
+
+	groups := s.media_descriptions[1].ssrc_groups()
+	assert groups.len == 1
+	assert groups[0].semantics == 'FID'
+	assert groups[0].ssrcs == [u32(2001), 2002]
+}
+
+fn test_msid() {
+	s := parse_offer()!
+	msid := s.media_descriptions[0].msid()?
+	assert msid.stream_id == 'stream-id'
+	assert msid.track_id == 'audio-track-id'
+	assert msid.str() == 'stream-id audio-track-id'
+	assert s.media_descriptions[2].msid() == none
+}
