@@ -79,3 +79,14 @@ pub fn (a Attribute) str() string {
 	}
 	return '${a.key}:${a.value}'
 }
+
+// Origin is the `o=` line, which identifies the session.
+pub struct Origin {
+pub mut:
+	username        string = '-'
+	session_id      u64
+	session_version u64
+	network_type    string = 'IN'
+	address_type    string = 'IP4'
+	unicast_address string = '127.0.0.1'
+}
