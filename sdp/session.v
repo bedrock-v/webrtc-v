@@ -38,3 +38,14 @@ pub fn (d Direction) str() string {
 		.inactive { 'inactive' }
 	}
 }
+
+// direction_from_string parses a direction attribute name.
+pub fn direction_from_string(s string) ?Direction {
+	return match s {
+		'sendrecv' { Direction.sendrecv }
+		'sendonly' { Direction.sendonly }
+		'recvonly' { Direction.recvonly }
+		'inactive' { Direction.inactive }
+		else { none }
+	}
+}
