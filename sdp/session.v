@@ -136,3 +136,11 @@ pub mut:
 	stop_time  u64
 	repeats    []Repeat
 }
+
+// Repeat is an `r=` line.
+pub struct Repeat {
+pub mut:
+	interval u64
+	active   u64
+	offsets  []u64
+}
