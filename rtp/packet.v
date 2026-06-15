@@ -19,3 +19,27 @@ pub const header_size = 12
 // extension_profile_one_byte is the profile identifier for the one-byte header
 // extension form of RFC 8285 section 4.2.
 pub const extension_profile_one_byte = u16(0xBEDE)
+
+// extension_profile_two_byte_base is the profile identifier for the two-byte
+// form (RFC 8285 section 4.3). The low four bits carry an appbits field, so the
+// profile is matched by masking.
+pub const extension_profile_two_byte_base = u16(0x1000)
+
+// max_csrc is the number of contributing sources the four-bit CC field can
+// express.
+pub const max_csrc = 15
+
+// DecodeError describes why a datagram is not a valid RTP packet.
+pub struct DecodeError {
+pub:
+	reason DecodeReason
+	detail string
+}
+
+pub enum DecodeReason {
+	too_short
+	bad_version
+	bad_padding
+	bad_extension
+	bad_csrc
+}
