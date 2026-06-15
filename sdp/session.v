@@ -21,3 +21,20 @@ pub enum Direction {
 	recvonly
 	inactive
 }
+
+// str returns the SDP attribute name for a direction.
+//
+// The unspecified variant has no attribute name - it means no direction line
+// was present - and renders as "unspecified" rather than as an empty string, so
+// that interpolating it into a description produces something obviously wrong
+// instead of something silently missing. Callers building SDP must check for it
+// rather than emitting it.
+pub fn (d Direction) str() string {
+	return match d {
+		.unspecified { 'unspecified' }
+		.sendrecv { 'sendrecv' }
+		.sendonly { 'sendonly' }
+		.recvonly { 'recvonly' }
+		.inactive { 'inactive' }
+	}
+}
