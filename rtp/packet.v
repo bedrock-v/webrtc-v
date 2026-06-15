@@ -43,3 +43,36 @@ pub enum DecodeReason {
 	bad_extension
 	bad_csrc
 }
+
+pub fn (e DecodeError) msg() string {
+	return 'rtp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 1
+}
+
+// EncodeError is returned when a header cannot be represented on the wire.
+pub struct EncodeError {
+pub:
+	detail string
+}
+
+pub fn (e EncodeError) msg() string {
+	return 'rtp: ${e.detail}'
+}
+
+pub fn (e EncodeError) code() int {
+	return 100
+}
+
+// Extension is one RFC 8285 header extension element.
+pub struct Extension {
+pub:
+	// id is the local identifier negotiated through an SDP extmap attribute.
+	// One-byte extensions use 1-14; two-byte extensions use 1-255.
+	id u8
+	// payload is the extension body, 1-16 bytes in the one-byte form and
+	// 0-255 in the two-byte form.
+	payload []u8
+}
