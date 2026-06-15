@@ -144,3 +144,27 @@ pub mut:
 	active   u64
 	offsets  []u64
 }
+
+// MediaDescription is one `m=` section: the media line and everything up to the
+// next `m=`.
+pub struct MediaDescription {
+pub mut:
+	// media is "audio", "video" or "application".
+	media string
+	// port is the transport port. In WebRTC it is a placeholder - the real
+	// address comes from ICE - except that 0 means the section is rejected.
+	port int
+	// port_count is the optional `/n` suffix on the port; 0 when absent.
+	port_count int
+	// protos is the transport protocol split on '/', for example
+	// ["UDP", "TLS", "RTP", "SAVPF"].
+	protos []string
+	// formats are the payload type numbers, or "webrtc-datachannel" for an
+	// application section.
+	formats        []string
+	title          string
+	connection     ?ConnectionData
+	bandwidth      []Bandwidth
+	encryption_key string
+	attributes     []Attribute
+}
