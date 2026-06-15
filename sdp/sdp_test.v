@@ -296,3 +296,30 @@ fn test_sctp_attributes() {
 	assert data.max_message_size()? == 262144
 	assert s.media_descriptions[0].sctp_port() == none
 }
+
+fn test_bandwidth_and_connection() {
+	s := parse_offer()!
+	video := s.media_descriptions[1]
+	assert video.bandwidth.len == 1
+	assert video.bandwidth[0].typ == 'AS'
+	assert video.bandwidth[0].value == 2000
+
+	conn := video.connection?
+	assert conn.network_type == 'IN'
+	assert conn.address_type == 'IP4'
+	assert conn.address == '0.0.0.0'
+}
+
+fn test_round_trip_is_stable() {
+	s := parse_offer()!
+	once := s.marshal()
+	twice := parse(once)!.marshal()
+	assert once == twice
+
+	// Every attribute survives, including the ones this package has no typed
+	// accessor for.
+	assert once.contains('a=extmap-allow-mixed')
+	assert once.contains('a=msid-semantic: WMS stream-id')
+	assert once.contains('a=rtcp:9 IN IP4 0.0.0.0')
+	assert once.contains('a=end-of-candidates')
+}
