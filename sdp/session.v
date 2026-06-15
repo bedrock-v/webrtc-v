@@ -49,3 +49,14 @@ pub fn direction_from_string(s string) ?Direction {
 		else { none }
 	}
 }
+
+// reverse returns the direction a peer must adopt to match this one. An offer
+// of sendonly is answered with recvonly, and the symmetric directions map to
+// themselves.
+pub fn (d Direction) reverse() Direction {
+	return match d {
+		.sendonly { Direction.recvonly }
+		.recvonly { Direction.sendonly }
+		else { d }
+	}
+}
