@@ -116,3 +116,58 @@ pub fn (h &Header) extension(id u8) ?[]u8 {
 	}
 	return none
 }
+
+// set_extension adds or replaces an extension element.
+//
+// The profile is chosen automatically when the header has none: a payload that
+// fits the one-byte form uses it, since it costs one byte less per element and
+// is what receivers are most likely to accept. Once a profile is fixed, adding
+// an element that does not fit it is an error rather than a silent upgrade,
+// because changing the profile mid-stream would invalidate elements already
+// written by the caller.
+pub fn (mut h Header) set_extension(id u8, payload []u8) ! {
+	if id == 0 {
+		return EncodeError{
+			detail: 'extension id 0 is reserved for padding'
+		}
+	}
+	if h.extension_profile == 0 {
+		h.extension_profile = if id <= 14 && payload.len >= 1 && payload.len <= 16 {
+			extension_profile_one_byte
+		} else {
+			extension_profile_two_byte_base
+		}
+	}
+	if h.uses_two_byte_extensions() {
+		if payload.len > 255 {
+			return EncodeError{
+				detail: 'two-byte extension ${id} payload is ${payload.len} bytes, over the 255-byte limit'
+			}
+		}
+	} else {
+		if id > 14 {
+			return EncodeError{
+				detail: 'extension id ${id} does not fit the one-byte form, which allows 1-14'
+			}
+		}
+		if payload.len < 1 || payload.len > 16 {
+			return EncodeError{
+				detail: 'one-byte extension ${id} payload is ${payload.len} bytes, outside the 1-16 range'
+			}
+		}
+	}
+
+	for i, ext in h.extensions {
+		if ext.id == id {
+			h.extensions[i] = Extension{
+				id:      id
+				payload: payload.clone()
+			}
+			return
+		}
+	}
+	h.extensions << Extension{
+		id:      id
+		payload: payload.clone()
+	}
+}
