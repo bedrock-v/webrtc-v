@@ -377,3 +377,14 @@ fn parse_bandwidth(value string) !Bandwidth {
 		value: parse_u64(value[idx + 1..]) or { return error('bad bandwidth value: ${err.msg()}') }
 	}
 }
+
+fn parse_time(value string) !TimeDescription {
+	fields := value.split(' ')
+	if fields.len != 2 {
+		return error('t= line has ${fields.len} fields, expected 2')
+	}
+	return TimeDescription{
+		start_time: parse_u64(fields[0]) or { return error('bad start time: ${err.msg()}') }
+		stop_time:  parse_u64(fields[1]) or { return error('bad stop time: ${err.msg()}') }
+	}
+}
