@@ -186,3 +186,40 @@ pub fn (mut h Header) delete_extension(id u8) bool {
 	}
 	return false
 }
+
+// Packet is an RTP packet.
+pub struct Packet {
+pub mut:
+	header  Header
+	payload []u8
+	// padding_size is the number of padding bytes that followed the payload,
+	// including the length byte itself. It is preserved so that a packet
+	// re-marshals to the same length, which matters when a packet has already
+	// been counted or authenticated at that size.
+	padding_size int
+}
+
+// is_rtp reports whether a datagram looks like RTP or RTCP.
+//
+// This is the RFC 7983 demultiplexing test for the 128-191 range. Telling RTP
+// from RTCP within that range needs the payload type, which is what
+// is_rtcp_payload_type is for.
+pub fn is_rtp(b []u8) bool {
+	if b.len < header_size {
+		return false
+	}
+	return b[0] & 0xC0 == 0x80
+}
+
+// is_rtcp_payload_type reports whether a packet in the RTP range is RTCP.
+//
+// RFC 5761 section 4 reserves RTP payload types 64-95 so that, with the marker
+// bit, they cannot collide with the RTCP packet types 200-223. That reservation
+// is what makes rtcp-mux possible.
+pub fn is_rtcp_payload_type(b []u8) bool {
+	if b.len < 2 {
+		return false
+	}
+	pt := b[1] & 0x7F
+	return pt >= 64 && pt <= 95
+}
