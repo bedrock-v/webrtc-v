@@ -364,3 +364,75 @@ pub fn Packet.decode(b []u8) !Packet {
 		padding_size: padding_size
 	}
 }
+
+// parse_extensions decodes the body of an RFC 8285 extension block.
+fn parse_extensions(profile u16, body []u8) ![]Extension {
+	mut out := []Extension{}
+	mut r := codec.Reader.new(body)
+
+	if profile == extension_profile_one_byte {
+		for r.remaining() > 0 {
+			b := r.u8('extension header')!
+			// Identifier 0 is a padding byte and carries no length.
+			if b == 0 {
+				continue
+			}
+			id := b >> 4
+			// Identifier 15 marks the end of the extension list: a receiver
+			// must stop parsing, because what follows is padding chosen by the
+			// sender and is not an element.
+			if id == 15 {
+				break
+			}
+			length := int(b & 0x0F) + 1
+			payload := r.bytes(length, 'extension ${id} payload') or {
+				return DecodeError{
+					reason: .bad_extension
+					detail: 'one-byte extension ${id} declares ${length} bytes but only ${r.remaining()} remain'
+				}
+			}
+			out << Extension{
+				id:      id
+				payload: payload
+			}
+		}
+		return out
+	}
+
+	if profile & 0xFFF0 == extension_profile_two_byte_base {
+		for r.remaining() > 0 {
+			id := r.u8('extension id')!
+			if id == 0 {
+				continue
+			}
+			length := int(r.u8('extension length') or {
+				return DecodeError{
+					reason: .bad_extension
+					detail: 'two-byte extension ${id} has no length byte'
+				}
+			})
+			payload := r.bytes(length, 'extension ${id} payload') or {
+				return DecodeError{
+					reason: .bad_extension
+					detail: 'two-byte extension ${id} declares ${length} bytes but only ${r.remaining()} remain'
+				}
+			}
+			out << Extension{
+				id:      id
+				payload: payload
+			}
+		}
+		return out
+	}
+
+	// A profile outside RFC 8285 identifies a single opaque extension. It is
+	// kept whole under id 0 so the packet still round-trips, rather than being
+	// dropped or misparsed as elements.
+	if body.len > 0 {
+		out << Extension{
+			id:      0
+			payload: body.clone()
+		}
+	}
+	return out
+}
