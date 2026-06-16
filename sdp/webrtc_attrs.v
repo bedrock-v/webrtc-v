@@ -21,3 +21,12 @@ pub enum Setup {
 	// holdconn: no connection is to be established.
 	holdconn
 }
+
+pub fn (s Setup) str() string {
+	return match s {
+		.active { 'active' }
+		.passive { 'passive' }
+		.actpass { 'actpass' }
+		.holdconn { 'holdconn' }
+	}
+}
