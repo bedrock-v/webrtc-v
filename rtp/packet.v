@@ -223,3 +223,50 @@ pub fn is_rtcp_payload_type(b []u8) bool {
 	pt := b[1] & 0x7F
 	return pt >= 64 && pt <= 95
 }
+
+// header_length returns the number of bytes the header occupies, including the
+// contributing source list and any header extension.
+//
+// It exists so that SRTP can find the boundary between the part of a packet it
+// authenticates and the part it encrypts without parsing and allocating a whole
+// Packet for every datagram on the wire.
+pub fn header_length(b []u8) !int {
+	if b.len < header_size {
+		return DecodeError{
+			reason: .too_short
+			detail: '${b.len} bytes is smaller than the ${header_size}-byte header'
+		}
+	}
+	if b[0] >> 6 != version {
+		return DecodeError{
+			reason: .bad_version
+			detail: 'version ${b[0] >> 6} is not 2'
+		}
+	}
+	mut length := header_size + int(b[0] & 0x0F) * 4
+	if b[0] & 0x10 == 0 {
+		if length > b.len {
+			return DecodeError{
+				reason: .bad_csrc
+				detail: 'CSRC list runs past the end of the packet'
+			}
+		}
+		return length
+	}
+	// The extension header is four bytes: a profile and a length in words.
+	if length + 4 > b.len {
+		return DecodeError{
+			reason: .bad_extension
+			detail: 'extension flag set but the extension header does not fit'
+		}
+	}
+	words := int((u16(b[length + 2]) << 8) | u16(b[length + 3]))
+	length += 4 + words * 4
+	if length > b.len {
+		return DecodeError{
+			reason: .bad_extension
+			detail: 'extension body runs past the end of the packet'
+		}
+	}
+	return length
+}
