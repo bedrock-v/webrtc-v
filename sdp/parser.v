@@ -365,3 +365,15 @@ fn parse_connection(value string) !ConnectionData {
 	}
 	return conn
 }
+
+fn parse_bandwidth(value string) !Bandwidth {
+	idx := value.index(':') or { return error('b= line is missing a colon') }
+	typ := value[..idx]
+	if typ == '' {
+		return error('b= line has an empty bandwidth type')
+	}
+	return Bandwidth{
+		typ:   typ
+		value: parse_u64(value[idx + 1..]) or { return error('bad bandwidth value: ${err.msg()}') }
+	}
+}
