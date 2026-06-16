@@ -40,3 +40,16 @@ pub fn setup_from_string(s string) ?Setup {
 		else { none }
 	}
 }
+
+// answer returns the role an answerer must take in response to an offered role.
+pub fn (s Setup) answer() Setup {
+	return match s {
+		// RFC 5763 section 5: an answerer that receives actpass picks a role,
+		// and picking active means it starts the handshake, which avoids a
+		// round trip.
+		.actpass { Setup.active }
+		.active { Setup.passive }
+		.passive { Setup.active }
+		.holdconn { Setup.holdconn }
+	}
+}
