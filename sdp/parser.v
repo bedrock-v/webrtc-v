@@ -403,3 +403,27 @@ fn parse_repeat(value string) !Repeat {
 	}
 	return repeat
 }
+
+// parse_typed_time reads the compact time form of RFC 8866 section 5.10, where
+// a trailing unit letter multiplies the value: 2d is two days.
+fn parse_typed_time(field string) !u64 {
+	if field == '' {
+		return error('empty time value')
+	}
+	last := field[field.len - 1]
+	multiplier := match last {
+		`d` { u64(86400) }
+		`h` { u64(3600) }
+		`m` { u64(60) }
+		`s` { u64(1) }
+		else { u64(0) }
+	}
+	if multiplier == 0 {
+		return parse_u64(field)!
+	}
+	base := parse_u64(field[..field.len - 1])!
+	if base > u64(-1) / multiplier {
+		return error('time value ${field} overflows')
+	}
+	return base * multiplier
+}
