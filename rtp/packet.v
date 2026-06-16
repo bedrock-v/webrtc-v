@@ -270,3 +270,97 @@ pub fn header_length(b []u8) !int {
 	}
 	return length
 }
+
+// Packet.decode parses an RTP packet.
+pub fn Packet.decode(b []u8) !Packet {
+	mut r := codec.Reader.new(b)
+	if b.len < header_size {
+		return DecodeError{
+			reason: .too_short
+			detail: '${b.len} bytes is smaller than the ${header_size}-byte header'
+		}
+	}
+
+	first := r.u8('flags')!
+	ver := first >> 6
+	if ver != version {
+		return DecodeError{
+			reason: .bad_version
+			detail: 'version ${ver} is not 2'
+		}
+	}
+	has_padding := first & 0x20 != 0
+	has_extension := first & 0x10 != 0
+	csrc_count := int(first & 0x0F)
+
+	second := r.u8('marker and payload type')!
+	mut header := Header{
+		version:         version
+		padding:         has_padding
+		marker:          second & 0x80 != 0
+		payload_type:    second & 0x7F
+		sequence_number: r.u16('sequence number')!
+		timestamp:       r.u32('timestamp')!
+		ssrc:            r.u32('ssrc')!
+	}
+
+	header.csrc = []u32{cap: csrc_count}
+	for i in 0 .. csrc_count {
+		header.csrc << r.u32('csrc ${i}') or {
+			return DecodeError{
+				reason: .bad_csrc
+				detail: 'CC declares ${csrc_count} sources but the packet holds ${i}'
+			}
+		}
+	}
+
+	if has_extension {
+		header.extension_profile = r.u16('extension profile') or {
+			return DecodeError{
+				reason: .bad_extension
+				detail: 'extension flag set but no extension header present'
+			}
+		}
+		words := int(r.u16('extension length') or {
+			return DecodeError{
+				reason: .bad_extension
+				detail: 'truncated extension header'
+			}
+		})
+		body := r.view(words * 4, 'extension body') or {
+			return DecodeError{
+				reason: .bad_extension
+				detail: 'extension declares ${words * 4} bytes but only ${r.remaining()} remain'
+			}
+		}
+		header.extensions = parse_extensions(header.extension_profile, body)!
+	}
+
+	mut payload := r.rest_view()
+
+	// Padding is stripped before the payload is handed to the caller: the
+	// length byte is the last byte of the packet and it counts itself.
+	mut padding_size := 0
+	if has_padding {
+		if payload.len == 0 {
+			return DecodeError{
+				reason: .bad_padding
+				detail: 'padding flag set but the packet has no payload'
+			}
+		}
+		padding_size = int(payload[payload.len - 1])
+		if padding_size == 0 || padding_size > payload.len {
+			return DecodeError{
+				reason: .bad_padding
+				detail: 'padding length ${padding_size} does not fit the ${payload.len}-byte payload'
+			}
+		}
+		payload = unsafe { payload[..payload.len - padding_size] }
+	}
+
+	return Packet{
+		header:       header
+		payload:      payload.clone()
+		padding_size: padding_size
+	}
+}
