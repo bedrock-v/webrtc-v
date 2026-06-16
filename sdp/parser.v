@@ -388,3 +388,18 @@ fn parse_time(value string) !TimeDescription {
 		stop_time:  parse_u64(fields[1]) or { return error('bad stop time: ${err.msg()}') }
 	}
 }
+
+fn parse_repeat(value string) !Repeat {
+	fields := value.split(' ')
+	if fields.len < 3 {
+		return error('r= line has ${fields.len} fields, expected at least 3')
+	}
+	mut repeat := Repeat{
+		interval: parse_typed_time(fields[0])!
+		active:   parse_typed_time(fields[1])!
+	}
+	for field in fields[2..] {
+		repeat.offsets << parse_typed_time(field)!
+	}
+	return repeat
+}
