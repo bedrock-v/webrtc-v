@@ -94,3 +94,25 @@ pub mut:
 	extension_profile u16
 	extensions        []Extension
 }
+
+// has_extensions reports whether the header carries any extension elements.
+@[inline]
+pub fn (h &Header) has_extensions() bool {
+	return h.extensions.len > 0
+}
+
+// uses_two_byte_extensions reports which RFC 8285 form the header uses.
+@[inline]
+pub fn (h &Header) uses_two_byte_extensions() bool {
+	return h.extension_profile & 0xFFF0 == extension_profile_two_byte_base
+}
+
+// extension returns the payload of the extension with the given id.
+pub fn (h &Header) extension(id u8) ?[]u8 {
+	for ext in h.extensions {
+		if ext.id == id {
+			return ext.payload
+		}
+	}
+	return none
+}
