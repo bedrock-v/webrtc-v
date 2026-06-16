@@ -476,3 +476,24 @@ fn parse_u32(s string) !u32 {
 	}
 	return u32(v)
 }
+
+fn parse_u64(s string) !u64 {
+	if s == '' {
+		return error('empty numeric field')
+	}
+	if s.len > 20 {
+		return error('numeric field "${truncate(s, 24)}" is too long')
+	}
+	mut v := u64(0)
+	for c in s {
+		if c < `0` || c > `9` {
+			return error('"${truncate(s, 24)}" is not a number')
+		}
+		digit := u64(c - `0`)
+		if v > (u64(-1) - digit) / 10 {
+			return error('numeric field "${s}" overflows')
+		}
+		v = v * 10 + digit
+	}
+	return v
+}
