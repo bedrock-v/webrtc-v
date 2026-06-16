@@ -53,3 +53,11 @@ pub fn (s Setup) answer() Setup {
 		.holdconn { Setup.holdconn }
 	}
 }
+
+// Fingerprint is an `a=fingerprint` value: the hash of the peer's certificate,
+// which binds the DTLS handshake to the signalled identity.
+pub struct Fingerprint {
+pub:
+	algorithm string
+	value     string
+}
