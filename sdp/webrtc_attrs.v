@@ -30,3 +30,13 @@ pub fn (s Setup) str() string {
 		.holdconn { 'holdconn' }
 	}
 }
+
+pub fn setup_from_string(s string) ?Setup {
+	return match s {
+		'active' { Setup.active }
+		'passive' { Setup.passive }
+		'actpass' { Setup.actpass }
+		'holdconn' { Setup.holdconn }
+		else { none }
+	}
+}
