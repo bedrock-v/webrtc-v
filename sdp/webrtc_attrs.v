@@ -211,3 +211,7 @@ pub fn (m &MediaDescription) attribute(key string) ?string {
 pub fn (m &MediaDescription) attribute_values(key string) []string {
 	return attribute_values(m.attributes, key)
 }
+
+pub fn (m &MediaDescription) has_attribute(key string) bool {
+	return has_attribute(m.attributes, key)
+}
