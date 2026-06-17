@@ -104,3 +104,11 @@ pub:
 	typ          string
 	parameter    string
 }
+
+pub fn (f RtcpFeedback) str() string {
+	pt := if f.wildcard { '*' } else { f.payload_type.str() }
+	if f.parameter == '' {
+		return '${pt} ${f.typ}'
+	}
+	return '${pt} ${f.typ} ${f.parameter}'
+}
