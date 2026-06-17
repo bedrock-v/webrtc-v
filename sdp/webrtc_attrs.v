@@ -328,3 +328,9 @@ pub fn (s &SessionDescription) setup(media &MediaDescription) ?Setup {
 pub fn (m &MediaDescription) candidates() []string {
 	return attribute_values(m.attributes, 'candidate')
 }
+
+// has_end_of_candidates reports whether the peer has signalled that its
+// gathering is complete (RFC 8840).
+pub fn (m &MediaDescription) has_end_of_candidates() bool {
+	return has_attribute(m.attributes, 'end-of-candidates')
+}
