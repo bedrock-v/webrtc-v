@@ -164,3 +164,13 @@ pub fn (m Msid) str() string {
 	}
 	return '${m.stream_id} ${m.track_id}'
 }
+
+// attribute returns the value of the first attribute with the given key.
+pub fn attribute(attrs []Attribute, key string) ?string {
+	for attr in attrs {
+		if attr.key == key {
+			return attr.value
+		}
+	}
+	return none
+}
