@@ -199,3 +199,23 @@ fn test_extension_profile_chosen_by_first_element() {
 	big_header.set_extension(1, []u8{len: 17})!
 	assert big_header.uses_two_byte_extensions()
 }
+
+fn test_set_extension_enforces_profile_limits() {
+	mut h := Header{}
+	h.set_extension(1, [u8(1)])!
+	assert h.extension_profile == extension_profile_one_byte
+
+	// Once the one-byte profile is fixed, an element that does not fit it is an
+	// error rather than a silent upgrade that would invalidate what came first.
+	h.set_extension(20, [u8(1)]) or {
+		h.set_extension(2, []u8{len: 17}) or {
+			h.set_extension(2, []u8{}) or {
+				h.set_extension(0, [u8(1)]) or { return }
+				assert false, 'id 0 must be rejected'
+			}
+			assert false, 'an empty one-byte payload must be rejected'
+		}
+		assert false, 'an over-long one-byte payload must be rejected'
+	}
+	assert false, 'an out-of-range one-byte id must be rejected'
+}
