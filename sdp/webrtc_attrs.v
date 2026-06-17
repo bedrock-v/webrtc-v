@@ -134,3 +134,11 @@ pub fn (e ExtMap) str() string {
 	}
 	return s
 }
+
+// SsrcAttribute is an `a=ssrc` value: a per-source attribute such as cname.
+pub struct SsrcAttribute {
+pub:
+	ssrc      u32
+	attribute string
+	value     string
+}
