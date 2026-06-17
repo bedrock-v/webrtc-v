@@ -140,3 +140,26 @@ fn test_decode_rejects_short_packets() {
 		assert false, 'a ${n}-byte packet must be rejected'
 	}
 }
+
+fn test_one_byte_extensions_round_trip() {
+	mut p := Packet{
+		header:  Header{
+			payload_type: 96
+		}
+		payload: [u8(0xFF)]
+	}
+	p.header.set_extension(1, [u8(0xAA)])!
+	p.header.set_extension(5, [u8(0xBB), 0xCC, 0xDD])!
+
+	assert p.header.extension_profile == extension_profile_one_byte
+	assert !p.header.uses_two_byte_extensions()
+
+	raw := p.marshal()!
+	assert raw[0] & 0x10 != 0
+
+	back := Packet.decode(raw)!
+	assert back.header.extension(1)? == [u8(0xAA)]
+	assert back.header.extension(5)? == [u8(0xBB), 0xCC, 0xDD]
+	assert back.header.extension(9) == none
+	assert back.payload == [u8(0xFF)]
+}
