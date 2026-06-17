@@ -150,3 +150,10 @@ pub:
 	semantics string
 	ssrcs     []u32
 }
+
+// Msid is an `a=msid` value tying a track to a media stream (RFC 8830).
+pub struct Msid {
+pub:
+	stream_id string
+	track_id  string
+}
