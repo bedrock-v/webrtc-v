@@ -500,3 +500,70 @@ pub fn (p &Packet) marshal() ![]u8 {
 	}
 	return w.buf
 }
+
+// encode_extensions builds the extension header and body, returning an empty
+// slice when there are no extensions.
+fn encode_extensions(h &Header) ![]u8 {
+	if h.extensions.len == 0 {
+		return []u8{}
+	}
+
+	mut body := codec.Writer.new()
+	if h.uses_two_byte_extensions() {
+		for ext in h.extensions {
+			if ext.id == 0 {
+				return EncodeError{
+					detail: 'extension id 0 is reserved for padding'
+				}
+			}
+			if ext.payload.len > 255 {
+				return EncodeError{
+					detail: 'two-byte extension ${ext.id} payload is ${ext.payload.len} bytes, over the 255-byte limit'
+				}
+			}
+			body.u8(ext.id)
+			body.u8(u8(ext.payload.len))
+			body.bytes(ext.payload)
+		}
+	} else if h.extension_profile == extension_profile_one_byte {
+		for ext in h.extensions {
+			if ext.id == 0 || ext.id > 14 {
+				return EncodeError{
+					detail: 'extension id ${ext.id} does not fit the one-byte form, which allows 1-14'
+				}
+			}
+			if ext.payload.len < 1 || ext.payload.len > 16 {
+				return EncodeError{
+					detail: 'one-byte extension ${ext.id} payload is ${ext.payload.len} bytes, outside the 1-16 range'
+				}
+			}
+			body.u8((ext.id << 4) | u8(ext.payload.len - 1))
+			body.bytes(ext.payload)
+		}
+	} else {
+		// An opaque non-RFC-8285 profile: write the single element back out
+		// exactly as it arrived.
+		if h.extensions.len != 1 {
+			return EncodeError{
+				detail: 'profile 0x${h.extension_profile.hex()} carries an opaque extension and cannot hold ${h.extensions.len} elements'
+			}
+		}
+		body.bytes(h.extensions[0].payload)
+	}
+
+	// The extension length field counts 32-bit words, so the body is padded
+	// with zero bytes, which the one-byte and two-byte forms both read as
+	// padding elements.
+	body.pad(4)
+	if body.len() / 4 > 0xFFFF {
+		return EncodeError{
+			detail: 'extension body of ${body.len()} bytes exceeds the 16-bit word count'
+		}
+	}
+
+	mut w := codec.Writer.with_capacity(4 + body.len())
+	w.u16(h.extension_profile)
+	w.u16(u16(body.len() / 4))
+	w.bytes(body.buf)
+	return w.buf
+}
