@@ -65,3 +65,12 @@ pub:
 pub fn (f Fingerprint) str() string {
 	return '${f.algorithm} ${f.value}'
 }
+
+// RtpMap is an `a=rtpmap` value binding a payload type to a codec.
+pub struct RtpMap {
+pub:
+	payload_type    u8
+	encoding_name   string
+	clock_rate      u32
+	encoding_params string
+}
