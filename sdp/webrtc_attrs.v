@@ -142,3 +142,11 @@ pub:
 	attribute string
 	value     string
 }
+
+// SsrcGroup is an `a=ssrc-group` value, for example FID pairing a media stream
+// with its retransmission stream.
+pub struct SsrcGroup {
+pub:
+	semantics string
+	ssrcs     []u32
+}
