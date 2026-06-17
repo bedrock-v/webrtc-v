@@ -393,3 +393,13 @@ pub fn (m &MediaDescription) fmtps() []Fmtp {
 	}
 	return out
 }
+
+// fmtp returns the format parameters for a payload type.
+pub fn (m &MediaDescription) fmtp(payload_type u8) ?string {
+	for entry in m.fmtps() {
+		if entry.payload_type == payload_type {
+			return entry.parameters
+		}
+	}
+	return none
+}
