@@ -263,3 +263,12 @@ pub fn (m &MediaDescription) direction() Direction {
 	}
 	return .unspecified
 }
+
+// ice_ufrag returns the `a=ice-ufrag` value, checking the media section first
+// and falling back to the session level, as RFC 8839 section 5.4 allows.
+pub fn (s &SessionDescription) ice_ufrag(media &MediaDescription) ?string {
+	if v := attribute(media.attributes, 'ice-ufrag') {
+		return v
+	}
+	return attribute(s.attributes, 'ice-ufrag')
+}
