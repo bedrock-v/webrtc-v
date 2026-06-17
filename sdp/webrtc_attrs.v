@@ -82,3 +82,10 @@ pub fn (r RtpMap) str() string {
 	}
 	return s
 }
+
+// Fmtp is an `a=fmtp` value: format-specific parameters for a payload type.
+pub struct Fmtp {
+pub:
+	payload_type u8
+	parameters   string
+}
