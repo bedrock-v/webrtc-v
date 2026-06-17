@@ -121,3 +121,22 @@ fn test_decode_rejects_bad_padding() {
 		assert false, 'expected ${name} to be rejected'
 	}
 }
+
+fn test_decode_rejects_wrong_version() {
+	raw := hex.decode('4060699bd9c8dd1a1c64b0d4')!
+	Packet.decode(raw) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .bad_version
+		}
+		return
+	}
+	assert false, 'version 1 must be rejected'
+}
+
+fn test_decode_rejects_short_packets() {
+	for n in 0 .. header_size {
+		Packet.decode([]u8{len: n, init: 0x80}) or { continue }
+		assert false, 'a ${n}-byte packet must be rejected'
+	}
+}
