@@ -272,3 +272,11 @@ pub fn (s &SessionDescription) ice_ufrag(media &MediaDescription) ?string {
 	}
 	return attribute(s.attributes, 'ice-ufrag')
 }
+
+// ice_pwd returns the `a=ice-pwd` value with the same fallback as ice_ufrag.
+pub fn (s &SessionDescription) ice_pwd(media &MediaDescription) ?string {
+	if v := attribute(media.attributes, 'ice-pwd') {
+		return v
+	}
+	return attribute(s.attributes, 'ice-pwd')
+}
