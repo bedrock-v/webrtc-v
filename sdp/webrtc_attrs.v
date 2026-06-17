@@ -112,3 +112,13 @@ pub fn (f RtcpFeedback) str() string {
 	}
 	return '${pt} ${f.typ} ${f.parameter}'
 }
+
+// ExtMap is an `a=extmap` value declaring an RTP header extension (RFC 8285).
+pub struct ExtMap {
+pub:
+	id        u16
+	direction Direction
+	uri       string
+	// attributes carries any extension-specific suffix.
+	attributes string
+}
