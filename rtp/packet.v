@@ -567,3 +567,19 @@ fn encode_extensions(h &Header) ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+// marshal_size returns the number of bytes marshal will produce, without
+// building the packet. A pacer uses it to decide whether a packet fits the path
+// MTU before committing to sending it.
+pub fn (p &Packet) marshal_size() int {
+	mut size := header_size + p.header.csrc.len * 4 + p.payload.len + p.padding_size
+	if p.header.extensions.len > 0 {
+		body := encode_extensions(p.header) or { return size }
+		size += body.len
+	}
+	return size
+}
+
+pub fn (p &Packet) str() string {
+	return 'RTP pt=${p.header.payload_type} seq=${p.header.sequence_number} ts=${p.header.timestamp} ssrc=${p.header.ssrc} marker=${p.header.marker} payload=${p.payload.len}B'
+}
