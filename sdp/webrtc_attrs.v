@@ -74,3 +74,11 @@ pub:
 	clock_rate      u32
 	encoding_params string
 }
+
+pub fn (r RtpMap) str() string {
+	mut s := '${r.payload_type} ${r.encoding_name}/${r.clock_rate}'
+	if r.encoding_params != '' {
+		s += '/${r.encoding_params}'
+	}
+	return s
+}
