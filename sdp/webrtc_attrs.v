@@ -122,3 +122,15 @@ pub:
 	// attributes carries any extension-specific suffix.
 	attributes string
 }
+
+pub fn (e ExtMap) str() string {
+	mut s := e.id.str()
+	if e.direction != .unspecified {
+		s += '/${e.direction}'
+	}
+	s += ' ${e.uri}'
+	if e.attributes != '' {
+		s += ' ${e.attributes}'
+	}
+	return s
+}
