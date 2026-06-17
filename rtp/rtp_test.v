@@ -44,3 +44,19 @@ fn test_marker_and_payload_type_split() {
 	assert back.header.marker
 	assert back.header.payload_type == 111
 }
+
+fn test_csrc_round_trip() {
+	mut p := Packet{
+		header:  Header{
+			payload_type: 96
+			csrc:         [u32(0x11111111), 0x22222222, 0x33333333]
+		}
+		payload: [u8(0xAA)]
+	}
+	raw := p.marshal()!
+	assert raw[0] & 0x0F == 3
+	assert raw.len == header_size + 12 + 1
+
+	back := Packet.decode(raw)!
+	assert back.header.csrc == [u32(0x11111111), 0x22222222, 0x33333333]
+}
