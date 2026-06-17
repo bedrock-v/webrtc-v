@@ -21,3 +21,26 @@ fn test_decode_minimal_packet() {
 	assert p.payload == [u8(0x98), 0x36, 0x43, 0x23]
 	assert p.padding_size == 0
 }
+
+fn test_round_trip_minimal_packet() {
+	raw := hex.decode(minimal_packet)!
+	p := Packet.decode(raw)!
+	assert p.marshal()!.hex() == minimal_packet
+	assert p.marshal_size() == raw.len
+}
+
+fn test_marker_and_payload_type_split() {
+	mut p := Packet{
+		header:  Header{
+			marker:       true
+			payload_type: 111
+		}
+		payload: [u8(1)]
+	}
+	raw := p.marshal()!
+	assert raw[1] == 0xEF // marker set, payload type 111
+
+	back := Packet.decode(raw)!
+	assert back.header.marker
+	assert back.header.payload_type == 111
+}
