@@ -341,3 +341,8 @@ pub fn (m &MediaDescription) has_end_of_candidates() bool {
 pub fn (m &MediaDescription) uses_rtcp_mux() bool {
 	return has_attribute(m.attributes, 'rtcp-mux')
 }
+
+// uses_rtcp_rsize reports whether reduced-size RTCP is permitted (RFC 5506).
+pub fn (m &MediaDescription) uses_rtcp_rsize() bool {
+	return has_attribute(m.attributes, 'rtcp-rsize')
+}
