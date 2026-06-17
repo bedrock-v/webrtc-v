@@ -322,3 +322,9 @@ pub fn (s &SessionDescription) setup(media &MediaDescription) ?Setup {
 	}
 	return setup_from_string(raw)
 }
+
+// candidates returns the raw `a=candidate` values. Parsing them belongs to the
+// ICE layer, which owns the candidate grammar.
+pub fn (m &MediaDescription) candidates() []string {
+	return attribute_values(m.attributes, 'candidate')
+}
