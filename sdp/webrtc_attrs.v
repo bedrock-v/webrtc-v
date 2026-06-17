@@ -61,3 +61,7 @@ pub:
 	algorithm string
 	value     string
 }
+
+pub fn (f Fingerprint) str() string {
+	return '${f.algorithm} ${f.value}'
+}
