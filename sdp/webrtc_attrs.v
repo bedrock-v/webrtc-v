@@ -89,3 +89,7 @@ pub:
 	payload_type u8
 	parameters   string
 }
+
+pub fn (f Fmtp) str() string {
+	return '${f.payload_type} ${f.parameters}'
+}
