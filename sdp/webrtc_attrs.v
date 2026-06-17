@@ -241,3 +241,12 @@ pub fn (s &SessionDescription) bundle_groups() [][]string {
 	}
 	return out
 }
+
+// mid returns the `a=mid` identifier of a media section.
+pub fn (m &MediaDescription) mid() ?string {
+	value := attribute(m.attributes, 'mid')?
+	if value == '' {
+		return none
+	}
+	return value
+}
