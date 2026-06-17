@@ -283,3 +283,38 @@ fn test_decode_rejects_truncated_extension() {
 		assert false, 'expected ${encoded} to be rejected'
 	}
 }
+
+fn test_unknown_extension_profile_round_trips_opaquely() {
+	// Profile 0x1234 is neither RFC 8285 form; the body is preserved whole so
+	// the packet re-marshals unchanged.
+	raw := hex.decode('9060699bd9c8dd1a1c64b0d41234000101020304')!
+	p := Packet.decode(raw)!
+	assert p.header.extension_profile == 0x1234
+	assert p.header.extensions.len == 1
+	assert p.header.extensions[0].payload == [u8(1), 2, 3, 4]
+	assert p.marshal()!.hex() == raw.hex()
+}
+
+fn test_extension_body_is_padded_to_a_word() {
+	mut h := Header{}
+	// One element: 1 header byte + 1 payload byte = 2, padded to 4.
+	h.set_extension(1, [u8(0xAA)])!
+	body := encode_extensions(h)!
+	assert body.len == 8 // 4-byte extension header + 4-byte body
+	assert body[2] == 0x00 && body[3] == 0x01 // one 32-bit word
+}
+
+fn test_demultiplexing_predicates() {
+	rtp_packet := hex.decode(minimal_packet)!
+	assert is_rtp(rtp_packet)
+	assert !is_rtcp_payload_type(rtp_packet)
+
+	// A sender report: version 2, payload type 200.
+	sr := hex.decode('80c800061c64b0d4')!
+	assert is_rtcp_payload_type(sr)
+
+	// STUN and DTLS both fall outside the 128-191 first-byte range.
+	assert !is_rtp([]u8{len: 20, init: 0x00})
+	assert !is_rtp([]u8{len: 20, init: 0x16})
+	assert !is_rtp([]u8{len: 4, init: 0x80})
+}
