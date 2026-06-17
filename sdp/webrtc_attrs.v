@@ -215,3 +215,15 @@ pub fn (m &MediaDescription) attribute_values(key string) []string {
 pub fn (m &MediaDescription) has_attribute(key string) bool {
 	return has_attribute(m.attributes, key)
 }
+
+// media_description returns the section with the given `a=mid` value.
+pub fn (s &SessionDescription) media_description(mid string) ?MediaDescription {
+	for media in s.media_descriptions {
+		if got := media.mid() {
+			if got == mid {
+				return media
+			}
+		}
+	}
+	return none
+}
