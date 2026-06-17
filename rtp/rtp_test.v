@@ -163,3 +163,39 @@ fn test_one_byte_extensions_round_trip() {
 	assert back.header.extension(9) == none
 	assert back.payload == [u8(0xFF)]
 }
+
+fn test_two_byte_extensions_round_trip() {
+	mut p := Packet{
+		header: Header{
+			payload_type:      96
+			extension_profile: extension_profile_two_byte_base
+		}
+	}
+	p.header.set_extension(200, []u8{len: 32, init: u8(index)})!
+	// A zero-length payload is legal in the two-byte form and not in the
+	// one-byte form, so it is a good check that the profile is honoured.
+	p.header.set_extension(3, []u8{})!
+
+	assert p.header.uses_two_byte_extensions()
+	back := Packet.decode(p.marshal()!)!
+	assert back.header.uses_two_byte_extensions()
+	assert back.header.extension(200)?.len == 32
+	assert back.header.extension(3)?.len == 0
+}
+
+fn test_extension_profile_chosen_by_first_element() {
+	mut short_header := Header{}
+	short_header.set_extension(3, [u8(1), 2])!
+	assert short_header.extension_profile == extension_profile_one_byte
+
+	// An id above 14 cannot be expressed in the one-byte form, so the two-byte
+	// form is chosen instead.
+	mut long_header := Header{}
+	long_header.set_extension(20, [u8(1)])!
+	assert long_header.uses_two_byte_extensions()
+
+	// So does a payload that will not fit 16 bytes.
+	mut big_header := Header{}
+	big_header.set_extension(1, []u8{len: 17})!
+	assert big_header.uses_two_byte_extensions()
+}
