@@ -157,3 +157,10 @@ pub:
 	stream_id string
 	track_id  string
 }
+
+pub fn (m Msid) str() string {
+	if m.track_id == '' {
+		return m.stream_id
+	}
+	return '${m.stream_id} ${m.track_id}'
+}
