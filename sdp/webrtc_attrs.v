@@ -369,3 +369,13 @@ pub fn (m &MediaDescription) rtpmaps() []RtpMap {
 	}
 	return out
 }
+
+// rtpmap returns the codec bound to a payload type.
+pub fn (m &MediaDescription) rtpmap(payload_type u8) ?RtpMap {
+	for entry in m.rtpmaps() {
+		if entry.payload_type == payload_type {
+			return entry
+		}
+	}
+	return none
+}
