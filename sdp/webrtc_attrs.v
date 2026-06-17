@@ -93,3 +93,14 @@ pub:
 pub fn (f Fmtp) str() string {
 	return '${f.payload_type} ${f.parameters}'
 }
+
+// RtcpFeedback is an `a=rtcp-fb` value.
+pub struct RtcpFeedback {
+pub:
+	// payload_type is the type the feedback applies to; wildcard is true when
+	// the attribute used '*' to mean all of them.
+	payload_type u8
+	wildcard     bool
+	typ          string
+	parameter    string
+}
