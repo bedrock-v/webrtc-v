@@ -38,3 +38,34 @@ pub fn Sequencer.starting_at(sequence_number u16) Sequencer {
 		started:         false
 	}
 }
+
+// next returns the sequence number for the next packet.
+pub fn (mut s Sequencer) next() u16 {
+	if !s.started {
+		s.started = true
+		return s.sequence_number
+	}
+	s.sequence_number++
+	if s.sequence_number == 0 {
+		s.roll_over_count++
+	}
+	return s.sequence_number
+}
+
+// roll_over_count returns how many times the sequence number has wrapped. SRTP
+// needs it to build the 48-bit packet index that its ciphers are keyed on.
+@[inline]
+pub fn (s &Sequencer) roll_over_count() u32 {
+	return s.roll_over_count
+}
+
+// is_newer_sequence reports whether a is newer than b, treating the 16-bit
+// space as circular (RFC 1982 serial number arithmetic).
+//
+// Exactly half the space is "newer" and half is "older"; the antipodal value is
+// arbitrarily called older, which is the convention every RTP stack uses.
+@[inline]
+pub fn is_newer_sequence(a u16, b u16) bool {
+	diff := u16(a - b)
+	return diff != 0 && diff < 0x8000
+}
