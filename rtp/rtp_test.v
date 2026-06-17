@@ -60,3 +60,29 @@ fn test_csrc_round_trip() {
 	back := Packet.decode(raw)!
 	assert back.header.csrc == [u32(0x11111111), 0x22222222, 0x33333333]
 }
+
+fn test_marshal_rejects_too_many_csrc() {
+	mut p := Packet{
+		header: Header{
+			csrc: []u32{len: 16}
+		}
+	}
+	p.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'more than 15 CSRCs must be rejected'
+}
+
+fn test_decode_rejects_truncated_csrc_list() {
+	// CC says 3, but the packet ends after the fixed header.
+	raw := hex.decode('8360699bd9c8dd1a1c64b0d4')!
+	Packet.decode(raw) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .bad_csrc
+		}
+		return
+	}
+	assert false, 'a truncated CSRC list must be rejected'
+}
