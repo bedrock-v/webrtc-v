@@ -195,3 +195,11 @@ pub fn has_attribute(attrs []Attribute, key string) bool {
 	}
 	return false
 }
+
+pub fn (s &SessionDescription) attribute(key string) ?string {
+	return attribute(s.attributes, key)
+}
+
+pub fn (s &SessionDescription) has_attribute(key string) bool {
+	return has_attribute(s.attributes, key)
+}
