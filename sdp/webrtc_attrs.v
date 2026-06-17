@@ -458,3 +458,26 @@ pub fn (m &MediaDescription) extmaps() []ExtMap {
 	}
 	return out
 }
+
+// ssrcs returns the parsed `a=ssrc` lines.
+pub fn (m &MediaDescription) ssrcs() []SsrcAttribute {
+	mut out := []SsrcAttribute{}
+	for value in attribute_values(m.attributes, 'ssrc') {
+		space := value.index(' ') or { continue }
+		ssrc := parse_u32(value[..space]) or { continue }
+		rest := value[space + 1..]
+		if colon := rest.index(':') {
+			out << SsrcAttribute{
+				ssrc:      ssrc
+				attribute: rest[..colon]
+				value:     rest[colon + 1..]
+			}
+		} else {
+			out << SsrcAttribute{
+				ssrc:      ssrc
+				attribute: rest
+			}
+		}
+	}
+	return out
+}
