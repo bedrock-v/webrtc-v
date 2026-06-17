@@ -250,3 +250,16 @@ pub fn (m &MediaDescription) mid() ?string {
 	}
 	return value
 }
+
+// direction returns the media direction of a section.
+pub fn (m &MediaDescription) direction() Direction {
+	for attr in m.attributes {
+		if attr.value != '' {
+			continue
+		}
+		if d := direction_from_string(attr.key) {
+			return d
+		}
+	}
+	return .unspecified
+}
