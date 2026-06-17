@@ -289,3 +289,27 @@ pub fn (s &SessionDescription) ice_options(media &MediaDescription) []string {
 	}
 	return raw.split(' ').filter(it != '')
 }
+
+// fingerprints returns the `a=fingerprint` values of a section, falling back to
+// the session level.
+//
+// More than one may be present when a peer offers several certificates. A
+// handshake is acceptable if the peer certificate matches any of them.
+pub fn (s &SessionDescription) fingerprints(media &MediaDescription) []Fingerprint {
+	mut values := attribute_values(media.attributes, 'fingerprint')
+	if values.len == 0 {
+		values = attribute_values(s.attributes, 'fingerprint')
+	}
+	mut out := []Fingerprint{cap: values.len}
+	for value in values {
+		fields := value.split(' ').filter(it != '')
+		if fields.len != 2 {
+			continue
+		}
+		out << Fingerprint{
+			algorithm: fields[0].to_lower()
+			value:     fields[1].to_lower()
+		}
+	}
+	return out
+}
