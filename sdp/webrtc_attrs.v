@@ -334,3 +334,10 @@ pub fn (m &MediaDescription) candidates() []string {
 pub fn (m &MediaDescription) has_end_of_candidates() bool {
 	return has_attribute(m.attributes, 'end-of-candidates')
 }
+
+// uses_rtcp_mux reports whether RTP and RTCP share one port. WebRTC endpoints
+// always do; the attribute is checked rather than assumed because a peer that
+// omits it needs a second port.
+pub fn (m &MediaDescription) uses_rtcp_mux() bool {
+	return has_attribute(m.attributes, 'rtcp-mux')
+}
