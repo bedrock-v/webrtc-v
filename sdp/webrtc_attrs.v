@@ -403,3 +403,28 @@ pub fn (m &MediaDescription) fmtp(payload_type u8) ?string {
 	}
 	return none
 }
+
+// rtcp_feedback returns the parsed `a=rtcp-fb` lines.
+pub fn (m &MediaDescription) rtcp_feedback() []RtcpFeedback {
+	mut out := []RtcpFeedback{}
+	for value in attribute_values(m.attributes, 'rtcp-fb') {
+		fields := value.split(' ').filter(it != '')
+		if fields.len < 2 {
+			continue
+		}
+		mut wildcard := false
+		mut pt := u8(0)
+		if fields[0] == '*' {
+			wildcard = true
+		} else {
+			pt = parse_payload_type(fields[0]) or { continue }
+		}
+		out << RtcpFeedback{
+			payload_type: pt
+			wildcard:     wildcard
+			typ:          fields[1]
+			parameter:    if fields.len > 2 { fields[2..].join(' ') } else { '' }
+		}
+	}
+	return out
+}
