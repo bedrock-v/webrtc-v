@@ -174,3 +174,14 @@ pub fn attribute(attrs []Attribute, key string) ?string {
 	}
 	return none
 }
+
+// attribute_values returns the values of every attribute with the given key.
+pub fn attribute_values(attrs []Attribute, key string) []string {
+	mut out := []string{}
+	for attr in attrs {
+		if attr.key == key {
+			out << attr.value
+		}
+	}
+	return out
+}
