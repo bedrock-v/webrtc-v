@@ -428,3 +428,33 @@ pub fn (m &MediaDescription) rtcp_feedback() []RtcpFeedback {
 	}
 	return out
 }
+
+// extmaps returns the parsed `a=extmap` lines.
+pub fn (m &MediaDescription) extmaps() []ExtMap {
+	mut out := []ExtMap{}
+	for value in attribute_values(m.attributes, 'extmap') {
+		fields := value.split(' ').filter(it != '')
+		if fields.len < 2 {
+			continue
+		}
+		mut id_field := fields[0]
+		mut direction := Direction.unspecified
+		if slash := id_field.index('/') {
+			direction = direction_from_string(id_field[slash + 1..]) or { Direction.unspecified }
+			id_field = id_field[..slash]
+		}
+		id := parse_u32(id_field) or { continue }
+		// RFC 8285 section 4.2: identifiers run from 1 to 14 in the one-byte
+		// form and up to 255 in the two-byte form. Zero is never valid.
+		if id == 0 || id > 255 {
+			continue
+		}
+		out << ExtMap{
+			id:         u16(id)
+			direction:  direction
+			uri:        fields[1]
+			attributes: if fields.len > 2 { fields[2..].join(' ') } else { '' }
+		}
+	}
+	return out
+}
