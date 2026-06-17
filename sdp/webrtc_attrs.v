@@ -203,3 +203,11 @@ pub fn (s &SessionDescription) attribute(key string) ?string {
 pub fn (s &SessionDescription) has_attribute(key string) bool {
 	return has_attribute(s.attributes, key)
 }
+
+pub fn (m &MediaDescription) attribute(key string) ?string {
+	return attribute(m.attributes, key)
+}
+
+pub fn (m &MediaDescription) attribute_values(key string) []string {
+	return attribute_values(m.attributes, key)
+}
