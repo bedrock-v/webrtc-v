@@ -19,3 +19,22 @@ mut:
 	roll_over_count u32
 	started         bool
 }
+
+// Sequencer.new returns a sequencer starting from a random point.
+pub fn Sequencer.new() !Sequencer {
+	start := randutil.next_u16()!
+	return Sequencer{
+		sequence_number: start
+		started:         false
+	}
+}
+
+// Sequencer.starting_at returns a sequencer with a chosen initial value. It
+// exists for tests and for resuming a stream; new streams should use
+// Sequencer.new.
+pub fn Sequencer.starting_at(sequence_number u16) Sequencer {
+	return Sequencer{
+		sequence_number: sequence_number
+		started:         false
+	}
+}
