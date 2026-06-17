@@ -313,3 +313,12 @@ pub fn (s &SessionDescription) fingerprints(media &MediaDescription) []Fingerpri
 	}
 	return out
 }
+
+// setup returns the `a=setup` role of a section, falling back to the session
+// level.
+pub fn (s &SessionDescription) setup(media &MediaDescription) ?Setup {
+	raw := attribute(media.attributes, 'setup') or {
+		attribute(s.attributes, 'setup') or { return none }
+	}
+	return setup_from_string(raw)
+}
