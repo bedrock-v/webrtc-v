@@ -436,3 +436,67 @@ fn parse_extensions(profile u16, body []u8) ![]Extension {
 	}
 	return out
 }
+
+// marshal serialises the packet.
+pub fn (p &Packet) marshal() ![]u8 {
+	if p.header.version != version {
+		return EncodeError{
+			detail: 'cannot marshal version ${p.header.version}, only version 2 is supported'
+		}
+	}
+	if p.header.csrc.len > max_csrc {
+		return EncodeError{
+			detail: '${p.header.csrc.len} contributing sources exceed the ${max_csrc} the CC field can express'
+		}
+	}
+	if p.header.payload_type > 127 {
+		return EncodeError{
+			detail: 'payload type ${p.header.payload_type} does not fit 7 bits'
+		}
+	}
+	if p.padding_size < 0 || p.padding_size > 255 {
+		return EncodeError{
+			detail: 'padding size ${p.padding_size} does not fit the length byte'
+		}
+	}
+
+	extension_body := encode_extensions(p.header)!
+	has_extension := extension_body.len > 0
+	// The padding flag and the padding bytes must agree, or a receiver either
+	// reads garbage as payload or truncates real payload.
+	needs_padding := p.padding_size > 0
+
+	mut w := codec.Writer.with_capacity(header_size + p.header.csrc.len * 4 + extension_body.len +
+		p.payload.len + p.padding_size)
+
+	mut first := version << 6
+	if needs_padding {
+		first |= 0x20
+	}
+	if has_extension {
+		first |= 0x10
+	}
+	first |= u8(p.header.csrc.len)
+	w.u8(first)
+
+	mut second := p.header.payload_type
+	if p.header.marker {
+		second |= 0x80
+	}
+	w.u8(second)
+	w.u16(p.header.sequence_number)
+	w.u32(p.header.timestamp)
+	w.u32(p.header.ssrc)
+	for source in p.header.csrc {
+		w.u32(source)
+	}
+	if has_extension {
+		w.bytes(extension_body)
+	}
+	w.bytes(p.payload)
+	if needs_padding {
+		w.zeros(p.padding_size - 1)
+		w.u8(u8(p.padding_size))
+	}
+	return w.buf
+}
