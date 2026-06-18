@@ -118,3 +118,11 @@ fn test_bundle_group() {
 	assert groups.len == 1
 	assert groups[0] == ['0', '1', '2']
 }
+
+fn test_mid_and_lookup() {
+	s := parse_offer()!
+	assert s.media_descriptions[0].mid()? == '0'
+	assert s.media_descriptions[1].mid()? == '1'
+	assert s.media_description('1')?.media == 'video'
+	assert s.media_description('nonexistent') == none
+}
