@@ -330,3 +330,12 @@ fn test_round_trip_preserves_unknown_attributes() {
 		'a=x-vendor-media:other\r\n' + 'a=x-flag\r\n'
 	assert parse(doc)!.marshal() == doc
 }
+
+fn test_accepts_bare_lf_line_endings() {
+	lf := browser_offer.replace('\r\n', '\n')
+	s := parse(lf)!
+	assert s.media_descriptions.len == 3
+	// Output is always CRLF regardless of what came in.
+	assert s.marshal().contains('\r\n')
+	assert !s.marshal().replace('\r\n', '').contains('\n')
+}
