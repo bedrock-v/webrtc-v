@@ -183,3 +183,26 @@ fn test_setup_answer_roles() {
 	assert Setup.holdconn.answer() == .holdconn
 	assert setup_from_string('nonsense') == none
 }
+
+fn test_rtpmap_and_fmtp() {
+	s := parse_offer()!
+	audio := s.media_descriptions[0]
+
+	opus := audio.rtpmap(111)?
+	assert opus.encoding_name == 'opus'
+	assert opus.clock_rate == 48000
+	assert opus.encoding_params == '2'
+	assert opus.str() == '111 opus/48000/2'
+
+	pcmu := audio.rtpmap(0)?
+	assert pcmu.encoding_name == 'PCMU'
+	assert pcmu.clock_rate == 8000
+	assert pcmu.encoding_params == ''
+
+	assert audio.fmtp(111)? == 'minptime=10;useinbandfec=1'
+	assert audio.fmtp(0) == none
+	assert audio.rtpmaps().len == 8
+
+	video := s.media_descriptions[1]
+	assert video.fmtp(97)? == 'apt=96'
+}
