@@ -111,3 +111,10 @@ fn test_parses_media_sections() {
 	assert data.proto() == 'UDP/DTLS/SCTP'
 	assert data.formats == ['webrtc-datachannel']
 }
+
+fn test_bundle_group() {
+	s := parse_offer()!
+	groups := s.bundle_groups()
+	assert groups.len == 1
+	assert groups[0] == ['0', '1', '2']
+}
