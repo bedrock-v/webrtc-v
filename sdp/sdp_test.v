@@ -296,3 +296,16 @@ fn test_sctp_attributes() {
 	assert data.max_message_size()? == 262144
 	assert s.media_descriptions[0].sctp_port() == none
 }
+
+fn test_bandwidth_and_connection() {
+	s := parse_offer()!
+	video := s.media_descriptions[1]
+	assert video.bandwidth.len == 1
+	assert video.bandwidth[0].typ == 'AS'
+	assert video.bandwidth[0].value == 2000
+
+	conn := video.connection?
+	assert conn.network_type == 'IN'
+	assert conn.address_type == 'IP4'
+	assert conn.address == '0.0.0.0'
+}
