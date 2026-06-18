@@ -153,3 +153,14 @@ fn test_ice_credentials_and_options() {
 	// level, so the list is empty rather than inherited from a sibling.
 	assert s.ice_options(s.media_descriptions[1]) == []
 }
+
+fn test_ice_credentials_fall_back_to_session_level() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' + 'a=ice-ufrag:SESS\r\n' +
+		'a=ice-pwd:sessionpassword0123456789\r\n' + 'a=ice-options:trickle\r\n' +
+		'm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n' + 'a=mid:0\r\n'
+	s := parse(doc)!
+	media := s.media_descriptions[0]
+	assert s.ice_ufrag(media)? == 'SESS'
+	assert s.ice_pwd(media)? == 'sessionpassword0123456789'
+	assert s.ice_options(media) == ['trickle']
+}
