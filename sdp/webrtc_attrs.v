@@ -521,3 +521,13 @@ pub fn (m &MediaDescription) msid() ?Msid {
 		track_id:  if fields.len > 1 { fields[1] } else { '' }
 	}
 }
+
+// sctp_port returns the `a=sctp-port` value of a data section (RFC 8841).
+pub fn (m &MediaDescription) sctp_port() ?u16 {
+	value := attribute(m.attributes, 'sctp-port')?
+	port := parse_u32(value) or { return none }
+	if port == 0 || port > 65535 {
+		return none
+	}
+	return u16(port)
+}
