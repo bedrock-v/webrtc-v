@@ -340,3 +340,31 @@ fn test_decode_survives_arbitrary_input() {
 		p.marshal() or { continue }
 	}
 }
+
+fn test_sequence_arithmetic_across_wrap() {
+	assert is_newer_sequence(2, 1)
+	assert !is_newer_sequence(1, 2)
+	assert !is_newer_sequence(1, 1)
+	// Across the wrap: 0 is newer than 65535.
+	assert is_newer_sequence(0, 65535)
+	assert !is_newer_sequence(65535, 0)
+	assert is_newer_sequence(5, 65530)
+	// The antipode is defined as older.
+	assert !is_newer_sequence(32768, 0)
+	assert is_newer_sequence(32767, 0)
+}
+
+fn test_sequence_distance() {
+	assert sequence_distance(10, 4) == 6
+	assert sequence_distance(4, 10) == -6
+	assert sequence_distance(1, 65535) == 2
+	assert sequence_distance(65535, 1) == -2
+	assert sequence_distance(7, 7) == 0
+}
+
+fn test_timestamp_arithmetic_across_wrap() {
+	assert is_newer_timestamp(2, 1)
+	assert !is_newer_timestamp(1, 2)
+	assert is_newer_timestamp(0, 0xFFFFFFFF)
+	assert !is_newer_timestamp(0xFFFFFFFF, 0)
+}
