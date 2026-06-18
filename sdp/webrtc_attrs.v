@@ -508,3 +508,16 @@ pub fn (m &MediaDescription) ssrc_groups() []SsrcGroup {
 	}
 	return out
 }
+
+// msid returns the `a=msid` value of a section.
+pub fn (m &MediaDescription) msid() ?Msid {
+	value := attribute(m.attributes, 'msid')?
+	fields := value.split(' ').filter(it != '')
+	if fields.len == 0 {
+		return none
+	}
+	return Msid{
+		stream_id: fields[0]
+		track_id:  if fields.len > 1 { fields[1] } else { '' }
+	}
+}
