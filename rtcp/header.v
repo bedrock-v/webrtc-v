@@ -35,3 +35,27 @@ pub const fmt_tmmbn = u8(4)
 pub const fmt_fir = u8(4)
 pub const fmt_transport_cc = u8(15)
 pub const fmt_application_layer = u8(15)
+
+// max_packet_size bounds a single RTCP packet. The length field can express
+// 256 KiB, far more than any real report needs; a lower ceiling limits what one
+// spoofed datagram costs.
+pub const max_packet_size = 8192
+
+// max_packets_per_compound bounds how many packets one datagram may carry.
+pub const max_packets_per_compound = 32
+
+// DecodeError describes why a byte string is not valid RTCP.
+pub struct DecodeError {
+pub:
+	reason DecodeReason
+	detail string
+}
+
+pub enum DecodeReason {
+	too_short
+	bad_version
+	bad_length
+	bad_padding
+	bad_value
+	too_many_packets
+}
