@@ -127,3 +127,25 @@ pub fn (s &SenderReport) marshal() ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+fn decode_sender_report(header Header, body []u8) !SenderReport {
+	mut r := codec.Reader.new(body)
+	mut sr := SenderReport{
+		ssrc:         r.u32('ssrc') or { return short_packet('SenderReport') }
+		ntp_time:     r.u64('ntp time') or { return short_packet('SenderReport') }
+		rtp_time:     r.u32('rtp time') or { return short_packet('SenderReport') }
+		packet_count: r.u32('packet count') or { return short_packet('SenderReport') }
+		octet_count:  r.u32('octet count') or { return short_packet('SenderReport') }
+	}
+	sr.reports = []ReceptionReport{cap: int(header.count)}
+	for i in 0 .. int(header.count) {
+		sr.reports << decode_reception_report(mut r) or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'SenderReport declares ${header.count} report blocks but block ${i} is truncated'
+			}
+		}
+	}
+	sr.profile_extension = r.rest()
+	return sr
+}
