@@ -381,3 +381,10 @@ fn test_enforces_limits() {
 	}
 	assert false, 'the media section limit must be enforced'
 }
+
+fn test_rejected_media_section() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=audio 0 UDP/TLS/RTP/SAVPF 111\r\n' + 'a=mid:0\r\n'
+	s := parse(doc)!
+	assert s.media_descriptions[0].is_rejected()
+}
