@@ -194,3 +194,28 @@ pub fn (rr &ReceiverReport) marshal() ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+fn decode_receiver_report(header Header, body []u8) !ReceiverReport {
+	mut r := codec.Reader.new(body)
+	mut rr := ReceiverReport{
+		ssrc: r.u32('ssrc') or { return short_packet('ReceiverReport') }
+	}
+	rr.reports = []ReceptionReport{cap: int(header.count)}
+	for i in 0 .. int(header.count) {
+		rr.reports << decode_reception_report(mut r) or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'ReceiverReport declares ${header.count} report blocks but block ${i} is truncated'
+			}
+		}
+	}
+	rr.profile_extension = r.rest()
+	return rr
+}
+
+fn short_packet(name string) DecodeError {
+	return DecodeError{
+		reason: .too_short
+		detail: '${name} is shorter than its fixed fields require'
+	}
+}
