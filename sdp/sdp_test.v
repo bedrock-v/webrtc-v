@@ -399,3 +399,16 @@ fn test_repeat_times_with_unit_suffixes() {
 	assert repeat.offsets == [u64(0), 25 * 3600]
 	assert s.marshal().contains('r=604800 3600 0 90000')
 }
+
+fn test_marshal_emits_default_time_line() {
+	s := SessionDescription{
+		origin: Origin{
+			session_id:      1
+			session_version: 1
+		}
+	}
+	out := s.marshal()
+	assert out.contains('t=0 0\r\n')
+	assert out.starts_with('v=0\r\n')
+	assert out.contains('s=-\r\n')
+}
