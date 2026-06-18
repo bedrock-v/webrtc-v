@@ -267,3 +267,12 @@ fn test_ssrcs_and_groups() {
 	assert groups[0].semantics == 'FID'
 	assert groups[0].ssrcs == [u32(2001), 2002]
 }
+
+fn test_msid() {
+	s := parse_offer()!
+	msid := s.media_descriptions[0].msid()?
+	assert msid.stream_id == 'stream-id'
+	assert msid.track_id == 'audio-track-id'
+	assert msid.str() == 'stream-id audio-track-id'
+	assert s.media_descriptions[2].msid() == none
+}
