@@ -309,3 +309,17 @@ fn test_bandwidth_and_connection() {
 	assert conn.address_type == 'IP4'
 	assert conn.address == '0.0.0.0'
 }
+
+fn test_round_trip_is_stable() {
+	s := parse_offer()!
+	once := s.marshal()
+	twice := parse(once)!.marshal()
+	assert once == twice
+
+	// Every attribute survives, including the ones this package has no typed
+	// accessor for.
+	assert once.contains('a=extmap-allow-mixed')
+	assert once.contains('a=msid-semantic: WMS stream-id')
+	assert once.contains('a=rtcp:9 IN IP4 0.0.0.0')
+	assert once.contains('a=end-of-candidates')
+}
