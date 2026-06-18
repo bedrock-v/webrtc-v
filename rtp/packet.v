@@ -6,3 +6,9 @@
 // those on top. That split keeps the parser - the part that touches bytes from
 // the network - small enough to reason about completely.
 module rtp
+
+import webrtc.internal.codec
+
+// version is the only RTP version this implementation accepts. Version 1 and 0
+// are historical and are not deployed.
+pub const version = u8(2)
