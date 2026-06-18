@@ -28,3 +28,10 @@ pub const extension_profile_two_byte_base = u16(0x1000)
 // max_csrc is the number of contributing sources the four-bit CC field can
 // express.
 pub const max_csrc = 15
+
+// DecodeError describes why a datagram is not a valid RTP packet.
+pub struct DecodeError {
+pub:
+	reason DecodeReason
+	detail string
+}
