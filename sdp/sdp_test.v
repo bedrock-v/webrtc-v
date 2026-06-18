@@ -72,3 +72,9 @@ const browser_offer_lines = [
 	'a=sctp-port:5000',
 	'a=max-message-size:262144',
 ]
+
+const browser_offer = browser_offer_lines.join('\r\n') + '\r\n'
+
+fn parse_offer() !SessionDescription {
+	return parse(browser_offer)!
+}
