@@ -22,3 +22,35 @@ pub mut:
 	typ  u8
 	text string
 }
+
+// SdesChunk is the set of items describing one source.
+pub struct SdesChunk {
+pub mut:
+	source u32
+	items  []SdesItem
+}
+
+// cname returns the canonical name of the source, the identifier that ties
+// several synchronisation sources to one participant.
+pub fn (c &SdesChunk) cname() ?string {
+	for item in c.items {
+		if item.typ == sdes_cname {
+			return item.text
+		}
+	}
+	return none
+}
+
+// SourceDescription is a 202 packet.
+pub struct SourceDescription {
+pub mut:
+	chunks []SdesChunk
+}
+
+pub fn (s &SourceDescription) destination_ssrc() []u32 {
+	mut out := []u32{cap: s.chunks.len}
+	for chunk in s.chunks {
+		out << chunk.source
+	}
+	return out
+}
