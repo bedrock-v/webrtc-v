@@ -81,3 +81,26 @@ pub fn (e EncodeError) msg() string {
 pub fn (e EncodeError) code() int {
 	return 100
 }
+
+// Header is the four-byte header common to every RTCP packet.
+pub struct Header {
+pub mut:
+	// count is the report count for a report packet, or the feedback message
+	// type for a 205 or 206 packet. The field is five bits wide either way.
+	count u8
+	// padding marks that the packet is followed by padding bytes, the last of
+	// which gives their number. Only the final packet of a compound datagram
+	// may carry it.
+	padding bool
+	// packet_type identifies the packet.
+	packet_type u8
+	// length is the packet size in 32-bit words minus one, as it appears on the
+	// wire. It is derived on encode and is only meaningful after a decode.
+	length u16
+}
+
+// byte_length returns the total size of the packet the header describes.
+@[inline]
+pub fn (h &Header) byte_length() int {
+	return (int(h.length) + 1) * 4
+}
