@@ -442,3 +442,15 @@ fn test_malformed_attributes_are_skipped_not_fatal() {
 	// The description itself parsed fine and re-serialises unchanged.
 	assert s.marshal() == doc
 }
+
+fn test_attribute_helpers() {
+	s := parse_offer()!
+	audio := s.media_descriptions[0]
+	assert audio.attribute('mid')? == '0'
+	assert audio.attribute('nonexistent') == none
+	assert audio.has_attribute('rtcp-mux')
+	assert !audio.has_attribute('rtcp-rsize')
+	assert audio.attribute_values('rtpmap').len == 8
+	assert s.has_attribute('extmap-allow-mixed')
+	assert s.attribute('group')? == 'BUNDLE 0 1 2'
+}
