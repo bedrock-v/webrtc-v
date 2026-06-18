@@ -132,3 +132,37 @@ fn (h &Header) marshal_into(mut w codec.Writer, body_len int) ! {
 	w.u8(h.packet_type)
 	w.u16(u16(words))
 }
+
+fn decode_header(mut r codec.Reader) !Header {
+	first := r.u8('flags') or {
+		return DecodeError{
+			reason: .too_short
+			detail: 'no room for the common header'
+		}
+	}
+	ver := first >> 6
+	if ver != version {
+		return DecodeError{
+			reason: .bad_version
+			detail: 'version ${ver} is not 2'
+		}
+	}
+	packet_type := r.u8('packet type') or {
+		return DecodeError{
+			reason: .too_short
+			detail: 'truncated common header'
+		}
+	}
+	length := r.u16('length') or {
+		return DecodeError{
+			reason: .too_short
+			detail: 'truncated common header'
+		}
+	}
+	return Header{
+		count:       first & 0x1F
+		padding:     first & 0x20 != 0
+		packet_type: packet_type
+		length:      length
+	}
+}
