@@ -134,3 +134,11 @@ fn test_direction() {
 	// The data section carries no direction attribute.
 	assert s.media_descriptions[2].direction() == .unspecified
 }
+
+fn test_direction_reverse() {
+	assert Direction.sendonly.reverse() == .recvonly
+	assert Direction.recvonly.reverse() == .sendonly
+	assert Direction.sendrecv.reverse() == .sendrecv
+	assert Direction.inactive.reverse() == .inactive
+	assert Direction.unspecified.reverse() == .unspecified
+}
