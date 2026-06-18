@@ -412,3 +412,13 @@ fn test_marshal_emits_default_time_line() {
 	assert out.starts_with('v=0\r\n')
 	assert out.contains('s=-\r\n')
 }
+
+fn test_connection_with_ttl_round_trips() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nc=IN IP4 224.2.1.1/127/3\r\nt=0 0\r\n'
+	s := parse(doc)!
+	conn := s.connection?
+	assert conn.address == '224.2.1.1'
+	assert conn.ttl == 127
+	assert conn.range == 3
+	assert s.marshal() == doc
+}
