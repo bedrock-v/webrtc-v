@@ -54,3 +54,44 @@ pub fn (s &SourceDescription) destination_ssrc() []u32 {
 	}
 	return out
 }
+
+pub fn (s &SourceDescription) marshal() ![]u8 {
+	if s.chunks.len > 31 {
+		return EncodeError{
+			detail: '${s.chunks.len} chunks exceed the 31 the count field can express'
+		}
+	}
+	mut body := codec.Writer.new()
+	for chunk in s.chunks {
+		body.u32(chunk.source)
+		for item in chunk.items {
+			if item.typ == sdes_end {
+				return EncodeError{
+					detail: 'item type 0 terminates a chunk and cannot be written as an item'
+				}
+			}
+			text := item.text.bytes()
+			if text.len > max_sdes_item_bytes {
+				return EncodeError{
+					detail: 'SDES item of ${text.len} bytes exceeds the ${max_sdes_item_bytes}-byte length field'
+				}
+			}
+			body.u8(item.typ)
+			body.u8(u8(text.len))
+			body.bytes(text)
+		}
+		// A chunk ends with a zero octet and is then padded to a word boundary
+		// with more zeros; there is always at least one.
+		body.u8(sdes_end)
+		body.pad(4)
+	}
+
+	mut w := codec.Writer.with_capacity(header_size + body.len())
+	header := Header{
+		count:       u8(s.chunks.len)
+		packet_type: pt_source_description
+	}
+	header.marshal_into(mut w, body.len())!
+	w.bytes(body.buf)
+	return w.buf
+}
