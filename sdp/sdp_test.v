@@ -174,3 +174,12 @@ fn test_fingerprints_and_setup() {
 	assert prints[0].value.starts_with('75:74:5a')
 	assert s.setup(audio)? == .actpass
 }
+
+fn test_setup_answer_roles() {
+	// RFC 5763: an answerer that receives actpass becomes the DTLS client.
+	assert Setup.actpass.answer() == .active
+	assert Setup.active.answer() == .passive
+	assert Setup.passive.answer() == .active
+	assert Setup.holdconn.answer() == .holdconn
+	assert setup_from_string('nonsense') == none
+}
