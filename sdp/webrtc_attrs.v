@@ -538,3 +538,11 @@ pub fn (m &MediaDescription) max_message_size() ?u32 {
 	value := attribute(m.attributes, 'max-message-size')?
 	return parse_u32(value) or { none }
 }
+
+fn parse_payload_type(s string) ?u8 {
+	v := parse_u32(s) or { return none }
+	if v > 127 {
+		return none
+	}
+	return u8(v)
+}
