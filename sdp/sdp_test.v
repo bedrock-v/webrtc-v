@@ -240,3 +240,14 @@ fn test_extmaps() {
 	assert video_ext[0].direction == .sendonly
 	assert video_ext[0].str() == '2/sendonly urn:ietf:params:rtp-hdrext:toffset'
 }
+
+fn test_extmap_rejects_invalid_ids() {
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n' + 'a=extmap:0 urn:zero\r\n' +
+		'a=extmap:256 urn:too-big\r\n' + 'a=extmap:not-a-number urn:bad\r\n' +
+		'a=extmap:5 urn:fine\r\n'
+	s := parse(doc)!
+	extmaps := s.media_descriptions[0].extmaps()
+	assert extmaps.len == 1
+	assert extmaps[0].id == 5
+}
