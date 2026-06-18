@@ -104,3 +104,31 @@ pub mut:
 pub fn (h &Header) byte_length() int {
 	return (int(h.length) + 1) * 4
 }
+
+fn (h &Header) marshal_into(mut w codec.Writer, body_len int) ! {
+	if h.count > 31 {
+		return EncodeError{
+			detail: 'count ${h.count} does not fit the 5-bit field'
+		}
+	}
+	total := header_size + body_len
+	if total % 4 != 0 {
+		return EncodeError{
+			detail: 'packet body of ${body_len} bytes is not a whole number of words'
+		}
+	}
+	words := total / 4 - 1
+	if words > 0xFFFF {
+		return EncodeError{
+			detail: 'packet of ${total} bytes exceeds the 16-bit length field'
+		}
+	}
+	mut first := version << 6
+	if h.padding {
+		first |= 0x20
+	}
+	first |= h.count
+	w.u8(first)
+	w.u8(h.packet_type)
+	w.u16(u16(words))
+}
