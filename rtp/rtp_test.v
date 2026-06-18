@@ -368,3 +368,26 @@ fn test_timestamp_arithmetic_across_wrap() {
 	assert is_newer_timestamp(0, 0xFFFFFFFF)
 	assert !is_newer_timestamp(0xFFFFFFFF, 0)
 }
+
+fn test_sequencer_counts_roll_overs() {
+	mut s := Sequencer.starting_at(65534)
+	assert s.next() == 65534
+	assert s.roll_over_count() == 0
+	assert s.next() == 65535
+	assert s.roll_over_count() == 0
+	assert s.next() == 0
+	assert s.roll_over_count() == 1
+	assert s.next() == 1
+	assert s.roll_over_count() == 1
+}
+
+fn test_sequencer_starts_randomly() {
+	// RFC 3550 section 5.1 requires an unpredictable starting point, so that a
+	// blind attacker cannot land a packet inside the receiver's window.
+	mut seen := map[u16]bool{}
+	for _ in 0 .. 64 {
+		mut s := Sequencer.new()!
+		seen[s.next()] = true
+	}
+	assert seen.len > 50, 'sequence numbers look predictable'
+}
