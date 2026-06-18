@@ -142,3 +142,14 @@ fn test_direction_reverse() {
 	assert Direction.inactive.reverse() == .inactive
 	assert Direction.unspecified.reverse() == .unspecified
 }
+
+fn test_ice_credentials_and_options() {
+	s := parse_offer()!
+	audio := s.media_descriptions[0]
+	assert s.ice_ufrag(audio)? == '4ZcD'
+	assert s.ice_pwd(audio)? == '2/1muCWoOi3uLifh0NuRHlZw'
+	assert s.ice_options(audio) == ['trickle']
+	// The video section has no ice-options of its own and none at session
+	// level, so the list is empty rather than inherited from a sibling.
+	assert s.ice_options(s.media_descriptions[1]) == []
+}
