@@ -166,3 +166,31 @@ pub fn (rr &ReceiverReport) destination_ssrc() []u32 {
 	}
 	return out
 }
+
+pub fn (rr &ReceiverReport) marshal() ![]u8 {
+	if rr.reports.len > 31 {
+		return EncodeError{
+			detail: '${rr.reports.len} report blocks exceed the 31 the count field can express'
+		}
+	}
+	if rr.profile_extension.len % 4 != 0 {
+		return EncodeError{
+			detail: 'profile extension of ${rr.profile_extension.len} bytes is not a whole number of words'
+		}
+	}
+	mut body := codec.Writer.new()
+	body.u32(rr.ssrc)
+	for report in rr.reports {
+		report.marshal_into(mut body)!
+	}
+	body.bytes(rr.profile_extension)
+
+	mut w := codec.Writer.with_capacity(header_size + body.len())
+	header := Header{
+		count:       u8(rr.reports.len)
+		packet_type: pt_receiver_report
+	}
+	header.marshal_into(mut w, body.len())!
+	w.bytes(body.buf)
+	return w.buf
+}
