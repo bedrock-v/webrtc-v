@@ -93,3 +93,21 @@ fn test_parses_session_level_fields() {
 	assert s.time_descriptions[0].start_time == 0
 	assert s.time_descriptions[0].stop_time == 0
 }
+
+fn test_parses_media_sections() {
+	s := parse_offer()!
+	assert s.media_descriptions.len == 3
+
+	audio := s.media_descriptions[0]
+	assert audio.media == 'audio'
+	assert audio.port == 9
+	assert audio.protos == ['UDP', 'TLS', 'RTP', 'SAVPF']
+	assert audio.proto() == 'UDP/TLS/RTP/SAVPF'
+	assert audio.formats == ['111', '63', '9', '0', '8', '13', '110', '126']
+	assert !audio.is_rejected()
+
+	data := s.media_descriptions[2]
+	assert data.media == 'application'
+	assert data.proto() == 'UDP/DTLS/SCTP'
+	assert data.formats == ['webrtc-datachannel']
+}
