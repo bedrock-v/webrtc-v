@@ -35,3 +35,11 @@ pub:
 	reason DecodeReason
 	detail string
 }
+
+pub enum DecodeReason {
+	too_short
+	bad_version
+	bad_padding
+	bad_extension
+	bad_csrc
+}
