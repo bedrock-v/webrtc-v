@@ -59,3 +59,25 @@ pub enum DecodeReason {
 	bad_value
 	too_many_packets
 }
+
+pub fn (e DecodeError) msg() string {
+	return 'rtcp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 1
+}
+
+// EncodeError is returned when a packet cannot be represented on the wire.
+pub struct EncodeError {
+pub:
+	detail string
+}
+
+pub fn (e EncodeError) msg() string {
+	return 'rtcp: ${e.detail}'
+}
+
+pub fn (e EncodeError) code() int {
+	return 100
+}
