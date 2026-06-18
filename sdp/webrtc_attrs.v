@@ -531,3 +531,10 @@ pub fn (m &MediaDescription) sctp_port() ?u16 {
 	}
 	return u16(port)
 }
+
+// max_message_size returns the `a=max-message-size` value, the largest data
+// channel message the peer will accept.
+pub fn (m &MediaDescription) max_message_size() ?u32 {
+	value := attribute(m.attributes, 'max-message-size')?
+	return parse_u32(value) or { none }
+}
