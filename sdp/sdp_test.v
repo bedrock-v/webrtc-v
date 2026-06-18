@@ -288,3 +288,11 @@ fn test_mux_flags_and_candidates() {
 	assert video.has_end_of_candidates()
 	assert !s.media_descriptions[0].has_end_of_candidates()
 }
+
+fn test_sctp_attributes() {
+	s := parse_offer()!
+	data := s.media_descriptions[2]
+	assert data.sctp_port()? == 5000
+	assert data.max_message_size()? == 262144
+	assert s.media_descriptions[0].sctp_port() == none
+}
