@@ -126,3 +126,11 @@ fn test_mid_and_lookup() {
 	assert s.media_description('1')?.media == 'video'
 	assert s.media_description('nonexistent') == none
 }
+
+fn test_direction() {
+	s := parse_offer()!
+	assert s.media_descriptions[0].direction() == .sendrecv
+	assert s.media_descriptions[1].direction() == .sendonly
+	// The data section carries no direction attribute.
+	assert s.media_descriptions[2].direction() == .unspecified
+}
