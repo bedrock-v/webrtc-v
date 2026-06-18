@@ -276,3 +276,15 @@ fn test_msid() {
 	assert msid.str() == 'stream-id audio-track-id'
 	assert s.media_descriptions[2].msid() == none
 }
+
+fn test_mux_flags_and_candidates() {
+	s := parse_offer()!
+	assert s.media_descriptions[0].uses_rtcp_mux()
+	assert !s.media_descriptions[0].uses_rtcp_rsize()
+	assert s.media_descriptions[1].uses_rtcp_rsize()
+
+	video := s.media_descriptions[1]
+	assert video.candidates() == ['1 1 udp 2113937151 192.168.1.10 54321 typ host']
+	assert video.has_end_of_candidates()
+	assert !s.media_descriptions[0].has_end_of_candidates()
+}
