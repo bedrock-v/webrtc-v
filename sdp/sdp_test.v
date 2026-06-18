@@ -422,3 +422,23 @@ fn test_connection_with_ttl_round_trips() {
 	assert conn.range == 3
 	assert s.marshal() == doc
 }
+
+fn test_malformed_attributes_are_skipped_not_fatal() {
+	// A single unusable codec line must cost that codec, not the session.
+	doc := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n' + 'a=rtpmap:notanumber opus/48000/2\r\n' +
+		'a=rtpmap:999 opus/48000/2\r\n' + 'a=rtpmap:111\r\n' + 'a=rtpmap:112 opus\r\n' +
+		'a=rtpmap:113 opus/notanumber\r\n' + 'a=rtpmap:111 opus/48000/2\r\n' +
+		'a=fmtp:oops x=1\r\n' + 'a=ssrc:notanumber cname:x\r\n' +
+		'a=ssrc-group:FID 1 notanumber\r\n' + 'a=rtcp-fb:99\r\n'
+	s := parse(doc)!
+	media := s.media_descriptions[0]
+	assert media.rtpmaps().len == 1
+	assert media.rtpmaps()[0].payload_type == 111
+	assert media.fmtps().len == 0
+	assert media.ssrcs().len == 0
+	assert media.ssrc_groups().len == 0
+	assert media.rtcp_feedback().len == 0
+	// The description itself parsed fine and re-serialises unchanged.
+	assert s.marshal() == doc
+}
