@@ -368,3 +368,16 @@ fn test_rejects_structurally_broken_documents() {
 		}
 	}
 }
+
+fn test_enforces_limits() {
+	s := parse_offer()!
+	_ = s
+	parse(browser_offer, max_media_descriptions: 2) or {
+		parse(browser_offer, max_lines: 5) or {
+			parse(browser_offer, max_line_length: 10) or { return }
+			assert false, 'the line length limit must be enforced'
+		}
+		assert false, 'the line count limit must be enforced'
+	}
+	assert false, 'the media section limit must be enforced'
+}
