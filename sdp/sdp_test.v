@@ -164,3 +164,13 @@ fn test_ice_credentials_fall_back_to_session_level() {
 	assert s.ice_pwd(media)? == 'sessionpassword0123456789'
 	assert s.ice_options(media) == ['trickle']
 }
+
+fn test_fingerprints_and_setup() {
+	s := parse_offer()!
+	audio := s.media_descriptions[0]
+	prints := s.fingerprints(audio)
+	assert prints.len == 1
+	assert prints[0].algorithm == 'sha-256'
+	assert prints[0].value.starts_with('75:74:5a')
+	assert s.setup(audio)? == .actpass
+}
