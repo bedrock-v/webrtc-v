@@ -279,3 +279,34 @@ pub fn (r &ReceiverEstimatedMaximumBitrate) marshal() ![]u8 {
 	// The media source field is unused by REMB and must be zero.
 	return marshal_feedback(pt_payload_feedback, fmt_application_layer, r.sender_ssrc, 0, fci.buf)!
 }
+
+fn decode_remb(body []u8) !ReceiverEstimatedMaximumBitrate {
+	mut r := codec.Reader.new(body)
+	fb := decode_feedback_header(mut r, 'REMB')!
+	identifier := r.bytes(4, 'remb identifier') or { return short_packet('REMB') }
+	if identifier.bytestr() != remb_identifier {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'application-layer feedback is not REMB (tag "${identifier.bytestr()}")'
+		}
+	}
+	count := int(r.u8('ssrc count') or { return short_packet('REMB') })
+	packed := r.u24('bitrate') or { return short_packet('REMB') }
+	exponent := u8(packed >> 18)
+	mantissa := u64(packed & 0x3FFFF)
+
+	mut out := ReceiverEstimatedMaximumBitrate{
+		sender_ssrc: fb.sender_ssrc
+		bitrate:     mantissa << exponent
+		ssrcs:       []u32{cap: count}
+	}
+	for i in 0 .. count {
+		out.ssrcs << r.u32('remb ssrc ${i}') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'REMB names ${count} sources but source ${i} is truncated'
+			}
+		}
+	}
+	return out
+}
