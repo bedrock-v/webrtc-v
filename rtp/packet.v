@@ -210,3 +210,16 @@ pub fn is_rtp(b []u8) bool {
 	}
 	return b[0] & 0xC0 == 0x80
 }
+
+// is_rtcp_payload_type reports whether a packet in the RTP range is RTCP.
+//
+// RFC 5761 section 4 reserves RTP payload types 64-95 so that, with the marker
+// bit, they cannot collide with the RTCP packet types 200-223. That reservation
+// is what makes rtcp-mux possible.
+pub fn is_rtcp_payload_type(b []u8) bool {
+	if b.len < 2 {
+		return false
+	}
+	pt := b[1] & 0x7F
+	return pt >= 64 && pt <= 95
+}
