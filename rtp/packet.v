@@ -76,3 +76,21 @@ pub:
 	// 0-255 in the two-byte form.
 	payload []u8
 }
+
+// Header is the RTP header.
+pub struct Header {
+pub mut:
+	version         u8 = version
+	padding         bool
+	marker          bool
+	payload_type    u8
+	sequence_number u16
+	timestamp       u32
+	ssrc            u32
+	csrc            []u32
+	// extension_profile is set when extensions are present. It records which
+	// of the two RFC 8285 forms was used, so a packet re-marshals the way it
+	// arrived instead of being silently converted.
+	extension_profile u16
+	extensions        []Extension
+}
