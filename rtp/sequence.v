@@ -19,3 +19,12 @@ mut:
 	roll_over_count u32
 	started         bool
 }
+
+// Sequencer.new returns a sequencer starting from a random point.
+pub fn Sequencer.new() !Sequencer {
+	start := randutil.next_u16()!
+	return Sequencer{
+		sequence_number: start
+		started:         false
+	}
+}
