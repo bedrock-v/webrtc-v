@@ -58,3 +58,14 @@ pub fn (mut s Sequencer) next() u16 {
 pub fn (s &Sequencer) roll_over_count() u32 {
 	return s.roll_over_count
 }
+
+// is_newer_sequence reports whether a is newer than b, treating the 16-bit
+// space as circular (RFC 1982 serial number arithmetic).
+//
+// Exactly half the space is "newer" and half is "older"; the antipodal value is
+// arbitrarily called older, which is the convention every RTP stack uses.
+@[inline]
+pub fn is_newer_sequence(a u16, b u16) bool {
+	diff := u16(a - b)
+	return diff != 0 && diff < 0x8000
+}
