@@ -69,3 +69,29 @@ pub mut:
 	// need not encode a second key frame.
 	sequence_number u8
 }
+
+// FullIntraRequest asks specific sources for a key frame (RFC 5104 section 4.3).
+pub struct FullIntraRequest {
+pub mut:
+	sender_ssrc u32
+	media_ssrc  u32
+	entries     []FirEntry
+}
+
+pub fn (f &FullIntraRequest) destination_ssrc() []u32 {
+	mut out := []u32{cap: f.entries.len}
+	for entry in f.entries {
+		out << entry.ssrc
+	}
+	return out
+}
+
+pub fn (f &FullIntraRequest) marshal() ![]u8 {
+	mut fci := codec.Writer.with_capacity(f.entries.len * 8)
+	for entry in f.entries {
+		fci.u32(entry.ssrc)
+		fci.u8(entry.sequence_number)
+		fci.u24(0)
+	}
+	return marshal_feedback(pt_payload_feedback, fmt_fir, f.sender_ssrc, f.media_ssrc, fci.buf)!
+}
