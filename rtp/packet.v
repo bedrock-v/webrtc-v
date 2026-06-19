@@ -100,3 +100,9 @@ pub mut:
 pub fn (h &Header) has_extensions() bool {
 	return h.extensions.len > 0
 }
+
+// uses_two_byte_extensions reports which RFC 8285 form the header uses.
+@[inline]
+pub fn (h &Header) uses_two_byte_extensions() bool {
+	return h.extension_profile & 0xFFF0 == extension_profile_two_byte_base
+}
