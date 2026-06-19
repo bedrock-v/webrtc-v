@@ -38,3 +38,16 @@ pub fn Sequencer.starting_at(sequence_number u16) Sequencer {
 		started:         false
 	}
 }
+
+// next returns the sequence number for the next packet.
+pub fn (mut s Sequencer) next() u16 {
+	if !s.started {
+		s.started = true
+		return s.sequence_number
+	}
+	s.sequence_number++
+	if s.sequence_number == 0 {
+		s.roll_over_count++
+	}
+	return s.sequence_number
+}
