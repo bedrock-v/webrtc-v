@@ -164,3 +164,36 @@ pub mut:
 pub fn (g &Goodbye) destination_ssrc() []u32 {
 	return g.sources.clone()
 }
+
+pub fn (g &Goodbye) marshal() ![]u8 {
+	if g.sources.len > 31 {
+		return EncodeError{
+			detail: '${g.sources.len} sources exceed the 31 the count field can express'
+		}
+	}
+	reason := g.reason.bytes()
+	if reason.len > 255 {
+		return EncodeError{
+			detail: 'goodbye reason of ${reason.len} bytes exceeds the 255-byte length field'
+		}
+	}
+
+	mut body := codec.Writer.new()
+	for source in g.sources {
+		body.u32(source)
+	}
+	if reason.len > 0 {
+		body.u8(u8(reason.len))
+		body.bytes(reason)
+		body.pad(4)
+	}
+
+	mut w := codec.Writer.with_capacity(header_size + body.len())
+	header := Header{
+		count:       u8(g.sources.len)
+		packet_type: pt_goodbye
+	}
+	header.marshal_into(mut w, body.len())!
+	w.bytes(body.buf)
+	return w.buf
+}
