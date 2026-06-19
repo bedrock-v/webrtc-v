@@ -21,3 +21,10 @@ fn test_decode_minimal_packet() {
 	assert p.payload == [u8(0x98), 0x36, 0x43, 0x23]
 	assert p.padding_size == 0
 }
+
+fn test_round_trip_minimal_packet() {
+	raw := hex.decode(minimal_packet)!
+	p := Packet.decode(raw)!
+	assert p.marshal()!.hex() == minimal_packet
+	assert p.marshal_size() == raw.len
+}
