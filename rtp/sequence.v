@@ -80,3 +80,11 @@ pub fn sequence_distance(a u16, b u16) int {
 	}
 	return int(diff) - 0x10000
 }
+
+// is_newer_timestamp reports whether a is newer than b in the circular 32-bit
+// timestamp space.
+@[inline]
+pub fn is_newer_timestamp(a u32, b u32) bool {
+	diff := u32(a - b)
+	return diff != 0 && diff < 0x80000000
+}
