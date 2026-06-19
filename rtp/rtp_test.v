@@ -60,3 +60,16 @@ fn test_csrc_round_trip() {
 	back := Packet.decode(raw)!
 	assert back.header.csrc == [u32(0x11111111), 0x22222222, 0x33333333]
 }
+
+fn test_marshal_rejects_too_many_csrc() {
+	mut p := Packet{
+		header: Header{
+			csrc: []u32{len: 16}
+		}
+	}
+	p.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'more than 15 CSRCs must be rejected'
+}
