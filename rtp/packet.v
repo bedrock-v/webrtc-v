@@ -94,3 +94,9 @@ pub mut:
 	extension_profile u16
 	extensions        []Extension
 }
+
+// has_extensions reports whether the header carries any extension elements.
+@[inline]
+pub fn (h &Header) has_extensions() bool {
+	return h.extensions.len > 0
+}
