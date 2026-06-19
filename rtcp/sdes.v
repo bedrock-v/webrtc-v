@@ -223,3 +223,18 @@ fn decode_goodbye(header Header, body []u8) !Goodbye {
 	}
 	return out
 }
+
+// ApplicationDefined is a 204 packet, reserved for experimental use.
+pub struct ApplicationDefined {
+pub mut:
+	// subtype is the five-bit field the application may use freely.
+	subtype u8
+	ssrc    u32
+	// name is a four-character ASCII identifier chosen by the application.
+	name string
+	data []u8
+}
+
+pub fn (a &ApplicationDefined) destination_ssrc() []u32 {
+	return [a.ssrc]
+}
