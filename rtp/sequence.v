@@ -69,3 +69,14 @@ pub fn is_newer_sequence(a u16, b u16) bool {
 	diff := u16(a - b)
 	return diff != 0 && diff < 0x8000
 }
+
+// sequence_distance returns how far a is ahead of b, as a signed count. A
+// negative result means a is behind b.
+@[inline]
+pub fn sequence_distance(a u16, b u16) int {
+	diff := u16(a - b)
+	if diff < 0x8000 {
+		return int(diff)
+	}
+	return int(diff) - 0x10000
+}
