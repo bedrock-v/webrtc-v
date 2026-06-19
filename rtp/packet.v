@@ -171,3 +171,18 @@ pub fn (mut h Header) set_extension(id u8, payload []u8) ! {
 		payload: payload.clone()
 	}
 }
+
+// delete_extension removes an extension element, reporting whether one was
+// present.
+pub fn (mut h Header) delete_extension(id u8) bool {
+	for i, ext in h.extensions {
+		if ext.id == id {
+			h.extensions.delete(i)
+			if h.extensions.len == 0 {
+				h.extension_profile = 0
+			}
+			return true
+		}
+	}
+	return false
+}
