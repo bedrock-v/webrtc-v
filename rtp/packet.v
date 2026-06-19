@@ -198,3 +198,15 @@ pub mut:
 	// been counted or authenticated at that size.
 	padding_size int
 }
+
+// is_rtp reports whether a datagram looks like RTP or RTCP.
+//
+// This is the RFC 7983 demultiplexing test for the 128-191 range. Telling RTP
+// from RTCP within that range needs the payload type, which is what
+// is_rtcp_payload_type is for.
+pub fn is_rtp(b []u8) bool {
+	if b.len < header_size {
+		return false
+	}
+	return b[0] & 0xC0 == 0x80
+}
