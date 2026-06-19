@@ -43,3 +43,11 @@ pub enum DecodeReason {
 	bad_extension
 	bad_csrc
 }
+
+pub fn (e DecodeError) msg() string {
+	return 'rtp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 1
+}
