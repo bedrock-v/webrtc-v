@@ -51,3 +51,9 @@ pub fn (e DecodeError) msg() string {
 pub fn (e DecodeError) code() int {
 	return int(e.reason) + 1
 }
+
+// EncodeError is returned when a header cannot be represented on the wire.
+pub struct EncodeError {
+pub:
+	detail string
+}
