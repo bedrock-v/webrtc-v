@@ -186,3 +186,15 @@ pub fn (mut h Header) delete_extension(id u8) bool {
 	}
 	return false
 }
+
+// Packet is an RTP packet.
+pub struct Packet {
+pub mut:
+	header  Header
+	payload []u8
+	// padding_size is the number of padding bytes that followed the payload,
+	// including the length byte itself. It is preserved so that a packet
+	// re-marshals to the same length, which matters when a packet has already
+	// been counted or authenticated at that size.
+	padding_size int
+}
