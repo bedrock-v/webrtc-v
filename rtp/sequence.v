@@ -51,3 +51,10 @@ pub fn (mut s Sequencer) next() u16 {
 	}
 	return s.sequence_number
 }
+
+// roll_over_count returns how many times the sequence number has wrapped. SRTP
+// needs it to build the 48-bit packet index that its ciphers are keyed on.
+@[inline]
+pub fn (s &Sequencer) roll_over_count() u32 {
+	return s.roll_over_count
+}
