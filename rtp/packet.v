@@ -65,3 +65,14 @@ pub fn (e EncodeError) msg() string {
 pub fn (e EncodeError) code() int {
 	return 100
 }
+
+// Extension is one RFC 8285 header extension element.
+pub struct Extension {
+pub:
+	// id is the local identifier negotiated through an SDP extmap attribute.
+	// One-byte extensions use 1-14; two-byte extensions use 1-255.
+	id u8
+	// payload is the extension body, 1-16 bytes in the one-byte form and
+	// 0-255 in the two-byte form.
+	payload []u8
+}
