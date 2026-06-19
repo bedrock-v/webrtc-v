@@ -579,3 +579,7 @@ pub fn (p &Packet) marshal_size() int {
 	}
 	return size
 }
+
+pub fn (p &Packet) str() string {
+	return 'RTP pt=${p.header.payload_type} seq=${p.header.sequence_number} ts=${p.header.timestamp} ssrc=${p.header.ssrc} marker=${p.header.marker} payload=${p.payload.len}B'
+}
