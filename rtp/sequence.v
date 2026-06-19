@@ -88,3 +88,30 @@ pub fn is_newer_timestamp(a u32, b u32) bool {
 	diff := u32(a - b)
 	return diff != 0 && diff < 0x80000000
 }
+
+// unwrap_sequence lifts a 16-bit sequence number into the 48-bit index space
+// SRTP uses, given the current roll-over count and the highest sequence number
+// seen so far.
+//
+// This is the index estimation of RFC 3711 appendix A. A packet whose sequence
+// number is far above the highest seen, while that highest is still low, is a
+// straggler from before the last wrap; one far below a high watermark belongs
+// to the next cycle. Without this, a reordered packet straddling a wrap is
+// decrypted against the wrong counter and fails authentication.
+//
+// The returned roll-over count is the one to use for this packet. It is not
+// necessarily the value to store: the stored count only advances when the
+// packet also advances the highest sequence number, which is the caller's
+// decision to make after replay checking.
+pub fn unwrap_sequence(roc u32, highest u16, sequence u16) (u32, u64) {
+	mut v := roc
+	if highest < 0x8000 {
+		if int(sequence) - int(highest) > 0x8000 {
+			v = roc - 1
+		}
+	} else if int(highest) - 0x8000 > int(sequence) {
+		v = roc + 1
+	}
+	index := (u64(v) << 16) | u64(sequence)
+	return v, index
+}
