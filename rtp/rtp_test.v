@@ -105,3 +105,19 @@ fn test_padding_is_stripped_and_restored() {
 	assert back.padding_size == 4
 	assert back.marshal()!.hex() == raw.hex()
 }
+
+fn test_decode_rejects_bad_padding() {
+	cases := {
+		'padding flag with no payload':    'a060699bd9c8dd1a1c64b0d4'
+		'padding length of zero':          'a060699bd9c8dd1a1c64b0d400'
+		'padding longer than the payload': 'a060699bd9c8dd1a1c64b0d40105'
+	}
+	for name, encoded in cases {
+		raw := hex.decode(encoded)!
+		Packet.decode(raw) or {
+			assert err is DecodeError
+			continue
+		}
+		assert false, 'expected ${name} to be rejected'
+	}
+}
