@@ -138,3 +138,15 @@ pub fn (t &TransportLayerCc) marshal() ![]u8 {
 	return marshal_feedback(pt_transport_feedback, fmt_transport_cc, t.sender_ssrc, t.media_ssrc,
 		fci.buf)!
 }
+
+// run_length_at returns how many consecutive packets from index i share a
+// status. Only the status has to match: a run-length chunk still stores one
+// delta per received packet in the delta section, so the deltas may differ.
+fn run_length_at(packets []PacketFeedback, i int) int {
+	status := packets[i].status
+	mut n := 1
+	for i + n < packets.len && packets[i + n].status == status {
+		n++
+	}
+	return n
+}
