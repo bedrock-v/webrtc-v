@@ -133,3 +133,10 @@ fn test_decode_rejects_wrong_version() {
 	}
 	assert false, 'version 1 must be rejected'
 }
+
+fn test_decode_rejects_short_packets() {
+	for n in 0 .. header_size {
+		Packet.decode([]u8{len: n, init: 0x80}) or { continue }
+		assert false, 'a ${n}-byte packet must be rejected'
+	}
+}
