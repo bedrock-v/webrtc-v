@@ -219,3 +219,16 @@ fn test_set_extension_enforces_profile_limits() {
 	}
 	assert false, 'an out-of-range one-byte id must be rejected'
 }
+
+fn test_set_extension_replaces_in_place() {
+	mut h := Header{}
+	h.set_extension(1, [u8(1)])!
+	h.set_extension(2, [u8(2)])!
+	h.set_extension(1, [u8(9), 9])!
+
+	assert h.extensions.len == 2
+	assert h.extension(1)? == [u8(9), 9]
+	// Replacing must not reorder: element order is part of what the peer sees.
+	assert h.extensions[0].id == 1
+	assert h.extensions[1].id == 2
+}
