@@ -266,3 +266,20 @@ fn test_one_byte_extension_skips_padding() {
 	assert p.header.extensions.len == 1
 	assert p.header.extension(1)? == [u8(0xAA)]
 }
+
+fn test_decode_rejects_truncated_extension() {
+	cases := [
+		'9060699bd9c8dd1a1c64b0d4be', // profile cut in half
+		'9060699bd9c8dd1a1c64b0d4bede', // no length
+		'9060699bd9c8dd1a1c64b0d4bede0004', // length longer than the packet
+		'9060699bd9c8dd1a1c64b0d4bede00011faa', // element declares 16 bytes, has 1
+	]
+	for encoded in cases {
+		raw := hex.decode(encoded)!
+		Packet.decode(raw) or {
+			assert err is DecodeError
+			continue
+		}
+		assert false, 'expected ${encoded} to be rejected'
+	}
+}
