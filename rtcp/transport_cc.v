@@ -69,3 +69,22 @@ pub mut:
 pub fn (t &TransportLayerCc) destination_ssrc() []u32 {
 	return [t.media_ssrc]
 }
+
+// arrival_times_micros returns the absolute arrival time of each received packet
+// in microseconds, relative to the message's reference time.
+//
+// Deltas accumulate, so a single corrupted delta shifts every later timestamp.
+// The values are only meaningful relative to each other and to the reference,
+// which itself wraps; do not treat them as a wall clock.
+pub fn (t &TransportLayerCc) arrival_times_micros() map[u16]i64 {
+	mut out := map[u16]i64{}
+	mut now := i64(t.reference_time) * reference_time_unit_micros
+	for packet in t.packets {
+		if packet.status == .not_received {
+			continue
+		}
+		now += i64(packet.delta_ticks) * delta_tick_micros
+		out[packet.sequence_number] = now
+	}
+	return out
+}
