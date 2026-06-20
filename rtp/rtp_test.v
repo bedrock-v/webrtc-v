@@ -294,3 +294,12 @@ fn test_unknown_extension_profile_round_trips_opaquely() {
 	assert p.header.extensions[0].payload == [u8(1), 2, 3, 4]
 	assert p.marshal()!.hex() == raw.hex()
 }
+
+fn test_extension_body_is_padded_to_a_word() {
+	mut h := Header{}
+	// One element: 1 header byte + 1 payload byte = 2, padded to 4.
+	h.set_extension(1, [u8(0xAA)])!
+	body := encode_extensions(h)!
+	assert body.len == 8 // 4-byte extension header + 4-byte body
+	assert body[2] == 0x00 && body[3] == 0x01 // one 32-bit word
+}
