@@ -258,3 +258,11 @@ fn test_one_byte_extension_stops_at_terminator() {
 	assert p.header.extensions.len == 1
 	assert p.header.extension(1)? == [u8(0xAA)]
 }
+
+fn test_one_byte_extension_skips_padding() {
+	// Two padding bytes before the element.
+	raw := hex.decode('9060699bd9c8dd1a1c64b0d4bede00010010aa00')!
+	p := Packet.decode(raw)!
+	assert p.header.extensions.len == 1
+	assert p.header.extension(1)? == [u8(0xAA)]
+}
