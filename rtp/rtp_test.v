@@ -121,3 +121,15 @@ fn test_decode_rejects_bad_padding() {
 		assert false, 'expected ${name} to be rejected'
 	}
 }
+
+fn test_decode_rejects_wrong_version() {
+	raw := hex.decode('4060699bd9c8dd1a1c64b0d4')!
+	Packet.decode(raw) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .bad_version
+		}
+		return
+	}
+	assert false, 'version 1 must be rejected'
+}
