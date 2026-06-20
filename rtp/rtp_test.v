@@ -283,3 +283,14 @@ fn test_decode_rejects_truncated_extension() {
 		assert false, 'expected ${encoded} to be rejected'
 	}
 }
+
+fn test_unknown_extension_profile_round_trips_opaquely() {
+	// Profile 0x1234 is neither RFC 8285 form; the body is preserved whole so
+	// the packet re-marshals unchanged.
+	raw := hex.decode('9060699bd9c8dd1a1c64b0d41234000101020304')!
+	p := Packet.decode(raw)!
+	assert p.header.extension_profile == 0x1234
+	assert p.header.extensions.len == 1
+	assert p.header.extensions[0].payload == [u8(1), 2, 3, 4]
+	assert p.marshal()!.hex() == raw.hex()
+}
