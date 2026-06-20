@@ -182,3 +182,20 @@ fn test_two_byte_extensions_round_trip() {
 	assert back.header.extension(200)?.len == 32
 	assert back.header.extension(3)?.len == 0
 }
+
+fn test_extension_profile_chosen_by_first_element() {
+	mut short_header := Header{}
+	short_header.set_extension(3, [u8(1), 2])!
+	assert short_header.extension_profile == extension_profile_one_byte
+
+	// An id above 14 cannot be expressed in the one-byte form, so the two-byte
+	// form is chosen instead.
+	mut long_header := Header{}
+	long_header.set_extension(20, [u8(1)])!
+	assert long_header.uses_two_byte_extensions()
+
+	// So does a payload that will not fit 16 bytes.
+	mut big_header := Header{}
+	big_header.set_extension(1, []u8{len: 17})!
+	assert big_header.uses_two_byte_extensions()
+}
