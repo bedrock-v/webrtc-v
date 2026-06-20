@@ -86,3 +86,22 @@ fn test_decode_rejects_truncated_csrc_list() {
 	}
 	assert false, 'a truncated CSRC list must be rejected'
 }
+
+fn test_padding_is_stripped_and_restored() {
+	mut p := Packet{
+		header:       Header{
+			payload_type: 96
+		}
+		payload:      [u8(1), 2, 3]
+		padding_size: 4
+	}
+	raw := p.marshal()!
+	assert raw[0] & 0x20 != 0
+	assert raw.len == header_size + 3 + 4
+	assert raw[raw.len - 1] == 4
+
+	back := Packet.decode(raw)!
+	assert back.payload == [u8(1), 2, 3]
+	assert back.padding_size == 4
+	assert back.marshal()!.hex() == raw.hex()
+}
