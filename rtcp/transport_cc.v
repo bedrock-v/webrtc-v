@@ -40,3 +40,32 @@ pub enum PacketStatus as u8 {
 	// probing; the packet is rejected rather than guessed at.
 	reserved = 3
 }
+
+// PacketFeedback is the report for one transport sequence number.
+pub struct PacketFeedback {
+pub mut:
+	sequence_number u16
+	status          PacketStatus
+	// delta_ticks is the arrival time relative to the previous received packet,
+	// in 250 microsecond units. It is meaningless when status is not_received.
+	delta_ticks i32
+}
+
+// TransportLayerCc is a 205 packet with FMT 15.
+pub struct TransportLayerCc {
+pub mut:
+	sender_ssrc          u32
+	media_ssrc           u32
+	base_sequence_number u16
+	// reference_time is a 24-bit value in 64 millisecond units. It wraps about
+	// every 13 hours, so consumers must treat it as circular.
+	reference_time u32
+	// fb_packet_count increments per feedback message and lets a sender detect
+	// that a feedback message was itself lost.
+	fb_packet_count u8
+	packets         []PacketFeedback
+}
+
+pub fn (t &TransportLayerCc) destination_ssrc() []u32 {
+	return [t.media_ssrc]
+}
