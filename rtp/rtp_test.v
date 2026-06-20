@@ -249,3 +249,12 @@ fn test_delete_extension() {
 	assert h.delete_extension(2)
 	assert h.extension_profile == 0
 }
+
+fn test_one_byte_extension_stops_at_terminator() {
+	// Profile 0xBEDE, one word: element id 1 length 1 value 0xAA, then the
+	// id-15 terminator, then a byte that must not be parsed as an element.
+	raw := hex.decode('9060699bd9c8dd1a1c64b0d4bede000110aaf0ff')!
+	p := Packet.decode(raw)!
+	assert p.header.extensions.len == 1
+	assert p.header.extension(1)? == [u8(0xAA)]
+}
