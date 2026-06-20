@@ -73,3 +73,16 @@ fn test_marshal_rejects_too_many_csrc() {
 	}
 	assert false, 'more than 15 CSRCs must be rejected'
 }
+
+fn test_decode_rejects_truncated_csrc_list() {
+	// CC says 3, but the packet ends after the fixed header.
+	raw := hex.decode('8360699bd9c8dd1a1c64b0d4')!
+	Packet.decode(raw) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .bad_csrc
+		}
+		return
+	}
+	assert false, 'a truncated CSRC list must be rejected'
+}
