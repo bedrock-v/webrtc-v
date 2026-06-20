@@ -12,3 +12,30 @@ pub mut:
 	header Header
 	body   []u8
 }
+
+pub fn (r &RawPacket) destination_ssrc() []u32 {
+	// The first word of most packet bodies is a source identifier, but that is
+	// a convention rather than a rule, so nothing is claimed for a packet whose
+	// layout is unknown.
+	return []u32{}
+}
+
+pub fn (r &RawPacket) marshal() ![]u8 {
+	mut w := codec.Writer.with_capacity(header_size + r.body.len)
+	r.header.marshal_into(mut w, r.body.len)!
+	w.bytes(r.body)
+	return w.buf
+}
+
+// Packet is any RTCP packet.
+pub type Packet = ApplicationDefined
+	| FullIntraRequest
+	| Goodbye
+	| PictureLossIndication
+	| RawPacket
+	| ReceiverEstimatedMaximumBitrate
+	| ReceiverReport
+	| SenderReport
+	| SourceDescription
+	| TransportLayerCc
+	| TransportLayerNack
