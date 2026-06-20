@@ -163,3 +163,22 @@ fn test_one_byte_extensions_round_trip() {
 	assert back.header.extension(9) == none
 	assert back.payload == [u8(0xFF)]
 }
+
+fn test_two_byte_extensions_round_trip() {
+	mut p := Packet{
+		header: Header{
+			payload_type:      96
+			extension_profile: extension_profile_two_byte_base
+		}
+	}
+	p.header.set_extension(200, []u8{len: 32, init: u8(index)})!
+	// A zero-length payload is legal in the two-byte form and not in the
+	// one-byte form, so it is a good check that the profile is honoured.
+	p.header.set_extension(3, []u8{})!
+
+	assert p.header.uses_two_byte_extensions()
+	back := Packet.decode(p.marshal()!)!
+	assert back.header.uses_two_byte_extensions()
+	assert back.header.extension(200)?.len == 32
+	assert back.header.extension(3)?.len == 0
+}
