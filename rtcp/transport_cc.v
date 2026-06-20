@@ -150,3 +150,48 @@ fn run_length_at(packets []PacketFeedback, i int) int {
 	}
 	return n
 }
+
+// write_status_vector emits one vector chunk and returns how many packets it
+// covered.
+//
+// The one-bit form holds fourteen packets but can only distinguish "not
+// received" from "received with a small delta". The two-bit form holds seven
+// and can express everything, so it is used whenever a large delta appears in
+// the window.
+fn write_status_vector(mut chunks codec.Writer, mut deltas codec.Writer, packets []PacketFeedback, i int) !int {
+	mut one_bit_capable := true
+	mut window := packets.len - i
+	if window > 14 {
+		window = 14
+	}
+	for k in 0 .. window {
+		if packets[i + k].status == .received_large_delta {
+			one_bit_capable = false
+			break
+		}
+	}
+
+	if one_bit_capable {
+		mut chunk := u16(0x8000)
+		for k in 0 .. window {
+			if packets[i + k].status == .received_small_delta {
+				chunk |= u16(1) << (13 - k)
+			}
+		}
+		chunks.u16(chunk)
+		write_deltas(mut deltas, packets, i, window)!
+		return window
+	}
+
+	mut count := packets.len - i
+	if count > 7 {
+		count = 7
+	}
+	mut chunk := u16(0xC000)
+	for k in 0 .. count {
+		chunk |= u16(packets[i + k].status) << (12 - k * 2)
+	}
+	chunks.u16(chunk)
+	write_deltas(mut deltas, packets, i, count)!
+	return count
+}
