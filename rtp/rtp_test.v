@@ -368,3 +368,15 @@ fn test_timestamp_arithmetic_across_wrap() {
 	assert is_newer_timestamp(0, 0xFFFFFFFF)
 	assert !is_newer_timestamp(0xFFFFFFFF, 0)
 }
+
+fn test_sequencer_counts_roll_overs() {
+	mut s := Sequencer.starting_at(65534)
+	assert s.next() == 65534
+	assert s.roll_over_count() == 0
+	assert s.next() == 65535
+	assert s.roll_over_count() == 0
+	assert s.next() == 0
+	assert s.roll_over_count() == 1
+	assert s.next() == 1
+	assert s.roll_over_count() == 1
+}
