@@ -56,3 +56,28 @@ pub fn (p Packet) marshal() ![]u8 {
 		RawPacket { p.marshal()! }
 	}
 }
+
+// destination_ssrc returns the synchronisation sources a packet is about.
+pub fn (p Packet) destination_ssrc() []u32 {
+	return match p {
+		SenderReport { p.destination_ssrc() }
+		ReceiverReport { p.destination_ssrc() }
+		SourceDescription { p.destination_ssrc() }
+		Goodbye { p.destination_ssrc() }
+		ApplicationDefined { p.destination_ssrc() }
+		PictureLossIndication { p.destination_ssrc() }
+		FullIntraRequest { p.destination_ssrc() }
+		TransportLayerNack { p.destination_ssrc() }
+		ReceiverEstimatedMaximumBitrate { p.destination_ssrc() }
+		TransportLayerCc { p.destination_ssrc() }
+		RawPacket { p.destination_ssrc() }
+	}
+}
+
+// DecodeOptions bounds what one datagram may cost to decode.
+@[params]
+pub struct DecodeOptions {
+pub:
+	max_packets int = max_packets_per_compound
+	max_size    int = max_packet_size
+}
