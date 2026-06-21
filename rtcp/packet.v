@@ -124,3 +124,55 @@ pub fn unmarshal(data []u8, opts DecodeOptions) ![]Packet {
 	}
 	return out
 }
+
+fn decode_packet(header Header, body []u8) !Packet {
+	match header.packet_type {
+		pt_sender_report {
+			return decode_sender_report(header, body)!
+		}
+		pt_receiver_report {
+			return decode_receiver_report(header, body)!
+		}
+		pt_source_description {
+			return decode_source_description(header, body)!
+		}
+		pt_goodbye {
+			return decode_goodbye(header, body)!
+		}
+		pt_application_defined {
+			return decode_application_defined(header, body)!
+		}
+		pt_transport_feedback {
+			match header.count {
+				fmt_nack { return decode_nack(body)! }
+				fmt_transport_cc { return decode_transport_cc(body)! }
+				else {}
+			}
+		}
+		pt_payload_feedback {
+			match header.count {
+				fmt_pli {
+					return decode_pli(body)!
+				}
+				fmt_fir {
+					return decode_fir(body)!
+				}
+				fmt_application_layer {
+					// Application-layer feedback shares a type with REMB and
+					// with anything else a vendor invents, so a body that does
+					// not carry the REMB tag falls through to RawPacket rather
+					// than being rejected.
+					if remb := decode_remb(body) {
+						return remb
+					}
+				}
+				else {}
+			}
+		}
+		else {}
+	}
+	return RawPacket{
+		header: header
+		body:   body.clone()
+	}
+}
