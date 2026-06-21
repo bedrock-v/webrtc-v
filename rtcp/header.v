@@ -43,3 +43,10 @@ pub const max_packet_size = 8192
 
 // max_packets_per_compound bounds how many packets one datagram may carry.
 pub const max_packets_per_compound = 32
+
+// DecodeError describes why a byte string is not valid RTCP.
+pub struct DecodeError {
+pub:
+	reason DecodeReason
+	detail string
+}
