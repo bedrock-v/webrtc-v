@@ -391,3 +391,24 @@ fn test_sequencer_starts_randomly() {
 	}
 	assert seen.len > 50, 'sequence numbers look predictable'
 }
+
+fn test_unwrap_sequence_follows_rfc3711_appendix_a() {
+	// Ordinary progress inside a cycle.
+	roc, index := unwrap_sequence(0, 100, 101)
+	assert roc == 0
+	assert index == 101
+
+	// A packet just after the wrap, while the watermark is still high.
+	wrapped_roc, wrapped_index := unwrap_sequence(0, 65535, 1)
+	assert wrapped_roc == 1
+	assert wrapped_index == 0x10001
+
+	// A straggler from before the wrap, arriving after the watermark reset.
+	late_roc, late_index := unwrap_sequence(1, 5, 65530)
+	assert late_roc == 0
+	assert late_index == 65530
+
+	// The roll-over count wraps with the packet index, not independently.
+	zero_roc, _ := unwrap_sequence(0, 5, 65530)
+	assert zero_roc == 0xFFFFFFFF
+}
