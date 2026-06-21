@@ -62,3 +62,27 @@ fn test_receiver_report_round_trip() {
 	assert decoded.reports[1].total_lost == -7
 	assert decoded.marshal()!.hex() == raw.hex()
 }
+
+fn test_reception_report_rejects_out_of_range_loss() {
+	rr := ReceiverReport{
+		reports: [ReceptionReport{
+			total_lost: 0x800000
+		}]
+	}
+	rr.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'cumulative loss that overflows 24 bits must be rejected'
+}
+
+fn test_report_count_limit() {
+	rr := ReceiverReport{
+		reports: []ReceptionReport{len: 32}
+	}
+	rr.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'more than 31 report blocks must be rejected'
+}
