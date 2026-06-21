@@ -50,3 +50,12 @@ pub:
 	reason DecodeReason
 	detail string
 }
+
+pub enum DecodeReason {
+	too_short
+	bad_version
+	bad_length
+	bad_padding
+	bad_value
+	too_many_packets
+}
