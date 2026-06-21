@@ -18,3 +18,7 @@ pub const header_size = 4
 
 // Packet types from the IANA RTP/RTCP registry.
 pub const pt_sender_report = u8(200)
+pub const pt_receiver_report = u8(201)
+pub const pt_source_description = u8(202)
+pub const pt_goodbye = u8(203)
+pub const pt_application_defined = u8(204)
