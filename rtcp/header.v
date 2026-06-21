@@ -73,3 +73,11 @@ pub struct EncodeError {
 pub:
 	detail string
 }
+
+pub fn (e EncodeError) msg() string {
+	return 'rtcp: ${e.detail}'
+}
+
+pub fn (e EncodeError) code() int {
+	return 100
+}
