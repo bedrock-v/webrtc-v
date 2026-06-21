@@ -176,3 +176,12 @@ fn decode_packet(header Header, body []u8) !Packet {
 		body:   body.clone()
 	}
 }
+
+// marshal serialises a compound datagram.
+pub fn marshal(packets []Packet) ![]u8 {
+	mut out := []u8{}
+	for packet in packets {
+		out << packet.marshal()!
+	}
+	return out
+}
