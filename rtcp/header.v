@@ -12,3 +12,9 @@ import webrtc.internal.codec
 
 // version is the only RTCP version in use.
 pub const version = u8(2)
+
+// header_size is the size of the common header that precedes every packet.
+pub const header_size = 4
+
+// Packet types from the IANA RTP/RTCP registry.
+pub const pt_sender_report = u8(200)
