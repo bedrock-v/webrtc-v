@@ -98,3 +98,9 @@ pub mut:
 	// wire. It is derived on encode and is only meaningful after a decode.
 	length u16
 }
+
+// byte_length returns the total size of the packet the header describes.
+@[inline]
+pub fn (h &Header) byte_length() int {
+	return (int(h.length) + 1) * 4
+}
