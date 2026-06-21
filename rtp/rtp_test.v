@@ -361,3 +361,10 @@ fn test_sequence_distance() {
 	assert sequence_distance(65535, 1) == -2
 	assert sequence_distance(7, 7) == 0
 }
+
+fn test_timestamp_arithmetic_across_wrap() {
+	assert is_newer_timestamp(2, 1)
+	assert !is_newer_timestamp(1, 2)
+	assert is_newer_timestamp(0, 0xFFFFFFFF)
+	assert !is_newer_timestamp(0xFFFFFFFF, 0)
+}
