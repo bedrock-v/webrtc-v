@@ -7,3 +7,8 @@
 // not decide when a report should be sent or what it should contain; it
 // serialises what a caller has decided.
 module rtcp
+
+import webrtc.internal.codec
+
+// version is the only RTCP version in use.
+pub const version = u8(2)
