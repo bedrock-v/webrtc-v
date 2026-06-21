@@ -303,3 +303,18 @@ fn test_extension_body_is_padded_to_a_word() {
 	assert body.len == 8 // 4-byte extension header + 4-byte body
 	assert body[2] == 0x00 && body[3] == 0x01 // one 32-bit word
 }
+
+fn test_demultiplexing_predicates() {
+	rtp_packet := hex.decode(minimal_packet)!
+	assert is_rtp(rtp_packet)
+	assert !is_rtcp_payload_type(rtp_packet)
+
+	// A sender report: version 2, payload type 200.
+	sr := hex.decode('80c800061c64b0d4')!
+	assert is_rtcp_payload_type(sr)
+
+	// STUN and DTLS both fall outside the 128-191 first-byte range.
+	assert !is_rtp([]u8{len: 20, init: 0x00})
+	assert !is_rtp([]u8{len: 20, init: 0x16})
+	assert !is_rtp([]u8{len: 4, init: 0x80})
+}
