@@ -28,3 +28,10 @@ pub const pt_extended_report = u8(207)
 
 // Feedback message subtypes carried in the count field of a 205 or 206 packet.
 pub const fmt_nack = u8(1)
+pub const fmt_pli = u8(1)
+pub const fmt_sli = u8(2)
+pub const fmt_tmmbr = u8(3)
+pub const fmt_tmmbn = u8(4)
+pub const fmt_fir = u8(4)
+pub const fmt_transport_cc = u8(15)
+pub const fmt_application_layer = u8(15)
