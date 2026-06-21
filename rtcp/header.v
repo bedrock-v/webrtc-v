@@ -59,3 +59,11 @@ pub enum DecodeReason {
 	bad_value
 	too_many_packets
 }
+
+pub fn (e DecodeError) msg() string {
+	return 'rtcp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 1
+}
