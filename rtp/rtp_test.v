@@ -340,3 +340,16 @@ fn test_decode_survives_arbitrary_input() {
 		p.marshal() or { continue }
 	}
 }
+
+fn test_sequence_arithmetic_across_wrap() {
+	assert is_newer_sequence(2, 1)
+	assert !is_newer_sequence(1, 2)
+	assert !is_newer_sequence(1, 1)
+	// Across the wrap: 0 is newer than 65535.
+	assert is_newer_sequence(0, 65535)
+	assert !is_newer_sequence(65535, 0)
+	assert is_newer_sequence(5, 65530)
+	// The antipode is defined as older.
+	assert !is_newer_sequence(32768, 0)
+	assert is_newer_sequence(32767, 0)
+}
