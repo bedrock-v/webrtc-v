@@ -22,3 +22,9 @@ pub const pt_receiver_report = u8(201)
 pub const pt_source_description = u8(202)
 pub const pt_goodbye = u8(203)
 pub const pt_application_defined = u8(204)
+pub const pt_transport_feedback = u8(205)
+pub const pt_payload_feedback = u8(206)
+pub const pt_extended_report = u8(207)
+
+// Feedback message subtypes carried in the count field of a 205 or 206 packet.
+pub const fmt_nack = u8(1)
