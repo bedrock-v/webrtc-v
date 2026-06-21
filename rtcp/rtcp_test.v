@@ -86,3 +86,42 @@ fn test_report_count_limit() {
 	}
 	assert false, 'more than 31 report blocks must be rejected'
 }
+
+fn test_source_description_round_trip() {
+	sdes := SourceDescription{
+		chunks: [
+			SdesChunk{
+				source: 0x10000000
+				items:  [
+					SdesItem{
+						typ:  sdes_cname
+						text: 'user@example.org'
+					},
+					SdesItem{
+						typ:  sdes_tool
+						text: 'webrtc-v'
+					},
+				]
+			},
+			SdesChunk{
+				source: 0x20000000
+				items:  [
+					SdesItem{
+						typ:  sdes_cname
+						text: 'a'
+					},
+				]
+			},
+		]
+	}
+	raw := sdes.marshal()!
+	assert raw.len % 4 == 0
+
+	decoded := unmarshal(raw)![0] as SourceDescription
+	assert decoded.chunks.len == 2
+	assert decoded.chunks[0].cname()? == 'user@example.org'
+	assert decoded.chunks[0].items.len == 2
+	assert decoded.chunks[1].cname()? == 'a'
+	assert decoded.destination_ssrc() == [u32(0x10000000), 0x20000000]
+	assert decoded.marshal()!.hex() == raw.hex()
+}
