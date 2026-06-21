@@ -380,3 +380,14 @@ fn test_sequencer_counts_roll_overs() {
 	assert s.next() == 1
 	assert s.roll_over_count() == 1
 }
+
+fn test_sequencer_starts_randomly() {
+	// RFC 3550 section 5.1 requires an unpredictable starting point, so that a
+	// blind attacker cannot land a packet inside the receiver's window.
+	mut seen := map[u16]bool{}
+	for _ in 0 .. 64 {
+		mut s := Sequencer.new()!
+		seen[s.next()] = true
+	}
+	assert seen.len > 50, 'sequence numbers look predictable'
+}
