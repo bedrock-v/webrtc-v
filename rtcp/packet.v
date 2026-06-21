@@ -39,3 +39,20 @@ pub type Packet = ApplicationDefined
 	| SourceDescription
 	| TransportLayerCc
 	| TransportLayerNack
+
+// marshal serialises any packet.
+pub fn (p Packet) marshal() ![]u8 {
+	return match p {
+		SenderReport { p.marshal()! }
+		ReceiverReport { p.marshal()! }
+		SourceDescription { p.marshal()! }
+		Goodbye { p.marshal()! }
+		ApplicationDefined { p.marshal()! }
+		PictureLossIndication { p.marshal()! }
+		FullIntraRequest { p.marshal()! }
+		TransportLayerNack { p.marshal()! }
+		ReceiverEstimatedMaximumBitrate { p.marshal()! }
+		TransportLayerCc { p.marshal()! }
+		RawPacket { p.marshal()! }
+	}
+}
