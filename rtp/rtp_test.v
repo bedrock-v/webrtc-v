@@ -318,3 +318,25 @@ fn test_demultiplexing_predicates() {
 	assert !is_rtp([]u8{len: 20, init: 0x16})
 	assert !is_rtp([]u8{len: 4, init: 0x80})
 }
+
+fn test_decode_survives_arbitrary_input() {
+	mut seed := u32(0xC0FFEE)
+	for _ in 0 .. 5000 {
+		seed = seed * 1103515245 + 12345
+		length := 8 + int(seed >> 26)
+		mut raw := []u8{len: length}
+		for i in 0 .. length {
+			seed = seed * 1103515245 + 12345
+			raw[i] = u8(seed >> 24)
+		}
+		// Force a valid version so more inputs get past the first check and
+		// exercise the rest of the parser.
+		raw[0] = (raw[0] & 0x3F) | 0x80
+
+		p := Packet.decode(raw) or { continue }
+		p.str()
+		p.marshal_size()
+		// Anything that decodes must also re-marshal without panicking.
+		p.marshal() or { continue }
+	}
+}
