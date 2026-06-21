@@ -353,3 +353,11 @@ fn test_sequence_arithmetic_across_wrap() {
 	assert !is_newer_sequence(32768, 0)
 	assert is_newer_sequence(32767, 0)
 }
+
+fn test_sequence_distance() {
+	assert sequence_distance(10, 4) == 6
+	assert sequence_distance(4, 10) == -6
+	assert sequence_distance(1, 65535) == 2
+	assert sequence_distance(65535, 1) == -2
+	assert sequence_distance(7, 7) == 0
+}
