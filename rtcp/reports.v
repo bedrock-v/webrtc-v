@@ -31,3 +31,18 @@ pub mut:
 	// compute a round-trip time.
 	delay u32
 }
+
+fn (r ReceptionReport) marshal_into(mut w codec.Writer) ! {
+	if r.total_lost > 0x7FFFFF || r.total_lost < -0x800000 {
+		return EncodeError{
+			detail: 'cumulative loss ${r.total_lost} does not fit the 24-bit field'
+		}
+	}
+	w.u32(r.ssrc)
+	w.u8(r.fraction_lost)
+	w.u24(u32(r.total_lost) & 0xFFFFFF)
+	w.u32(r.last_sequence_number)
+	w.u32(r.jitter)
+	w.u32(r.last_sender_report)
+	w.u32(r.delay)
+}
