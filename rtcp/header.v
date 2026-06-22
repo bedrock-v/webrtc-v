@@ -166,3 +166,19 @@ fn decode_header(mut r codec.Reader) !Header {
 		length:      length
 	}
 }
+
+// is_rtcp reports whether a datagram in the RTP first-byte range is RTCP rather
+// than RTP.
+//
+// The test is the packet type: RFC 5761 reserves RTP payload types 64-95 so
+// that they cannot be confused with RTCP packet types 200-223 once the marker
+// bit is accounted for. That reservation is what lets both share a port.
+pub fn is_rtcp(b []u8) bool {
+	if b.len < header_size {
+		return false
+	}
+	if b[0] & 0xC0 != 0x80 {
+		return false
+	}
+	return b[1] >= 192 && b[1] <= 223
+}
