@@ -256,3 +256,27 @@ fn test_nack_round_trip() {
 	assert decoded.sequence_numbers() == [u16(100), 102, 104]
 	assert decoded.marshal()!.hex() == raw.hex()
 }
+
+fn test_nack_pairs_packing() {
+	// A run of losses inside one 17-packet window costs a single pair.
+	pairs := nack_pairs_from([u16(10), 11, 12, 26, 27])
+	assert pairs.len == 2
+	assert pairs[0].packet_id == 10
+	assert pairs[0].sequence_numbers() == [u16(10), 11, 12, 26]
+	assert pairs[1].packet_id == 27
+
+	// A gap wider than the window starts a new pair.
+	wide := nack_pairs_from([u16(1), 100])
+	assert wide.len == 2
+
+	assert nack_pairs_from([]u16{}).len == 0
+	assert nack_pairs_from([u16(5)])[0].lost_packets == 0
+}
+
+fn test_nack_pairs_wrap_around() {
+	// The window is computed on wrapping 16-bit arithmetic, so a loss run that
+	// straddles the wrap still packs into one pair.
+	pairs := nack_pairs_from([u16(65534), 65535, 0, 1])
+	assert pairs.len == 1
+	assert pairs[0].sequence_numbers() == [u16(65534), 65535, 0, 1]
+}
