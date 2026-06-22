@@ -4,3 +4,7 @@ import webrtc.internal.codec
 
 // SDES item types from RFC 3550 section 6.5.
 pub const sdes_end = u8(0)
+pub const sdes_cname = u8(1)
+pub const sdes_name = u8(2)
+pub const sdes_email = u8(3)
+pub const sdes_phone = u8(4)
