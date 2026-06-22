@@ -149,3 +149,12 @@ fn decode_sender_report(header Header, body []u8) !SenderReport {
 	sr.profile_extension = r.rest()
 	return sr
 }
+
+// ReceiverReport is a 201 packet, sent by an endpoint that is receiving but not
+// sending on this synchronisation source.
+pub struct ReceiverReport {
+pub mut:
+	ssrc              u32
+	reports           []ReceptionReport
+	profile_extension []u8
+}
