@@ -67,3 +67,22 @@ fn decode_reception_report(mut r codec.Reader) !ReceptionReport {
 		delay:                r.u32('delay')!
 	}
 }
+
+// SenderReport is a 200 packet: the sender's clock and counters, plus what it
+// has received from others.
+pub struct SenderReport {
+pub mut:
+	ssrc u32
+	// ntp_time is the wallclock time as a 64-bit NTP timestamp. Together with
+	// rtp_time it lets a receiver align streams that use unrelated RTP clocks.
+	ntp_time u64
+	// rtp_time is the same instant expressed in this stream's RTP timestamp
+	// units.
+	rtp_time     u32
+	packet_count u32
+	octet_count  u32
+	reports      []ReceptionReport
+	// profile_extension carries any profile-specific trailer. It is preserved
+	// so an unrecognised extension does not vanish on a re-marshal.
+	profile_extension []u8
+}
