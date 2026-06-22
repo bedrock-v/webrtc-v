@@ -86,3 +86,12 @@ pub mut:
 	// so an unrecognised extension does not vanish on a re-marshal.
 	profile_extension []u8
 }
+
+// destination_ssrc returns the sources this packet reports on.
+pub fn (s &SenderReport) destination_ssrc() []u32 {
+	mut out := []u32{cap: s.reports.len}
+	for report in s.reports {
+		out << report.ssrc
+	}
+	return out
+}
