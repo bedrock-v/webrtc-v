@@ -356,3 +356,26 @@ fn test_transport_cc_round_trip_mixed_statuses() {
 		assert packet.delta_ticks == cc.packets[i].delta_ticks
 	}
 }
+
+fn test_transport_cc_long_run_uses_run_length_chunk() {
+	mut cc := TransportLayerCc{
+		base_sequence_number: 0
+	}
+	for i in 0 .. 300 {
+		cc.packets << PacketFeedback{
+			sequence_number: u16(i)
+			status:          .not_received
+		}
+	}
+	raw := cc.marshal()!
+	// 300 statuses that all fit one run-length chunk: the FCI is the 8-byte
+	// feedback header, 8 bytes of fixed fields and a single 2-byte chunk,
+	// padded to a word.
+	assert raw.len == header_size + 8 + 8 + 4
+
+	decoded := unmarshal(raw)![0] as TransportLayerCc
+	assert decoded.packets.len == 300
+	for packet in decoded.packets {
+		assert packet.status == .not_received
+	}
+}
