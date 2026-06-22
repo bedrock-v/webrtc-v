@@ -215,3 +215,27 @@ fn test_picture_loss_indication_round_trip() {
 	assert decoded.media_ssrc == 0x22222222
 	assert decoded.destination_ssrc() == [u32(0x22222222)]
 }
+
+fn test_full_intra_request_round_trip() {
+	fir := FullIntraRequest{
+		sender_ssrc: 0x11111111
+		media_ssrc:  0x22222222
+		entries:     [
+			FirEntry{
+				ssrc:            0x33333333
+				sequence_number: 7
+			},
+			FirEntry{
+				ssrc:            0x44444444
+				sequence_number: 8
+			},
+		]
+	}
+	raw := fir.marshal()!
+	decoded := unmarshal(raw)![0] as FullIntraRequest
+	assert decoded.entries.len == 2
+	assert decoded.entries[0].sequence_number == 7
+	assert decoded.entries[1].ssrc == 0x44444444
+	assert decoded.destination_ssrc() == [u32(0x33333333), 0x44444444]
+	assert decoded.marshal()!.hex() == raw.hex()
+}
