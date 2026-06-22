@@ -212,3 +212,10 @@ fn decode_receiver_report(header Header, body []u8) !ReceiverReport {
 	rr.profile_extension = r.rest()
 	return rr
 }
+
+fn short_packet(name string) DecodeError {
+	return DecodeError{
+		reason: .too_short
+		detail: '${name} is shorter than its fixed fields require'
+	}
+}
