@@ -407,3 +407,19 @@ fn test_transport_cc_arrival_times_accumulate() {
 	assert times[u16(7)] == 64000 + 12 * 250
 	assert u16(6) !in times
 }
+
+fn test_transport_cc_rejects_out_of_range_delta() {
+	cc := TransportLayerCc{
+		packets: [
+			PacketFeedback{
+				status:      .received_small_delta
+				delta_ticks: 256
+			},
+		]
+	}
+	cc.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'a small delta over 255 must be rejected'
+}
