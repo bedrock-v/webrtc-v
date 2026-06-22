@@ -318,3 +318,41 @@ fn test_non_remb_application_feedback_stays_raw() {
 	assert packets.len == 1
 	assert packets[0] is RawPacket
 }
+
+fn test_transport_cc_round_trip_mixed_statuses() {
+	mut cc := TransportLayerCc{
+		sender_ssrc:          0x11111111
+		media_ssrc:           0x22222222
+		base_sequence_number: 1000
+		reference_time:       0x123456
+		fb_packet_count:      42
+	}
+	statuses := [PacketStatus.received_small_delta, .received_small_delta, .not_received,
+		.received_large_delta, .not_received, .received_small_delta, .received_large_delta]
+	for i, status in statuses {
+		delta := match status {
+			.received_small_delta { i32(10 + i) }
+			.received_large_delta { i32(-500 - i) }
+			else { i32(0) }
+		}
+		cc.packets << PacketFeedback{
+			sequence_number: u16(1000 + i)
+			status:          status
+			delta_ticks:     delta
+		}
+	}
+
+	raw := cc.marshal()!
+	assert raw.len % 4 == 0
+	decoded := unmarshal(raw)![0] as TransportLayerCc
+
+	assert decoded.base_sequence_number == 1000
+	assert decoded.reference_time == 0x123456
+	assert decoded.fb_packet_count == 42
+	assert decoded.packets.len == cc.packets.len
+	for i, packet in decoded.packets {
+		assert packet.sequence_number == cc.packets[i].sequence_number
+		assert packet.status == cc.packets[i].status
+		assert packet.delta_ticks == cc.packets[i].delta_ticks
+	}
+}
