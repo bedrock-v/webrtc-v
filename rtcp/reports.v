@@ -158,3 +158,11 @@ pub mut:
 	reports           []ReceptionReport
 	profile_extension []u8
 }
+
+pub fn (rr &ReceiverReport) destination_ssrc() []u32 {
+	mut out := []u32{cap: rr.reports.len}
+	for report in rr.reports {
+		out << report.ssrc
+	}
+	return out
+}
