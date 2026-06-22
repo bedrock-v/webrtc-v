@@ -46,3 +46,24 @@ fn (r ReceptionReport) marshal_into(mut w codec.Writer) ! {
 	w.u32(r.last_sender_report)
 	w.u32(r.delay)
 }
+
+fn decode_reception_report(mut r codec.Reader) !ReceptionReport {
+	ssrc := r.u32('report ssrc')!
+	fraction_lost := r.u8('fraction lost')!
+	raw_lost := r.u24('cumulative lost')!
+	// Sign-extend the 24-bit two's complement value.
+	total_lost := if raw_lost & 0x800000 != 0 {
+		i32(raw_lost) - 0x1000000
+	} else {
+		i32(raw_lost)
+	}
+	return ReceptionReport{
+		ssrc:                 ssrc
+		fraction_lost:        fraction_lost
+		total_lost:           total_lost
+		last_sequence_number: r.u32('highest sequence')!
+		jitter:               r.u32('jitter')!
+		last_sender_report:   r.u32('last sender report')!
+		delay:                r.u32('delay')!
+	}
+}
