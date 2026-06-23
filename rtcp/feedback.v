@@ -245,3 +245,7 @@ pub mut:
 	bitrate u64
 	ssrcs   []u32
 }
+
+pub fn (r &ReceiverEstimatedMaximumBitrate) destination_ssrc() []u32 {
+	return r.ssrcs.clone()
+}
