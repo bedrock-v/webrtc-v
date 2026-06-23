@@ -58,3 +58,33 @@ pub fn (d &ReplayDetector) check(index u64) bool {
 	}
 	return d.mask & (u64(1) << diff) == 0
 }
+
+// accept records an index as seen, sliding the window forward if needed.
+pub fn (mut d ReplayDetector) accept(index u64) {
+	if !d.seen {
+		d.seen = true
+		d.highest = index
+		d.mask = 1
+		return
+	}
+	if index > d.highest {
+		shift := index - d.highest
+		if shift >= 64 {
+			d.mask = 1
+		} else {
+			d.mask = (d.mask << shift) | 1
+		}
+		d.highest = index
+		return
+	}
+	diff := d.highest - index
+	if diff < 64 {
+		d.mask |= u64(1) << diff
+	}
+}
+
+// highest_index returns the largest index accepted so far.
+@[inline]
+pub fn (d &ReplayDetector) highest_index() u64 {
+	return d.highest
+}
