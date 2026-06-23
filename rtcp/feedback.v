@@ -150,3 +150,7 @@ pub mut:
 	media_ssrc  u32
 	nacks       []NackPair
 }
+
+pub fn (n &TransportLayerNack) destination_ssrc() []u32 {
+	return [n.media_ssrc]
+}
