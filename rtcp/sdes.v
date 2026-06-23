@@ -265,3 +265,15 @@ pub fn (a &ApplicationDefined) marshal() ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+fn decode_application_defined(header Header, body []u8) !ApplicationDefined {
+	mut r := codec.Reader.new(body)
+	ssrc := r.u32('ssrc') or { return short_packet('ApplicationDefined') }
+	name := r.bytes(4, 'name') or { return short_packet('ApplicationDefined') }
+	return ApplicationDefined{
+		subtype: header.count
+		ssrc:    ssrc
+		name:    name.bytestr()
+		data:    r.rest()
+	}
+}
