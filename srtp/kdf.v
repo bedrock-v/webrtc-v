@@ -48,3 +48,29 @@ fn derive_key(master_key []u8, master_salt []u8, label u8, length int) ![]u8 {
 
 	return aes_keystream(master_key, block, length)!
 }
+
+// aes_keystream returns the first length bytes of the AES counter-mode
+// keystream starting from the given counter block.
+fn aes_keystream(key []u8, counter_block []u8, length int) ![]u8 {
+	if counter_block.len != aes_block_size {
+		return error('srtp: counter block must be ${aes_block_size} bytes, got ${counter_block.len}')
+	}
+	block := aes.Cipher.new(key)!
+	mut ctr := aes.Ctr.new(block, counter_block)!
+
+	// Counter mode is a stream cipher: XORing zeros yields the keystream.
+	mut out := []u8{len: length}
+	src := []u8{len: length}
+	ctr.xor_key_stream(mut out, src)!
+	return out
+}
+
+// SessionKeys holds every key derived from one master key.
+struct SessionKeys {
+	rtp_key   []u8
+	rtp_salt  []u8
+	rtp_auth  []u8
+	rtcp_key  []u8
+	rtcp_salt []u8
+	rtcp_auth []u8
+}
