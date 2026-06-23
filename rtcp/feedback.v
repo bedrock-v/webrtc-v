@@ -194,3 +194,12 @@ pub fn nack_pairs_from(sequence_numbers []u16) []NackPair {
 	}
 	return out
 }
+
+pub fn (n &TransportLayerNack) marshal() ![]u8 {
+	mut fci := codec.Writer.with_capacity(n.nacks.len * 4)
+	for pair in n.nacks {
+		fci.u16(pair.packet_id)
+		fci.u16(pair.lost_packets)
+	}
+	return marshal_feedback(pt_transport_feedback, fmt_nack, n.sender_ssrc, n.media_ssrc, fci.buf)!
+}
