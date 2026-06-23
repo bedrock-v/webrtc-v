@@ -120,3 +120,12 @@ fn decode_fir(body []u8) !FullIntraRequest {
 	}
 	return out
 }
+
+// NackPair is one FCI entry of a generic NACK: a sequence number plus a bitmask
+// naming up to 16 more that follow it (RFC 4585 section 6.2.1).
+pub struct NackPair {
+pub mut:
+	packet_id u16
+	// lost_packets has bit i set when packet_id + i + 1 was also lost.
+	lost_packets u16
+}
