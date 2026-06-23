@@ -238,3 +238,30 @@ pub mut:
 pub fn (a &ApplicationDefined) destination_ssrc() []u32 {
 	return [a.ssrc]
 }
+
+pub fn (a &ApplicationDefined) marshal() ![]u8 {
+	name := a.name.bytes()
+	if name.len != 4 {
+		return EncodeError{
+			detail: 'application-defined name must be exactly 4 characters, got ${name.len}'
+		}
+	}
+	if a.data.len % 4 != 0 {
+		return EncodeError{
+			detail: 'application-defined data of ${a.data.len} bytes is not a whole number of words'
+		}
+	}
+	mut body := codec.Writer.new()
+	body.u32(a.ssrc)
+	body.bytes(name)
+	body.bytes(a.data)
+
+	mut w := codec.Writer.with_capacity(header_size + body.len())
+	header := Header{
+		count:       a.subtype
+		packet_type: pt_application_defined
+	}
+	header.marshal_into(mut w, body.len())!
+	w.bytes(body.buf)
+	return w.buf
+}
