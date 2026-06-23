@@ -95,3 +95,28 @@ pub fn (f &FullIntraRequest) marshal() ![]u8 {
 	}
 	return marshal_feedback(pt_payload_feedback, fmt_fir, f.sender_ssrc, f.media_ssrc, fci.buf)!
 }
+
+fn decode_fir(body []u8) !FullIntraRequest {
+	mut r := codec.Reader.new(body)
+	fb := decode_feedback_header(mut r, 'FullIntraRequest')!
+	mut out := FullIntraRequest{
+		sender_ssrc: fb.sender_ssrc
+		media_ssrc:  fb.media_ssrc
+	}
+	for r.remaining() >= 8 {
+		ssrc := r.u32('fir ssrc')!
+		sequence_number := r.u8('fir sequence')!
+		r.skip(3, 'fir reserved')!
+		out.entries << FirEntry{
+			ssrc:            ssrc
+			sequence_number: sequence_number
+		}
+	}
+	if r.remaining() != 0 {
+		return DecodeError{
+			reason: .bad_length
+			detail: 'FullIntraRequest has ${r.remaining()} trailing bytes that are not a whole entry'
+		}
+	}
+	return out
+}
