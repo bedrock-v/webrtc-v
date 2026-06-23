@@ -197,3 +197,29 @@ pub fn (g &Goodbye) marshal() ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+fn decode_goodbye(header Header, body []u8) !Goodbye {
+	mut r := codec.Reader.new(body)
+	mut out := Goodbye{
+		sources: []u32{cap: int(header.count)}
+	}
+	for i in 0 .. int(header.count) {
+		out.sources << r.u32('goodbye source ${i}') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'Goodbye declares ${header.count} sources but source ${i} is truncated'
+			}
+		}
+	}
+	if r.remaining() > 0 {
+		length := int(r.u8('reason length')!)
+		text := r.bytes(length, 'reason') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'Goodbye reason declares ${length} bytes but only ${r.remaining()} remain'
+			}
+		}
+		out.reason = text.bytestr()
+	}
+	return out
+}
