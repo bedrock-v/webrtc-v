@@ -475,3 +475,35 @@ fn test_compound_datagram() {
 	assert packets[2] is PictureLossIndication
 	assert marshal(packets)!.hex() == raw.hex()
 }
+
+fn test_unmarshal_rejects_malformed_datagrams() {
+	cases := {
+		'empty header':           '80'
+		'wrong version':          '40c80006' + '000000000000000000000000000000000000000000000000'
+		'length past end':        '80c8ffff'
+		'truncated report block': '81c8000c11111111' + '0000000000000000000000000000000000000000'
+	}
+	for name, encoded in cases {
+		raw := hex.decode(encoded.replace(' ', ''))!
+		unmarshal(raw) or {
+			assert err is DecodeError
+			continue
+		}
+		assert false, 'expected ${name} to be rejected'
+	}
+}
+
+fn test_unmarshal_enforces_packet_limit() {
+	pli := PictureLossIndication{}
+	mut packets := []Packet{}
+	for _ in 0 .. 10 {
+		packets << Packet(pli)
+	}
+	raw := marshal(packets)!
+	unmarshal(raw, max_packets: 5) or {
+		assert err is DecodeError
+		unmarshal(raw)!
+		return
+	}
+	assert false, 'the packet count limit must be enforced'
+}
