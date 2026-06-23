@@ -95,3 +95,61 @@ pub fn (s &SourceDescription) marshal() ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+fn decode_source_description(header Header, body []u8) !SourceDescription {
+	mut r := codec.Reader.new(body)
+	mut out := SourceDescription{
+		chunks: []SdesChunk{cap: int(header.count)}
+	}
+
+	for i in 0 .. int(header.count) {
+		source := r.u32('chunk ${i} source') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'SourceDescription declares ${header.count} chunks but chunk ${i} is truncated'
+			}
+		}
+		mut chunk := SdesChunk{
+			source: source
+		}
+		for {
+			typ := r.u8('item type') or {
+				return DecodeError{
+					reason: .bad_length
+					detail: 'SDES chunk ${i} is not terminated'
+				}
+			}
+			if typ == sdes_end {
+				break
+			}
+			length := int(r.u8('item length') or {
+				return DecodeError{
+					reason: .bad_length
+					detail: 'SDES item in chunk ${i} has no length byte'
+				}
+			})
+			text := r.bytes(length, 'item text') or {
+				return DecodeError{
+					reason: .bad_length
+					detail: 'SDES item in chunk ${i} declares ${length} bytes but only ${r.remaining()} remain'
+				}
+			}
+			chunk.items << SdesItem{
+				typ:  typ
+				text: text.bytestr()
+			}
+		}
+		// Skip the zero padding that aligns the next chunk to a word boundary.
+		for r.remaining() > 0 && r.pos % 4 != 0 {
+			pad := r.u8('chunk padding')!
+			if pad != sdes_end {
+				return DecodeError{
+					reason: .bad_padding
+					detail: 'SDES chunk ${i} padding contains a non-zero byte'
+				}
+			}
+		}
+		out.chunks << chunk
+	}
+	return out
+}
