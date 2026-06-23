@@ -225,3 +225,7 @@ fn decode_nack(body []u8) !TransportLayerNack {
 	}
 	return out
 }
+
+// remb_identifier is the four-byte tag that distinguishes REMB from the other
+// application-layer feedback messages sharing packet type 206 with FMT 15.
+const remb_identifier = 'REMB'
