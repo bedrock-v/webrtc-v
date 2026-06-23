@@ -33,3 +33,12 @@ fn marshal_feedback(packet_type u8, fmt u8, sender_ssrc u32, media_ssrc u32, fci
 	w.bytes(body.buf)
 	return w.buf
 }
+
+// PictureLossIndication asks the sender for a new key frame. It carries no
+// detail about what was lost, which is why a decoder that can be more specific
+// should send a FIR or a slice loss indication instead.
+pub struct PictureLossIndication {
+pub mut:
+	sender_ssrc u32
+	media_ssrc  u32
+}
