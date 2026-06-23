@@ -69,3 +69,11 @@ pub mut:
 	// need not encode a second key frame.
 	sequence_number u8
 }
+
+// FullIntraRequest asks specific sources for a key frame (RFC 5104 section 4.3).
+pub struct FullIntraRequest {
+pub mut:
+	sender_ssrc u32
+	media_ssrc  u32
+	entries     []FirEntry
+}
