@@ -91,3 +91,28 @@ pub fn (p Profile) rtp_auth_tag_len() int {
 		.aead_aes_128_gcm, .aead_aes_256_gcm { 16 }
 	}
 }
+
+// rtcp_auth_tag_len is the number of tag bytes appended to an SRTCP packet.
+//
+// The 32-bit profile is an exception worth knowing about: RFC 3711 section 5.2
+// keeps SRTCP at an 80-bit tag even when SRTP is truncated to 32, because
+// control traffic is low volume and forging it is more damaging.
+pub fn (p Profile) rtcp_auth_tag_len() int {
+	return match p {
+		.aes128_cm_hmac_sha1_80, .aes128_cm_hmac_sha1_32 { 10 }
+		.aead_aes_128_gcm, .aead_aes_256_gcm { 16 }
+	}
+}
+
+// keying_material_len is the number of bytes the DTLS extractor must produce
+// for this profile: two keys and two salts.
+pub fn (p Profile) keying_material_len() int {
+	return 2 * (p.master_key_len() + p.master_salt_len())
+}
+
+// KeyingMaterial is one direction's master key and salt.
+pub struct KeyingMaterial {
+pub:
+	key  []u8
+	salt []u8
+}
