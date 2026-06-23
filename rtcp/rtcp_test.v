@@ -446,3 +446,32 @@ fn test_transport_cc_rejects_absurd_status_count() {
 	}
 	assert false, 'an inflated status count must be rejected'
 }
+
+fn test_compound_datagram() {
+	sr := SenderReport{
+		ssrc: 1
+	}
+	sdes := SourceDescription{
+		chunks: [
+			SdesChunk{
+				source: 1
+				items:  [SdesItem{
+					typ:  sdes_cname
+					text: 'cname'
+				}]
+			},
+		]
+	}
+	pli := PictureLossIndication{
+		sender_ssrc: 1
+		media_ssrc:  2
+	}
+
+	raw := marshal([Packet(sr), Packet(sdes), Packet(pli)])!
+	packets := unmarshal(raw)!
+	assert packets.len == 3
+	assert packets[0] is SenderReport
+	assert packets[1] is SourceDescription
+	assert packets[2] is PictureLossIndication
+	assert marshal(packets)!.hex() == raw.hex()
+}
