@@ -140,3 +140,30 @@ fn counter_mode_iv(salt []u8, ssrc u32, index u64) []u8 {
 	iv[13] ^= u8(index)
 	return iv
 }
+
+// gcm_nonce builds the 12-byte AEAD nonce of RFC 7714 section 8.1.
+//
+//	nonce = salt XOR (0x0000 || SSRC || ROC || SEQ)
+//
+// For SRTCP the 32-bit index takes the place of ROC || SEQ, which is why this
+// function takes the trailing 48 bits as one value.
+fn gcm_nonce(salt []u8, ssrc u32, index u64) []u8 {
+	mut nonce := []u8{len: 12}
+	for i, b in salt {
+		if i >= 12 {
+			break
+		}
+		nonce[i] = b
+	}
+	nonce[2] ^= u8(ssrc >> 24)
+	nonce[3] ^= u8(ssrc >> 16)
+	nonce[4] ^= u8(ssrc >> 8)
+	nonce[5] ^= u8(ssrc)
+	nonce[6] ^= u8(index >> 40)
+	nonce[7] ^= u8(index >> 32)
+	nonce[8] ^= u8(index >> 24)
+	nonce[9] ^= u8(index >> 16)
+	nonce[10] ^= u8(index >> 8)
+	nonce[11] ^= u8(index)
+	return nonce
+}
