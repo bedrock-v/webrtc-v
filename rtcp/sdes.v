@@ -29,3 +29,14 @@ pub mut:
 	source u32
 	items  []SdesItem
 }
+
+// cname returns the canonical name of the source, the identifier that ties
+// several synchronisation sources to one participant.
+pub fn (c &SdesChunk) cname() ?string {
+	for item in c.items {
+		if item.typ == sdes_cname {
+			return item.text
+		}
+	}
+	return none
+}
