@@ -153,3 +153,10 @@ fn decode_source_description(header Header, body []u8) !SourceDescription {
 	}
 	return out
 }
+
+// Goodbye is a 203 packet: the listed sources are leaving the session.
+pub struct Goodbye {
+pub mut:
+	sources []u32
+	reason  string
+}
