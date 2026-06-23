@@ -17,3 +17,12 @@ import webrtc.internal.codec
 
 // delta_tick is the unit of the arrival-time deltas, in microseconds.
 pub const delta_tick_micros = 250
+
+// reference_time_unit_micros is the unit of the reference time field.
+pub const reference_time_unit_micros = 64000
+
+// max_transport_cc_packets bounds how many packet statuses one message may
+// describe. The status count field is 16 bits, so a hostile peer could
+// otherwise declare 65535 statuses and make the decoder allocate for all of
+// them before discovering the message is truncated.
+pub const max_transport_cc_packets = 4096
