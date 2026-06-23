@@ -164,3 +164,33 @@ pub fn (n &TransportLayerNack) sequence_numbers() []u16 {
 	}
 	return out
 }
+
+// nack_pairs_from packs a sorted list of missing sequence numbers into the
+// smallest set of NACK pairs that covers them.
+//
+// Each pair covers a 17-packet window, so a run of losses costs one pair rather
+// than one entry per packet. The input must be sorted; unsorted input would
+// still encode correctly but would waste pairs.
+pub fn nack_pairs_from(sequence_numbers []u16) []NackPair {
+	mut out := []NackPair{}
+	mut i := 0
+	for i < sequence_numbers.len {
+		base := sequence_numbers[i]
+		mut mask := u16(0)
+		mut j := i + 1
+		for j < sequence_numbers.len {
+			offset := int(u16(sequence_numbers[j] - base))
+			if offset < 1 || offset > 16 {
+				break
+			}
+			mask |= u16(1) << (offset - 1)
+			j++
+		}
+		out << NackPair{
+			packet_id:    base
+			lost_packets: mask
+		}
+		i = j
+	}
+	return out
+}
