@@ -160,3 +160,7 @@ pub mut:
 	sources []u32
 	reason  string
 }
+
+pub fn (g &Goodbye) destination_ssrc() []u32 {
+	return g.sources.clone()
+}
