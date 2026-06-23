@@ -72,3 +72,26 @@ pub struct Options {
 pub:
 	replay_window int = default_replay_window
 }
+
+// Context protects and unprotects packets for one direction of one transport.
+//
+// Two contexts are needed per connection: one keyed with the local write key
+// for outbound packets, one with the peer's for inbound. Sharing a context
+// between directions would make both sides generate the same keystream for the
+// same index, which is a complete break.
+//
+// A Context is not safe for concurrent use. Each one belongs to a single
+// transport, and a transport processes packets in order on one thread.
+pub struct Context {
+mut:
+	profile Profile
+	keys    SessionKeys
+	// rtp_gcm and rtcp_gcm are built once. The key schedule and the GHASH table
+	// cost about as much as encrypting a small packet, so building them per
+	// packet halves throughput on exactly the path that carries media.
+	rtp_gcm  &aes.Gcm = unsafe { nil }
+	rtcp_gcm &aes.Gcm = unsafe { nil }
+	options  Options
+	srtp     map[u32]SrtpState
+	srtcp    map[u32]SrtcpState
+}
