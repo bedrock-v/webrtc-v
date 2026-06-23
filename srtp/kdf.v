@@ -74,3 +74,37 @@ struct SessionKeys {
 	rtcp_salt []u8
 	rtcp_auth []u8
 }
+
+// derive_session_keys expands a master key and salt into the six session keys.
+//
+// The AEAD profiles derive no authentication key: GCM authenticates with the
+// same key it encrypts with, so asking for one would produce an unused secret.
+fn derive_session_keys(master_key []u8, master_salt []u8, profile Profile) !SessionKeys {
+	if master_key.len != profile.master_key_len() {
+		return error('srtp: ${profile} needs a ${profile.master_key_len()}-byte master key, got ${master_key.len}')
+	}
+	if master_salt.len != profile.master_salt_len() {
+		return error('srtp: ${profile} needs a ${profile.master_salt_len()}-byte master salt, got ${master_salt.len}')
+	}
+
+	key_len := profile.master_key_len()
+	salt_len := profile.master_salt_len()
+	auth_len := profile.auth_key_len()
+
+	return SessionKeys{
+		rtp_key:   derive_key(master_key, master_salt, label_srtp_encryption, key_len)!
+		rtp_salt:  derive_key(master_key, master_salt, label_srtp_salt, salt_len)!
+		rtp_auth:  if auth_len > 0 {
+			derive_key(master_key, master_salt, label_srtp_auth, auth_len)!
+		} else {
+			[]u8{}
+		}
+		rtcp_key:  derive_key(master_key, master_salt, label_srtcp_encryption, key_len)!
+		rtcp_salt: derive_key(master_key, master_salt, label_srtcp_salt, salt_len)!
+		rtcp_auth: if auth_len > 0 {
+			derive_key(master_key, master_salt, label_srtcp_auth, auth_len)!
+		} else {
+			[]u8{}
+		}
+	}
+}
