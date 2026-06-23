@@ -129,3 +129,15 @@ pub mut:
 	// lost_packets has bit i set when packet_id + i + 1 was also lost.
 	lost_packets u16
 }
+
+// sequence_numbers expands the pair into the list of sequence numbers it names.
+pub fn (n NackPair) sequence_numbers() []u16 {
+	mut out := []u16{cap: 17}
+	out << n.packet_id
+	for i in 0 .. 16 {
+		if n.lost_packets & (u16(1) << i) != 0 {
+			out << n.packet_id + u16(i) + 1
+		}
+	}
+	return out
+}
