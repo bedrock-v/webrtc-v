@@ -229,3 +229,19 @@ fn decode_nack(body []u8) !TransportLayerNack {
 // remb_identifier is the four-byte tag that distinguishes REMB from the other
 // application-layer feedback messages sharing packet type 206 with FMT 15.
 const remb_identifier = 'REMB'
+
+// ReceiverEstimatedMaximumBitrate tells a sender how much bandwidth the
+// receiver believes the path can carry.
+//
+// REMB is not an IETF standard - it is a Google draft that never advanced - but
+// it is what browsers emitted before transport-wide congestion control, and
+// interoperating with older endpoints still requires it.
+pub struct ReceiverEstimatedMaximumBitrate {
+pub mut:
+	sender_ssrc u32
+	// bitrate is in bits per second. It is transmitted as a 6-bit exponent and
+	// an 18-bit mantissa, so only about 5.5 significant digits survive the
+	// round trip.
+	bitrate u64
+	ssrcs   []u32
+}
