@@ -40,3 +40,9 @@ pub fn (c &SdesChunk) cname() ?string {
 	}
 	return none
 }
+
+// SourceDescription is a 202 packet.
+pub struct SourceDescription {
+pub mut:
+	chunks []SdesChunk
+}
