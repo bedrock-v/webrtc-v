@@ -531,3 +531,28 @@ fn test_is_rtcp_demultiplexing() {
 	assert !is_rtcp([u8(0x00), 0xC8, 0x00, 0x01])
 	assert !is_rtcp([u8(0x80)])
 }
+
+fn test_unmarshal_survives_arbitrary_input() {
+	mut seed := u32(0xBEEF)
+	for _ in 0 .. 5000 {
+		seed = seed * 1103515245 + 12345
+		length := 4 + int(seed >> 27) * 4
+		mut raw := []u8{len: length}
+		for i in 0 .. length {
+			seed = seed * 1103515245 + 12345
+			raw[i] = u8(seed >> 24)
+		}
+		raw[0] = (raw[0] & 0x3F) | 0x80
+		// Make the declared length agree with the buffer often enough that the
+		// body parsers actually get exercised.
+		words := length / 4 - 1
+		raw[2] = u8(words >> 8)
+		raw[3] = u8(words)
+
+		packets := unmarshal(raw) or { continue }
+		for packet in packets {
+			packet.destination_ssrc()
+			packet.marshal() or { continue }
+		}
+	}
+}
