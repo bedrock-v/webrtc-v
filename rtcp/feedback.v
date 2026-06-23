@@ -85,3 +85,13 @@ pub fn (f &FullIntraRequest) destination_ssrc() []u32 {
 	}
 	return out
 }
+
+pub fn (f &FullIntraRequest) marshal() ![]u8 {
+	mut fci := codec.Writer.with_capacity(f.entries.len * 8)
+	for entry in f.entries {
+		fci.u32(entry.ssrc)
+		fci.u8(entry.sequence_number)
+		fci.u24(0)
+	}
+	return marshal_feedback(pt_payload_feedback, fmt_fir, f.sender_ssrc, f.media_ssrc, fci.buf)!
+}
