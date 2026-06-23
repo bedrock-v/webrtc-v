@@ -50,3 +50,12 @@ pub fn (p &PictureLossIndication) destination_ssrc() []u32 {
 pub fn (p &PictureLossIndication) marshal() ![]u8 {
 	return marshal_feedback(pt_payload_feedback, fmt_pli, p.sender_ssrc, p.media_ssrc, []u8{})!
 }
+
+fn decode_pli(body []u8) !PictureLossIndication {
+	mut r := codec.Reader.new(body)
+	fb := decode_feedback_header(mut r, 'PictureLossIndication')!
+	return PictureLossIndication{
+		sender_ssrc: fb.sender_ssrc
+		media_ssrc:  fb.media_ssrc
+	}
+}
