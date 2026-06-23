@@ -17,3 +17,19 @@ fn decode_feedback_header(mut r codec.Reader, name string) !FeedbackHeader {
 		media_ssrc:  media
 	}
 }
+
+fn marshal_feedback(packet_type u8, fmt u8, sender_ssrc u32, media_ssrc u32, fci []u8) ![]u8 {
+	mut body := codec.Writer.with_capacity(8 + fci.len)
+	body.u32(sender_ssrc)
+	body.u32(media_ssrc)
+	body.bytes(fci)
+
+	mut w := codec.Writer.with_capacity(header_size + body.len())
+	header := Header{
+		count:       fmt
+		packet_type: packet_type
+	}
+	header.marshal_into(mut w, body.len())!
+	w.bytes(body.buf)
+	return w.buf
+}
