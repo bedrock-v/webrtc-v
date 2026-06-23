@@ -154,3 +154,13 @@ pub mut:
 pub fn (n &TransportLayerNack) destination_ssrc() []u32 {
 	return [n.media_ssrc]
 }
+
+// sequence_numbers expands every pair into the full list of missing sequence
+// numbers.
+pub fn (n &TransportLayerNack) sequence_numbers() []u16 {
+	mut out := []u16{}
+	for pair in n.nacks {
+		out << pair.sequence_numbers()
+	}
+	return out
+}
