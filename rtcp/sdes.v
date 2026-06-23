@@ -15,3 +15,10 @@ pub const sdes_private = u8(8)
 
 // max_sdes_item_bytes is the largest item the 8-bit length field can express.
 pub const max_sdes_item_bytes = 255
+
+// SdesItem is one item inside a source description chunk.
+pub struct SdesItem {
+pub mut:
+	typ  u8
+	text string
+}
