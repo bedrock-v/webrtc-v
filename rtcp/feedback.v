@@ -42,3 +42,11 @@ pub mut:
 	sender_ssrc u32
 	media_ssrc  u32
 }
+
+pub fn (p &PictureLossIndication) destination_ssrc() []u32 {
+	return [p.media_ssrc]
+}
+
+pub fn (p &PictureLossIndication) marshal() ![]u8 {
+	return marshal_feedback(pt_payload_feedback, fmt_pli, p.sender_ssrc, p.media_ssrc, []u8{})!
+}
