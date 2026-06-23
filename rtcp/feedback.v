@@ -249,3 +249,33 @@ pub mut:
 pub fn (r &ReceiverEstimatedMaximumBitrate) destination_ssrc() []u32 {
 	return r.ssrcs.clone()
 }
+
+pub fn (r &ReceiverEstimatedMaximumBitrate) marshal() ![]u8 {
+	if r.ssrcs.len > 255 {
+		return EncodeError{
+			detail: 'REMB names ${r.ssrcs.len} sources, over the 255 the count field allows'
+		}
+	}
+	// Find the smallest exponent that lets the mantissa fit 18 bits.
+	mut exponent := u8(0)
+	mut mantissa := r.bitrate
+	for mantissa > 0x3FFFF {
+		mantissa >>= 1
+		exponent++
+		if exponent > 63 {
+			return EncodeError{
+				detail: 'bitrate ${r.bitrate} is too large to encode as REMB'
+			}
+		}
+	}
+
+	mut fci := codec.Writer.with_capacity(8 + r.ssrcs.len * 4)
+	fci.string(remb_identifier)
+	fci.u8(u8(r.ssrcs.len))
+	fci.u24((u32(exponent) << 18) | u32(mantissa))
+	for ssrc in r.ssrcs {
+		fci.u32(ssrc)
+	}
+	// The media source field is unused by REMB and must be zero.
+	return marshal_feedback(pt_payload_feedback, fmt_application_layer, r.sender_ssrc, 0, fci.buf)!
+}
