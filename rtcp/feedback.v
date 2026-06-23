@@ -59,3 +59,13 @@ fn decode_pli(body []u8) !PictureLossIndication {
 		media_ssrc:  fb.media_ssrc
 	}
 }
+
+// FirEntry names one source that should send a key frame.
+pub struct FirEntry {
+pub mut:
+	ssrc u32
+	// sequence_number distinguishes a repeated request from a new one. A sender
+	// that sees the same value twice knows the request was retransmitted and
+	// need not encode a second key frame.
+	sequence_number u8
+}
