@@ -46,3 +46,11 @@ pub struct SourceDescription {
 pub mut:
 	chunks []SdesChunk
 }
+
+pub fn (s &SourceDescription) destination_ssrc() []u32 {
+	mut out := []u32{cap: s.chunks.len}
+	for chunk in s.chunks {
+		out << chunk.source
+	}
+	return out
+}
