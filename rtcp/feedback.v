@@ -77,3 +77,11 @@ pub mut:
 	media_ssrc  u32
 	entries     []FirEntry
 }
+
+pub fn (f &FullIntraRequest) destination_ssrc() []u32 {
+	mut out := []u32{cap: f.entries.len}
+	for entry in f.entries {
+		out << entry.ssrc
+	}
+	return out
+}
