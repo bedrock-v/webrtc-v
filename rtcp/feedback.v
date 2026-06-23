@@ -141,3 +141,12 @@ pub fn (n NackPair) sequence_numbers() []u16 {
 	}
 	return out
 }
+
+// TransportLayerNack reports packets a receiver did not get, so the sender can
+// retransmit them.
+pub struct TransportLayerNack {
+pub mut:
+	sender_ssrc u32
+	media_ssrc  u32
+	nacks       []NackPair
+}
