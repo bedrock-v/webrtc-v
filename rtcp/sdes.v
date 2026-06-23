@@ -234,3 +234,7 @@ pub mut:
 	name string
 	data []u8
 }
+
+pub fn (a &ApplicationDefined) destination_ssrc() []u32 {
+	return [a.ssrc]
+}
