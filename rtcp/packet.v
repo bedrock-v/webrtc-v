@@ -33,3 +33,9 @@ pub type Packet = ApplicationDefined
 	| Goodbye
 	| PictureLossIndication
 	| RawPacket
+	| ReceiverEstimatedMaximumBitrate
+	| ReceiverReport
+	| SenderReport
+	| SourceDescription
+	| TransportLayerCc
+	| TransportLayerNack
