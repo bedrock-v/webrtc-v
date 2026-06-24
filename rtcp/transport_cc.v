@@ -195,3 +195,33 @@ fn write_status_vector(mut chunks codec.Writer, mut deltas codec.Writer, packets
 	write_deltas(mut deltas, packets, i, count)!
 	return count
 }
+
+fn write_deltas(mut deltas codec.Writer, packets []PacketFeedback, start int, count int) ! {
+	for k in 0 .. count {
+		packet := packets[start + k]
+		match packet.status {
+			.not_received {}
+			.received_small_delta {
+				if packet.delta_ticks < 0 || packet.delta_ticks > 255 {
+					return EncodeError{
+						detail: 'delta ${packet.delta_ticks} for sequence ${packet.sequence_number} does not fit a small delta'
+					}
+				}
+				deltas.u8(u8(packet.delta_ticks))
+			}
+			.received_large_delta {
+				if packet.delta_ticks < -32768 || packet.delta_ticks > 32767 {
+					return EncodeError{
+						detail: 'delta ${packet.delta_ticks} for sequence ${packet.sequence_number} does not fit a large delta'
+					}
+				}
+				deltas.u16(u16(i16(packet.delta_ticks)))
+			}
+			.reserved {
+				return EncodeError{
+					detail: 'packet status "reserved" cannot be encoded'
+				}
+			}
+		}
+	}
+}
