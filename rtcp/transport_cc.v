@@ -65,3 +65,7 @@ pub mut:
 	fb_packet_count u8
 	packets         []PacketFeedback
 }
+
+pub fn (t &TransportLayerCc) destination_ssrc() []u32 {
+	return [t.media_ssrc]
+}
