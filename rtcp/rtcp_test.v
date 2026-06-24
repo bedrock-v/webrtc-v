@@ -239,3 +239,20 @@ fn test_full_intra_request_round_trip() {
 	assert decoded.destination_ssrc() == [u32(0x33333333), 0x44444444]
 	assert decoded.marshal()!.hex() == raw.hex()
 }
+
+fn test_nack_round_trip() {
+	nack := TransportLayerNack{
+		sender_ssrc: 0x11111111
+		media_ssrc:  0x22222222
+		nacks:       [NackPair{
+			packet_id:    100
+			lost_packets: 0b1010
+		}]
+	}
+	raw := nack.marshal()!
+	decoded := unmarshal(raw)![0] as TransportLayerNack
+	assert decoded.nacks.len == 1
+	// The bitmask names packet_id + i + 1 for each set bit.
+	assert decoded.sequence_numbers() == [u16(100), 102, 104]
+	assert decoded.marshal()!.hex() == raw.hex()
+}
