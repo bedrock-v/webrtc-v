@@ -96,3 +96,30 @@ fn test_split_keying_material_order() {
 	split_keying_material(material[..10], profile) or { return }
 	assert false, 'short keying material must be rejected'
 }
+
+fn make_pair(profile Profile) !(&Context, &Context) {
+	key_len := profile.master_key_len()
+	salt_len := profile.master_salt_len()
+	key := []u8{len: key_len, init: u8(index * 3 + 1)}
+	salt := []u8{len: salt_len, init: u8(index * 5 + 2)}
+	sender := Context.new(key, salt, profile)!
+	receiver := Context.new(key, salt, profile)!
+	return sender, receiver
+}
+
+fn make_rtp(sequence u16, ssrc u32, payload []u8) []u8 {
+	mut packet := [u8(0x80), 0x60, u8(sequence >> 8), u8(sequence), 0x00, 0x00, 0x00, 0x01,
+		u8(ssrc >> 24), u8(ssrc >> 16), u8(ssrc >> 8), u8(ssrc)]
+	packet << payload
+	return packet
+}
+
+fn make_rtcp(ssrc u32) []u8 {
+	// A receiver report with no report blocks: header, then the sender's SSRC.
+	return [u8(0x80), 201, 0x00, 0x01, u8(ssrc >> 24), u8(ssrc >> 16), u8(ssrc >> 8), u8(ssrc)]
+}
+
+fn all_profiles() []Profile {
+	return [Profile.aes128_cm_hmac_sha1_80, .aes128_cm_hmac_sha1_32, .aead_aes_128_gcm,
+		.aead_aes_256_gcm]
+}
