@@ -160,3 +160,22 @@ fn test_sdes_rejects_terminator_as_item() {
 	}
 	assert false, 'item type 0 must be rejected'
 }
+
+fn test_goodbye_round_trip() {
+	bye := Goodbye{
+		sources: [u32(0x11111111), 0x22222222]
+		reason:  'session ended'
+	}
+	raw := bye.marshal()!
+	decoded := unmarshal(raw)![0] as Goodbye
+	assert decoded.sources == [u32(0x11111111), 0x22222222]
+	assert decoded.reason == 'session ended'
+	assert decoded.marshal()!.hex() == raw.hex()
+
+	// A goodbye with no reason is also valid.
+	plain := Goodbye{
+		sources: [u32(1)]
+	}
+	back := unmarshal(plain.marshal()!)![0] as Goodbye
+	assert back.reason == ''
+}
