@@ -199,3 +199,19 @@ fn test_application_defined_round_trip() {
 	bad.marshal() or { return }
 	assert false, 'a name that is not 4 characters must be rejected'
 }
+
+fn test_picture_loss_indication_round_trip() {
+	pli := PictureLossIndication{
+		sender_ssrc: 0x11111111
+		media_ssrc:  0x22222222
+	}
+	raw := pli.marshal()!
+	assert raw.len == 12
+	assert raw[0] == 0x81 // version 2, FMT 1
+	assert raw[1] == pt_payload_feedback
+
+	decoded := unmarshal(raw)![0] as PictureLossIndication
+	assert decoded.sender_ssrc == 0x11111111
+	assert decoded.media_ssrc == 0x22222222
+	assert decoded.destination_ssrc() == [u32(0x22222222)]
+}
