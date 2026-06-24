@@ -125,3 +125,19 @@ fn test_source_description_round_trip() {
 	assert decoded.destination_ssrc() == [u32(0x10000000), 0x20000000]
 	assert decoded.marshal()!.hex() == raw.hex()
 }
+
+fn test_sdes_chunk_without_cname() {
+	sdes := SourceDescription{
+		chunks: [
+			SdesChunk{
+				source: 1
+				items:  [SdesItem{
+					typ:  sdes_tool
+					text: 'x'
+				}]
+			},
+		]
+	}
+	decoded := unmarshal(sdes.marshal()!)![0] as SourceDescription
+	assert decoded.chunks[0].cname() == none
+}
