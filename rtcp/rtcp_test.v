@@ -299,3 +299,12 @@ fn test_remb_round_trip() {
 	// the last place.
 	assert decoded.bitrate >= 2499000 && decoded.bitrate <= 2500000
 }
+
+fn test_remb_small_bitrate_is_exact() {
+	// A value that fits the mantissa needs no exponent and survives exactly.
+	remb := ReceiverEstimatedMaximumBitrate{
+		bitrate: 262143
+	}
+	decoded := unmarshal(remb.marshal()!)![0] as ReceiverEstimatedMaximumBitrate
+	assert decoded.bitrate == 262143
+}
