@@ -81,3 +81,46 @@ pub:
 	max_packets int = max_packets_per_compound
 	max_size    int = max_packet_size
 }
+
+// unmarshal decodes a datagram into the packets it carries.
+//
+// RTCP datagrams are compound: several packets are concatenated, and RFC 3550
+// section 6.1 requires the first to be a report and the second an SDES. Those
+// composition rules are not enforced here - a receiver that rejected a
+// non-conforming datagram would interoperate badly, and several deployed
+// stacks send reduced-size RTCP (RFC 5506) that deliberately breaks them.
+// What is enforced is that every packet fits inside the datagram.
+pub fn unmarshal(data []u8, opts DecodeOptions) ![]Packet {
+	if data.len > opts.max_size {
+		return DecodeError{
+			reason: .bad_length
+			detail: 'datagram of ${data.len} bytes exceeds the ${opts.max_size}-byte limit'
+		}
+	}
+
+	mut out := []Packet{}
+	mut offset := 0
+	for offset < data.len {
+		if out.len >= opts.max_packets {
+			return DecodeError{
+				reason: .too_many_packets
+				detail: 'more than ${opts.max_packets} packets in one datagram'
+			}
+		}
+		remaining := unsafe { data[offset..] }
+		mut r := codec.Reader.new(remaining)
+		header := decode_header(mut r)!
+
+		total := header.byte_length()
+		if total > remaining.len {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'packet declares ${total} bytes but only ${remaining.len} remain in the datagram'
+			}
+		}
+		body := unsafe { remaining[header_size..total] }
+		out << decode_packet(header, body)!
+		offset += total
+	}
+	return out
+}
