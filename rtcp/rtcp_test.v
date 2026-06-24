@@ -39,3 +39,26 @@ fn test_sender_report_round_trip() {
 	assert decoded.destination_ssrc() == [u32(0xbc5e9a40)]
 	assert decoded.marshal()!.hex() == raw.hex()
 }
+
+fn test_receiver_report_round_trip() {
+	rr := ReceiverReport{
+		ssrc:    0x902f9e2e
+		reports: [
+			ReceptionReport{
+				ssrc:       0xbc5e9a40
+				total_lost: 42
+			},
+			ReceptionReport{
+				ssrc:       0x11223344
+				total_lost: -7
+			},
+		]
+	}
+	raw := rr.marshal()!
+	decoded := unmarshal(raw)![0] as ReceiverReport
+	assert decoded.reports.len == 2
+	assert decoded.reports[0].total_lost == 42
+	// Cumulative loss is signed: duplicates can drive it negative.
+	assert decoded.reports[1].total_lost == -7
+	assert decoded.marshal()!.hex() == raw.hex()
+}
