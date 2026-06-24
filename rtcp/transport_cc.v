@@ -88,3 +88,53 @@ pub fn (t &TransportLayerCc) arrival_times_micros() map[u16]i64 {
 	}
 	return out
 }
+
+pub fn (t &TransportLayerCc) marshal() ![]u8 {
+	if t.packets.len > 0xFFFF {
+		return EncodeError{
+			detail: '${t.packets.len} packet statuses exceed the 16-bit count field'
+		}
+	}
+	if t.reference_time > 0xFFFFFF {
+		return EncodeError{
+			detail: 'reference time ${t.reference_time} does not fit 24 bits'
+		}
+	}
+
+	mut chunks := codec.Writer.new()
+	mut deltas := codec.Writer.new()
+	mut i := 0
+	for i < t.packets.len {
+		if t.packets[i].status == .reserved {
+			return EncodeError{
+				detail: 'packet status "reserved" cannot be encoded'
+			}
+		}
+		run := run_length_at(t.packets, i)
+		// A run-length chunk covers up to 8191 packets in two bytes. It only
+		// pays off once the run is longer than a status vector would hold.
+		if run >= 8 {
+			length := if run > 8191 { 8191 } else { run }
+			chunks.u16((u16(t.packets[i].status) << 13) | u16(length))
+			write_deltas(mut deltas, t.packets, i, length)!
+			i += length
+			continue
+		}
+		i += write_status_vector(mut chunks, mut deltas, t.packets, i)!
+	}
+
+	// The FCI is padded to a word boundary; the padding must be inside the
+	// packet length, not appended after it, or the compound parser will read it
+	// as another packet.
+	mut fci := codec.Writer.with_capacity(8 + chunks.len() + deltas.len() + 4)
+	fci.u16(t.base_sequence_number)
+	fci.u16(u16(t.packets.len))
+	fci.u24(t.reference_time)
+	fci.u8(t.fb_packet_count)
+	fci.bytes(chunks.buf)
+	fci.bytes(deltas.buf)
+	fci.pad(4)
+
+	return marshal_feedback(pt_transport_feedback, fmt_transport_cc, t.sender_ssrc, t.media_ssrc,
+		fci.buf)!
+}
