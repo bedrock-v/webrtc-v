@@ -60,3 +60,39 @@ fn test_derive_rejects_wrong_key_sizes() {
 	}
 	assert false, 'a short key must be rejected'
 }
+
+fn test_profile_parameters() {
+	assert profile_from_value(0x0001)? == Profile.aes128_cm_hmac_sha1_80
+	assert profile_from_value(0x0008)? == Profile.aead_aes_256_gcm
+	assert profile_from_value(0x1234) == none
+
+	assert Profile.aes128_cm_hmac_sha1_80.rtp_auth_tag_len() == 10
+	assert Profile.aes128_cm_hmac_sha1_32.rtp_auth_tag_len() == 4
+	// RFC 3711 section 5.2 keeps SRTCP at an 80-bit tag even when SRTP is
+	// truncated to 32.
+	assert Profile.aes128_cm_hmac_sha1_32.rtcp_auth_tag_len() == 10
+	assert Profile.aead_aes_256_gcm.master_key_len() == 32
+	assert Profile.aead_aes_128_gcm.master_salt_len() == 12
+	assert !Profile.aes128_cm_hmac_sha1_80.is_aead()
+	assert Profile.aead_aes_128_gcm.is_aead()
+}
+
+fn test_split_keying_material_order() {
+	// RFC 5764 section 4.2 orders the extractor output as both keys and then
+	// both salts, not as key-salt pairs.
+	profile := Profile.aes128_cm_hmac_sha1_80
+	mut material := []u8{}
+	material << []u8{len: 16, init: 0x11} // client key
+	material << []u8{len: 16, init: 0x22} // server key
+	material << []u8{len: 14, init: 0x33} // client salt
+	material << []u8{len: 14, init: 0x44} // server salt
+
+	client, server := split_keying_material(material, profile)!
+	assert client.key.all(it == 0x11)
+	assert server.key.all(it == 0x22)
+	assert client.salt.all(it == 0x33)
+	assert server.salt.all(it == 0x44)
+
+	split_keying_material(material[..10], profile) or { return }
+	assert false, 'short keying material must be rejected'
+}
