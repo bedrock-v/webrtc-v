@@ -179,3 +179,23 @@ fn test_goodbye_round_trip() {
 	back := unmarshal(plain.marshal()!)![0] as Goodbye
 	assert back.reason == ''
 }
+
+fn test_application_defined_round_trip() {
+	app := ApplicationDefined{
+		subtype: 5
+		ssrc:    0xdeadbeef
+		name:    'TEST'
+		data:    [u8(1), 2, 3, 4]
+	}
+	raw := app.marshal()!
+	decoded := unmarshal(raw)![0] as ApplicationDefined
+	assert decoded.subtype == 5
+	assert decoded.name == 'TEST'
+	assert decoded.data == [u8(1), 2, 3, 4]
+
+	bad := ApplicationDefined{
+		name: 'TOOLONG'
+	}
+	bad.marshal() or { return }
+	assert false, 'a name that is not 4 characters must be rejected'
+}
