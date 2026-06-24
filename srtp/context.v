@@ -95,3 +95,30 @@ mut:
 	srtp     map[u32]SrtpState
 	srtcp    map[u32]SrtcpState
 }
+
+// Context.new derives session keys from a master key and salt.
+pub fn Context.new(master_key []u8, master_salt []u8, profile Profile, options Options) !&Context {
+	keys := derive_session_keys(master_key, master_salt, profile)!
+	mut context := &Context{
+		profile: profile
+		keys:    keys
+		options: options
+	}
+	if profile.is_aead() {
+		context.rtp_gcm = aes.Gcm.new(keys.rtp_key)!
+		context.rtcp_gcm = aes.Gcm.new(keys.rtcp_key)!
+	}
+	return context
+}
+
+// Context.from_keying_material builds a context from one half of the DTLS-SRTP
+// extractor output.
+pub fn Context.from_keying_material(material KeyingMaterial, profile Profile, options Options) !&Context {
+	return Context.new(material.key, material.salt, profile, options)!
+}
+
+// profile returns the protection profile in use.
+@[inline]
+pub fn (c &Context) profile() Profile {
+	return c.profile
+}
