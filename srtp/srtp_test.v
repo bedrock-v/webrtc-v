@@ -238,3 +238,39 @@ fn test_sequence_wrap_keeps_streams_decryptable() {
 		assert recovered[3] == u8(seq)
 	}
 }
+
+fn test_distinct_ssrcs_have_independent_state() {
+	mut sender, mut receiver := make_pair(.aead_aes_128_gcm)!
+	a := sender.protect_rtp(make_rtp(1, 0xAAAA, [u8(1), 1, 1, 1]))!
+	b := sender.protect_rtp(make_rtp(1, 0xBBBB, [u8(2), 2, 2, 2]))!
+
+	// The same sequence number on two sources is not a replay.
+	receiver.unprotect_rtp(a)!
+	receiver.unprotect_rtp(b)!
+
+	// Two sources with the same index must not produce the same ciphertext,
+	// because the SSRC is mixed into the counter block.
+	assert a[12..] != b[12..]
+}
+
+fn test_rtcp_index_advances_and_replay_is_rejected() {
+	mut sender, mut receiver := make_pair(.aes128_cm_hmac_sha1_80)!
+	plain := make_rtcp(0x5555)
+
+	first := sender.protect_rtcp(plain)!
+	second := sender.protect_rtcp(plain)!
+	// Identical plaintext must produce different ciphertext, because the index
+	// advances and with it the counter block.
+	assert first != second
+
+	receiver.unprotect_rtcp(first)!
+	receiver.unprotect_rtcp(second)!
+	receiver.unprotect_rtcp(first) or {
+		assert err is ProtectionError
+		if err is ProtectionError {
+			assert err.reason == .replayed
+		}
+		return
+	}
+	assert false, 'a replayed SRTCP packet must be rejected'
+}
