@@ -19,3 +19,10 @@ pub fn (r &RawPacket) destination_ssrc() []u32 {
 	// layout is unknown.
 	return []u32{}
 }
+
+pub fn (r &RawPacket) marshal() ![]u8 {
+	mut w := codec.Writer.with_capacity(header_size + r.body.len)
+	r.header.marshal_into(mut w, r.body.len)!
+	w.bytes(r.body)
+	return w.buf
+}
