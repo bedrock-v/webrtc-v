@@ -12,3 +12,10 @@ pub mut:
 	header Header
 	body   []u8
 }
+
+pub fn (r &RawPacket) destination_ssrc() []u32 {
+	// The first word of most packet bodies is a source identifier, but that is
+	// a convention rather than a rule, so nothing is claimed for a packet whose
+	// layout is unknown.
+	return []u32{}
+}
