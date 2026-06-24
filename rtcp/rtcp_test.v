@@ -308,3 +308,13 @@ fn test_remb_small_bitrate_is_exact() {
 	decoded := unmarshal(remb.marshal()!)![0] as ReceiverEstimatedMaximumBitrate
 	assert decoded.bitrate == 262143
 }
+
+fn test_non_remb_application_feedback_stays_raw() {
+	// Packet type 206 with FMT 15 is shared by REMB and anything else a vendor
+	// invents. A body without the REMB tag must survive as a raw packet rather
+	// than being rejected or misread.
+	raw := hex.decode('8fce0003111111112222222241424344')!
+	packets := unmarshal(raw)!
+	assert packets.len == 1
+	assert packets[0] is RawPacket
+}
