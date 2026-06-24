@@ -40,3 +40,13 @@ pub enum PacketStatus as u8 {
 	// probing; the packet is rejected rather than guessed at.
 	reserved = 3
 }
+
+// PacketFeedback is the report for one transport sequence number.
+pub struct PacketFeedback {
+pub mut:
+	sequence_number u16
+	status          PacketStatus
+	// delta_ticks is the arrival time relative to the previous received packet,
+	// in 250 microsecond units. It is meaningless when status is not_received.
+	delta_ticks i32
+}
