@@ -410,3 +410,31 @@ pub fn (mut c Context) unprotect_rtcp(packet []u8) ![]u8 {
 	out << plaintext
 	return out
 }
+
+// apply_keystream XORs data with the AES counter-mode keystream from iv.
+// Counter mode is its own inverse, so this serves both directions.
+fn (c &Context) apply_keystream(key []u8, iv []u8, data []u8) ![]u8 {
+	if data.len == 0 {
+		return []u8{}
+	}
+	block := aes.Cipher.new(key) or {
+		return ProtectionError{
+			reason: .crypto_failed
+			detail: err.msg()
+		}
+	}
+	mut ctr := aes.Ctr.new(block, iv) or {
+		return ProtectionError{
+			reason: .crypto_failed
+			detail: err.msg()
+		}
+	}
+	mut out := []u8{len: data.len}
+	ctr.xor_key_stream(mut out, data) or {
+		return ProtectionError{
+			reason: .crypto_failed
+			detail: err.msg()
+		}
+	}
+	return out
+}
