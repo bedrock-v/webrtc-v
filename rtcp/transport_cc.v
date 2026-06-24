@@ -225,3 +225,115 @@ fn write_deltas(mut deltas codec.Writer, packets []PacketFeedback, start int, co
 		}
 	}
 }
+
+fn decode_transport_cc(body []u8) !TransportLayerCc {
+	mut r := codec.Reader.new(body)
+	fb := decode_feedback_header(mut r, 'TransportLayerCc')!
+
+	base := r.u16('base sequence number') or { return short_packet('TransportLayerCc') }
+	count := int(r.u16('packet status count') or { return short_packet('TransportLayerCc') })
+	reference_time := r.u24('reference time') or { return short_packet('TransportLayerCc') }
+	fb_packet_count := r.u8('feedback packet count') or { return short_packet('TransportLayerCc') }
+
+	if count > max_transport_cc_packets {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'feedback declares ${count} packet statuses, over the ${max_transport_cc_packets} limit'
+		}
+	}
+
+	// Statuses come first, then the deltas they refer to, so the chunks must be
+	// fully decoded before any delta can be read.
+	mut statuses := []PacketStatus{cap: count}
+	for statuses.len < count {
+		chunk := r.u16('status chunk') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'feedback declares ${count} statuses but the chunks end after ${statuses.len}'
+			}
+		}
+		if chunk & 0x8000 == 0 {
+			status := unsafe { PacketStatus(u8((chunk >> 13) & 0x03)) }
+			length := int(chunk & 0x1FFF)
+			if length == 0 {
+				return DecodeError{
+					reason: .bad_value
+					detail: 'run-length chunk with a zero run'
+				}
+			}
+			for _ in 0 .. length {
+				if statuses.len == count {
+					break
+				}
+				statuses << status
+			}
+			continue
+		}
+		if chunk & 0x4000 == 0 {
+			// One-bit symbols: fourteen of them.
+			for k in 0 .. 14 {
+				if statuses.len == count {
+					break
+				}
+				bit := (chunk >> (13 - k)) & 0x01
+				statuses << if bit == 1 {
+					PacketStatus.received_small_delta
+				} else {
+					PacketStatus.not_received
+				}
+			}
+			continue
+		}
+		// Two-bit symbols: seven of them.
+		for k in 0 .. 7 {
+			if statuses.len == count {
+				break
+			}
+			statuses << unsafe { PacketStatus(u8((chunk >> (12 - k * 2)) & 0x03)) }
+		}
+	}
+
+	mut out := TransportLayerCc{
+		sender_ssrc:          fb.sender_ssrc
+		media_ssrc:           fb.media_ssrc
+		base_sequence_number: base
+		reference_time:       reference_time
+		fb_packet_count:      fb_packet_count
+		packets:              []PacketFeedback{cap: count}
+	}
+	for i, status in statuses {
+		mut delta := i32(0)
+		match status {
+			.not_received {}
+			.received_small_delta {
+				delta = i32(r.u8('small delta') or {
+					return DecodeError{
+						reason: .bad_length
+						detail: 'feedback is missing the delta for sequence ${base + u16(i)}'
+					}
+				})
+			}
+			.received_large_delta {
+				raw := r.u16('large delta') or {
+					return DecodeError{
+						reason: .bad_length
+						detail: 'feedback is missing the delta for sequence ${base + u16(i)}'
+					}
+				}
+				delta = i32(i16(raw))
+			}
+			.reserved {
+				return DecodeError{
+					reason: .bad_value
+					detail: 'feedback uses the reserved packet status for sequence ${base + u16(i)}'
+				}
+			}
+		}
+		out.packets << PacketFeedback{
+			sequence_number: base + u16(i)
+			status:          status
+			delta_ticks:     delta
+		}
+	}
+	return out
+}
