@@ -180,3 +180,96 @@ pub fn (mut c Context) protect_rtp(packet []u8) ![]u8 {
 	out << c.rtp_auth_tag(out, roc)
 	return out
 }
+
+// unprotect_rtp verifies and decrypts an SRTP packet.
+//
+// Authentication is checked before the packet is decrypted and before the
+// replay window is advanced, so a forged packet changes no state and reveals
+// nothing beyond the fact that it was rejected.
+pub fn (mut c Context) unprotect_rtp(packet []u8) ![]u8 {
+	tag_len := c.profile.rtp_auth_tag_len()
+	header_len := rtp.header_length(packet) or {
+		return ProtectionError{
+			reason: .bad_input
+			detail: err.msg()
+		}
+	}
+	if packet.len < header_len + tag_len {
+		return ProtectionError{
+			reason: .bad_input
+			detail: 'packet of ${packet.len} bytes has no room for a ${tag_len}-byte tag after a ${header_len}-byte header'
+		}
+	}
+
+	ssrc := read_u32(packet, 8)
+	sequence := read_u16(packet, 2)
+	mut state := c.srtp[ssrc] or {
+		SrtpState{
+			replay: ReplayDetector.new(c.options.replay_window)
+		}
+	}
+
+	// The index is estimated from the roll-over count and the highest sequence
+	// number seen, so that a packet reordered across a wrap is still decrypted
+	// against the counter its sender used.
+	roc, index := if state.started {
+		rtp.unwrap_sequence(state.roll_over_count, state.highest_seq, sequence)
+	} else {
+		u32(0), u64(sequence)
+	}
+
+	if !state.replay.check(index) {
+		return ProtectionError{
+			reason: .replayed
+			detail: 'packet index ${index} has already been seen or is outside the replay window'
+		}
+	}
+
+	header := packet[..header_len]
+	mut plaintext := []u8{}
+
+	if c.profile.is_aead() {
+		nonce := gcm_nonce(c.keys.rtp_salt, ssrc, index)
+		plaintext = c.rtp_gcm.open(packet[header_len..], nonce, header) or {
+			return ProtectionError{
+				reason: .auth_failed
+				detail: 'AEAD tag did not verify'
+			}
+		}
+	} else {
+		body := packet[..packet.len - tag_len]
+		received_tag := packet[packet.len - tag_len..]
+		expected := c.rtp_auth_tag(body, roc)
+		if !hmac.equal(expected, received_tag) {
+			return ProtectionError{
+				reason: .auth_failed
+				detail: 'HMAC did not verify'
+			}
+		}
+		iv := counter_mode_iv(c.keys.rtp_salt, ssrc, index)
+		plaintext = c.apply_keystream(c.keys.rtp_key, iv, body[header_len..])!
+	}
+
+	// Only now, with the packet proven authentic, is any state advanced.
+	state.replay.accept(index)
+	if !state.started {
+		// The first packet establishes the watermark. It cannot go through the
+		// comparison below: the initial highest_seq is zero, and RFC 3550
+		// requires senders to start from a random sequence number, so half of
+		// all streams would begin with a value that compares as older than the
+		// sentinel and never advance it.
+		state.started = true
+		state.roll_over_count = roc
+		state.highest_seq = sequence
+	} else if roc > state.roll_over_count
+		|| (roc == state.roll_over_count && rtp.is_newer_sequence(sequence, state.highest_seq)) {
+		state.roll_over_count = roc
+		state.highest_seq = sequence
+	}
+	c.srtp[ssrc] = state
+
+	mut out := []u8{cap: header.len + plaintext.len}
+	out << header
+	out << plaintext
+	return out
+}
