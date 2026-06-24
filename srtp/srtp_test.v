@@ -123,3 +123,35 @@ fn all_profiles() []Profile {
 	return [Profile.aes128_cm_hmac_sha1_80, .aes128_cm_hmac_sha1_32, .aead_aes_128_gcm,
 		.aead_aes_256_gcm]
 }
+
+fn test_rtp_round_trip_every_profile() {
+	for profile in all_profiles() {
+		mut sender, mut receiver := make_pair(profile)!
+		payload := [u8(0xDE), 0xAD, 0xBE, 0xEF, 0x01, 0x02]
+		plain := make_rtp(1000, 0xCAFEBABE, payload)
+
+		protected := sender.protect_rtp(plain)!
+		// The header is authenticated but not encrypted, so it stays readable.
+		assert protected[..12] == plain[..12]
+		// The payload must not appear in the clear.
+		assert protected[12..12 + payload.len] != payload
+		assert protected.len == plain.len + profile.rtp_auth_tag_len()
+
+		recovered := receiver.unprotect_rtp(protected)!
+		assert recovered == plain, 'round trip failed for ${profile}'
+	}
+}
+
+fn test_rtcp_round_trip_every_profile() {
+	for profile in all_profiles() {
+		mut sender, mut receiver := make_pair(profile)!
+		plain := make_rtcp(0x11223344)
+
+		protected := sender.protect_rtcp(plain)!
+		assert protected[..8] == plain[..8]
+		assert protected.len > plain.len
+
+		recovered := receiver.unprotect_rtcp(protected)!
+		assert recovered == plain, 'RTCP round trip failed for ${profile}'
+	}
+}
