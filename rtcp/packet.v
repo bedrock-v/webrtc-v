@@ -73,3 +73,11 @@ pub fn (p Packet) destination_ssrc() []u32 {
 		RawPacket { p.destination_ssrc() }
 	}
 }
+
+// DecodeOptions bounds what one datagram may cost to decode.
+@[params]
+pub struct DecodeOptions {
+pub:
+	max_packets int = max_packets_per_compound
+	max_size    int = max_packet_size
+}
