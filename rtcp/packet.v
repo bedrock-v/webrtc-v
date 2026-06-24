@@ -26,3 +26,10 @@ pub fn (r &RawPacket) marshal() ![]u8 {
 	w.bytes(r.body)
 	return w.buf
 }
+
+// Packet is any RTCP packet.
+pub type Packet = ApplicationDefined
+	| FullIntraRequest
+	| Goodbye
+	| PictureLossIndication
+	| RawPacket
