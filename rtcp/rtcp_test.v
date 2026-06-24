@@ -280,3 +280,22 @@ fn test_nack_pairs_wrap_around() {
 	assert pairs.len == 1
 	assert pairs[0].sequence_numbers() == [u16(65534), 65535, 0, 1]
 }
+
+fn test_remb_round_trip() {
+	remb := ReceiverEstimatedMaximumBitrate{
+		sender_ssrc: 0x11111111
+		bitrate:     2500000
+		ssrcs:       [u32(0x33333333), 0x44444444]
+	}
+	raw := remb.marshal()!
+	assert raw[1] == pt_payload_feedback
+	assert raw[0] & 0x1F == fmt_application_layer
+	assert raw[12..16].bytestr() == 'REMB'
+
+	decoded := unmarshal(raw)![0] as ReceiverEstimatedMaximumBitrate
+	assert decoded.ssrcs == [u32(0x33333333), 0x44444444]
+	// The 18-bit mantissa loses precision on large values; the result must be
+	// close and must never exceed the requested rate by more than one unit in
+	// the last place.
+	assert decoded.bitrate >= 2499000 && decoded.bitrate <= 2500000
+}
