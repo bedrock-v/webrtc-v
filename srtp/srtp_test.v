@@ -318,3 +318,19 @@ fn test_unprotect_survives_arbitrary_input() {
 		gcm_receiver.unprotect_rtcp(raw) or {}
 	}
 }
+
+fn test_packet_with_csrc_and_extension_round_trips() {
+	// The whole header, contributing sources and extension included, is
+	// authenticated but left in the clear.
+	mut packet := [u8(0x91), 0x60, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x01, 0x11, 0x22, 0x33, 0x44]
+	packet << [u8(0xAA), 0xBB, 0xCC, 0xDD] // one CSRC
+	packet << [u8(0xBE), 0xDE, 0x00, 0x01, 0x10, 0xFF, 0x00, 0x00] // extension
+	packet << [u8(1), 2, 3, 4, 5, 6, 7, 8] // payload
+
+	for profile in all_profiles() {
+		mut sender, mut receiver := make_pair(profile)!
+		protected := sender.protect_rtp(packet)!
+		assert protected[..24] == packet[..24]
+		assert receiver.unprotect_rtp(protected)! == packet
+	}
+}
