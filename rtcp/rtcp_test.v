@@ -141,3 +141,22 @@ fn test_sdes_chunk_without_cname() {
 	decoded := unmarshal(sdes.marshal()!)![0] as SourceDescription
 	assert decoded.chunks[0].cname() == none
 }
+
+fn test_sdes_rejects_terminator_as_item() {
+	sdes := SourceDescription{
+		chunks: [
+			SdesChunk{
+				source: 1
+				items:  [SdesItem{
+					typ:  sdes_end
+					text: 'x'
+				}]
+			},
+		]
+	}
+	sdes.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'item type 0 must be rejected'
+}
