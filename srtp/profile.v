@@ -74,3 +74,11 @@ pub fn (p Profile) master_salt_len() int {
 		.aead_aes_128_gcm, .aead_aes_256_gcm { 12 }
 	}
 }
+
+// auth_key_len is the size of the HMAC key, or zero for an AEAD profile.
+pub fn (p Profile) auth_key_len() int {
+	return match p {
+		.aes128_cm_hmac_sha1_80, .aes128_cm_hmac_sha1_32 { 20 }
+		.aead_aes_128_gcm, .aead_aes_256_gcm { 0 }
+	}
+}
