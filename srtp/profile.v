@@ -36,3 +36,14 @@ pub fn (p Profile) str() string {
 		.aead_aes_256_gcm { 'SRTP_AEAD_AES_256_GCM' }
 	}
 }
+
+// profile_from_value maps a use_srtp extension value to a profile.
+pub fn profile_from_value(v u16) ?Profile {
+	return match v {
+		0x0001 { Profile.aes128_cm_hmac_sha1_80 }
+		0x0002 { Profile.aes128_cm_hmac_sha1_32 }
+		0x0007 { Profile.aead_aes_128_gcm }
+		0x0008 { Profile.aead_aes_256_gcm }
+		else { none }
+	}
+}
