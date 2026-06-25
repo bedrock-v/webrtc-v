@@ -11,3 +11,19 @@
 // or the decoder. And a packet that fails any check is dropped with an error
 // rather than passed on partially processed.
 module srtp
+
+// Profile is an SRTP protection profile, identified by the values RFC 5764 and
+// RFC 7714 register for the DTLS use_srtp extension.
+pub enum Profile as u16 {
+	// aes128_cm_hmac_sha1_80 is the profile every WebRTC endpoint supports.
+	aes128_cm_hmac_sha1_80 = 0x0001
+	// aes128_cm_hmac_sha1_32 trades authentication strength for four bytes per
+	// packet. It is offered for interoperability; 32 bits of tag is weak enough
+	// that it should not be preferred.
+	aes128_cm_hmac_sha1_32 = 0x0002
+	// aead_aes_128_gcm authenticates and encrypts in one pass and is what
+	// modern endpoints negotiate.
+	aead_aes_128_gcm = 0x0007
+	// aead_aes_256_gcm is the 256-bit key variant.
+	aead_aes_256_gcm = 0x0008
+}
