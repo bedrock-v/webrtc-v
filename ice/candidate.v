@@ -413,3 +413,26 @@ fn validate_usable_address(addr netaddr.SocketAddr) ! {
 		}
 	}
 }
+
+fn parse_u32_field(s string, name string) !u32 {
+	if s == '' || s.len > 10 {
+		return CandidateError{
+			detail: '${name} field "${s}" has an invalid length'
+		}
+	}
+	mut value := u64(0)
+	for c in s {
+		if c < `0` || c > `9` {
+			return CandidateError{
+				detail: '${name} field "${s}" is not a number'
+			}
+		}
+		value = value * 10 + u64(c - `0`)
+		if value > u64(max_u32) {
+			return CandidateError{
+				detail: '${name} field "${s}" is out of range'
+			}
+		}
+	}
+	return u32(value)
+}
