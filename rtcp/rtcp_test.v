@@ -436,3 +436,13 @@ fn test_transport_cc_rejects_reserved_status() {
 	}
 	assert false, 'the reserved status must not be encodable'
 }
+
+fn test_transport_cc_rejects_absurd_status_count() {
+	// Declares 60000 statuses in a 20-byte packet.
+	raw := hex.decode('af cd 0004 11111111 22222222 0000 ea60 000000 00'.replace(' ', ''))!
+	unmarshal(raw) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'an inflated status count must be rejected'
+}
