@@ -517,3 +517,17 @@ fn test_unmarshal_enforces_size_limit() {
 	}
 	assert false, 'the datagram size limit must be enforced'
 }
+
+fn test_is_rtcp_demultiplexing() {
+	sr := SenderReport{}
+	assert is_rtcp(sr.marshal()!)
+
+	// An RTP packet with payload type 96 is in the shared first-byte range but
+	// its second byte falls outside the RTCP packet type range.
+	assert !is_rtcp([u8(0x80), 0x60, 0x00, 0x01])
+	// Payload types 64-95 are reserved by RFC 5761 exactly so this test is
+	// decidable.
+	assert !is_rtcp([u8(0x80), 0x5F, 0x00, 0x01])
+	assert !is_rtcp([u8(0x00), 0xC8, 0x00, 0x01])
+	assert !is_rtcp([u8(0x80)])
+}
