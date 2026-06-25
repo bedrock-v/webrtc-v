@@ -82,3 +82,12 @@ pub fn (p Profile) auth_key_len() int {
 		.aead_aes_128_gcm, .aead_aes_256_gcm { 0 }
 	}
 }
+
+// rtp_auth_tag_len is the number of tag bytes appended to an SRTP packet.
+pub fn (p Profile) rtp_auth_tag_len() int {
+	return match p {
+		.aes128_cm_hmac_sha1_80 { 10 }
+		.aes128_cm_hmac_sha1_32 { 4 }
+		.aead_aes_128_gcm, .aead_aes_256_gcm { 16 }
+	}
+}
