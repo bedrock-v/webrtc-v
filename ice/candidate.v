@@ -31,3 +31,22 @@ pub enum CandidateType {
 	// resort.
 	relayed
 }
+
+pub fn (t CandidateType) str() string {
+	return match t {
+		.host { 'host' }
+		.peer_reflexive { 'prflx' }
+		.server_reflexive { 'srflx' }
+		.relayed { 'relay' }
+	}
+}
+
+pub fn candidate_type_from_string(s string) ?CandidateType {
+	return match s {
+		'host' { CandidateType.host }
+		'prflx' { CandidateType.peer_reflexive }
+		'srflx' { CandidateType.server_reflexive }
+		'relay' { CandidateType.relayed }
+		else { none }
+	}
+}
