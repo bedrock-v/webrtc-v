@@ -47,3 +47,10 @@ pub fn profile_from_value(v u16) ?Profile {
 		else { none }
 	}
 }
+
+// is_aead reports whether the profile authenticates through an AEAD rather than
+// a separate HMAC.
+@[inline]
+pub fn (p Profile) is_aead() bool {
+	return p == .aead_aes_128_gcm || p == .aead_aes_256_gcm
+}
