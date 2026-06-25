@@ -109,3 +109,10 @@ pub fn (p Profile) rtcp_auth_tag_len() int {
 pub fn (p Profile) keying_material_len() int {
 	return 2 * (p.master_key_len() + p.master_salt_len())
 }
+
+// KeyingMaterial is one direction's master key and salt.
+pub struct KeyingMaterial {
+pub:
+	key  []u8
+	salt []u8
+}
