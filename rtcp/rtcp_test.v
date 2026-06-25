@@ -379,3 +379,31 @@ fn test_transport_cc_long_run_uses_run_length_chunk() {
 		assert packet.status == .not_received
 	}
 }
+
+fn test_transport_cc_arrival_times_accumulate() {
+	cc := TransportLayerCc{
+		base_sequence_number: 5
+		reference_time:       1
+		packets:              [
+			PacketFeedback{
+				sequence_number: 5
+				status:          .received_small_delta
+				delta_ticks:     4
+			},
+			PacketFeedback{
+				sequence_number: 6
+				status:          .not_received
+			},
+			PacketFeedback{
+				sequence_number: 7
+				status:          .received_small_delta
+				delta_ticks:     8
+			},
+		]
+	}
+	times := cc.arrival_times_micros()
+	assert times.len == 2
+	assert times[u16(5)] == 64000 + 4 * 250
+	assert times[u16(7)] == 64000 + 12 * 250
+	assert u16(6) !in times
+}
