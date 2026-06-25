@@ -116,3 +116,36 @@ pub:
 	key  []u8
 	salt []u8
 }
+
+// split_keying_material divides the DTLS-SRTP extractor output into the client
+// and server halves.
+//
+// RFC 5764 section 4.2 fixes the order as client key, server key, client salt,
+// server salt - the keys first and then the salts, not key-salt pairs. Getting
+// this wrong produces a context that encrypts happily and cannot be decrypted
+// by anyone, which is a miserable failure to debug.
+pub fn split_keying_material(material []u8, profile Profile) !(KeyingMaterial, KeyingMaterial) {
+	key_len := profile.master_key_len()
+	salt_len := profile.master_salt_len()
+	want := profile.keying_material_len()
+	if material.len != want {
+		return error('srtp: ${profile} needs ${want} bytes of keying material, got ${material.len}')
+	}
+
+	mut offset := 0
+	client_key := material[offset..offset + key_len].clone()
+	offset += key_len
+	server_key := material[offset..offset + key_len].clone()
+	offset += key_len
+	client_salt := material[offset..offset + salt_len].clone()
+	offset += salt_len
+	server_salt := material[offset..offset + salt_len].clone()
+
+	return KeyingMaterial{
+		key:  client_key
+		salt: client_salt
+	}, KeyingMaterial{
+		key:  server_key
+		salt: server_salt
+	}
+}
