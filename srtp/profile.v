@@ -103,3 +103,9 @@ pub fn (p Profile) rtcp_auth_tag_len() int {
 		.aead_aes_128_gcm, .aead_aes_256_gcm { 16 }
 	}
 }
+
+// keying_material_len is the number of bytes the DTLS extractor must produce
+// for this profile: two keys and two salts.
+pub fn (p Profile) keying_material_len() int {
+	return 2 * (p.master_key_len() + p.master_salt_len())
+}
