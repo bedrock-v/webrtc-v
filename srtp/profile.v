@@ -62,3 +62,15 @@ pub fn (p Profile) master_key_len() int {
 		.aead_aes_256_gcm { 32 }
 	}
 }
+
+// master_salt_len is the size of the master salt.
+//
+// The counter-mode profiles use a 112-bit salt because the AES-CM construction
+// leaves 16 bits of the block for the counter. The GCM profiles use 96 bits,
+// which is the full nonce.
+pub fn (p Profile) master_salt_len() int {
+	return match p {
+		.aes128_cm_hmac_sha1_80, .aes128_cm_hmac_sha1_32 { 14 }
+		.aead_aes_128_gcm, .aead_aes_256_gcm { 12 }
+	}
+}
