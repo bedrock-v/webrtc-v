@@ -492,3 +492,18 @@ fn test_unmarshal_rejects_malformed_datagrams() {
 		assert false, 'expected ${name} to be rejected'
 	}
 }
+
+fn test_unmarshal_enforces_packet_limit() {
+	pli := PictureLossIndication{}
+	mut packets := []Packet{}
+	for _ in 0 .. 10 {
+		packets << Packet(pli)
+	}
+	raw := marshal(packets)!
+	unmarshal(raw, max_packets: 5) or {
+		assert err is DecodeError
+		unmarshal(raw)!
+		return
+	}
+	assert false, 'the packet count limit must be enforced'
+}
