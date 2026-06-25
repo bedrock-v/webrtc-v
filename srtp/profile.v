@@ -27,3 +27,12 @@ pub enum Profile as u16 {
 	// aead_aes_256_gcm is the 256-bit key variant.
 	aead_aes_256_gcm = 0x0008
 }
+
+pub fn (p Profile) str() string {
+	return match p {
+		.aes128_cm_hmac_sha1_80 { 'SRTP_AES128_CM_HMAC_SHA1_80' }
+		.aes128_cm_hmac_sha1_32 { 'SRTP_AES128_CM_HMAC_SHA1_32' }
+		.aead_aes_128_gcm { 'SRTP_AEAD_AES_128_GCM' }
+		.aead_aes_256_gcm { 'SRTP_AEAD_AES_256_GCM' }
+	}
+}
