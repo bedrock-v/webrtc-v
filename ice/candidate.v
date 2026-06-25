@@ -148,3 +148,40 @@ pub fn (c &Candidate) needs_resolution() bool {
 pub fn compute_priority(typ CandidateType, local_preference u16, component u16) u32 {
 	return (typ.preference() << 24) | (u32(local_preference) << 8) | (256 - u32(component))
 }
+
+// default_local_preference returns a local preference that ranks IPv6 above
+// IPv4 and routable addresses above link-local ones.
+//
+// RFC 8445 leaves the value to the implementation. Preferring IPv6 follows
+// RFC 8445 section 5.1.2.2, and demoting link-local addresses keeps checks that
+// can only succeed on the same link from delaying ones that might reach the
+// wider network.
+pub fn default_local_preference(addr netaddr.IpAddr) u16 {
+	mut preference := u16(0)
+	if addr.family == .ipv6 {
+		preference += 40000
+	} else {
+		preference += 20000
+	}
+	if addr.is_link_local() {
+		preference -= 15000
+	} else if addr.is_loopback() {
+		preference -= 18000
+	} else if !addr.is_private() {
+		preference += 10000
+	}
+	return preference
+}
+
+// compute_foundation derives the foundation of a candidate.
+//
+// RFC 8445 section 5.1.1.3 requires that two candidates share a foundation
+// exactly when they have the same type, base address, STUN or TURN server and
+// transport. A hash of those four gives that property without having to carry a
+// registry of assigned identifiers.
+pub fn compute_foundation(typ CandidateType, base netaddr.IpAddr, server string, transport Transport) string {
+	digest := sha256.sum('${typ}|${base}|${server}|${transport}'.bytes())
+	// Foundations are compared, never interpreted, so a short prefix of the
+	// digest is enough and keeps the SDP readable.
+	return digest[..8].hex()
+}
