@@ -128,3 +128,23 @@ pub:
 	// resolved it, and `address` stays zero in the meantime.
 	hostname string
 }
+
+// needs_resolution reports whether this candidate names a host rather than an
+// address.
+@[inline]
+pub fn (c &Candidate) needs_resolution() bool {
+	return c.hostname != ''
+}
+
+// compute_priority returns the priority of a candidate (RFC 8445 section
+// 5.1.2.1).
+//
+//	priority = 2^24 * type preference + 2^8 * local preference + (256 - component)
+//
+// The three terms are laid out so that type dominates: any host candidate
+// outranks any server-reflexive one, whatever the local preference. That is
+// deliberate - it makes the checks that are cheapest and lowest latency happen
+// first.
+pub fn compute_priority(typ CandidateType, local_preference u16, component u16) u32 {
+	return (typ.preference() << 24) | (u32(local_preference) << 8) | (256 - u32(component))
+}
