@@ -423,3 +423,16 @@ fn test_transport_cc_rejects_out_of_range_delta() {
 	}
 	assert false, 'a small delta over 255 must be rejected'
 }
+
+fn test_transport_cc_rejects_reserved_status() {
+	cc := TransportLayerCc{
+		packets: [PacketFeedback{
+			status: .reserved
+		}]
+	}
+	cc.marshal() or {
+		assert err is EncodeError
+		return
+	}
+	assert false, 'the reserved status must not be encodable'
+}
