@@ -74,3 +74,30 @@ pub fn (t Transport) str() string {
 		.tcp { 'tcp' }
 	}
 }
+
+// TcpType distinguishes the roles of an ICE-TCP candidate (RFC 6544).
+pub enum TcpType {
+	unspecified
+	active
+	passive
+	simultaneous_open
+}
+
+pub fn (t TcpType) str() string {
+	return match t {
+		.unspecified { '' }
+		.active { 'active' }
+		.passive { 'passive' }
+		.simultaneous_open { 'so' }
+	}
+}
+
+// component_rtp and component_rtcp are the component identifiers of RFC 8445
+// section 4.1.1.1. With rtcp-mux, which every WebRTC endpoint uses, only the
+// RTP component exists.
+pub const component_rtp = u16(1)
+pub const component_rtcp = u16(2)
+
+// max_candidate_line_bytes bounds a candidate attribute from signalling. The
+// peer controls this string, so its length is not to be trusted.
+pub const max_candidate_line_bytes = 1024
