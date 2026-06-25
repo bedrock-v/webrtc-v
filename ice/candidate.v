@@ -185,3 +185,27 @@ pub fn compute_foundation(typ CandidateType, base netaddr.IpAddr, server string,
 	// digest is enough and keeps the SDP readable.
 	return digest[..8].hex()
 }
+
+// str renders the candidate as it appears after "a=candidate:" in SDP
+// (RFC 8839 section 5.1).
+pub fn (c Candidate) str() string {
+	host := if c.hostname != '' { c.hostname } else { c.address.ip.str() }
+	mut parts := [c.foundation, c.component.str(), c.transport.str(),
+		c.priority.str(), host, c.address.port.str(), 'typ', c.typ.str()]
+	if related := c.related {
+		parts << ['raddr', related.ip.str(), 'rport', related.port.str()]
+	}
+	if c.tcp_type != .unspecified {
+		parts << ['tcptype', c.tcp_type.str()]
+	}
+	parts << c.extensions
+	return parts.join(' ')
+}
+
+// equal reports whether two candidates describe the same thing. Priority is
+// excluded: the same address learned twice must compare equal even if the
+// second discovery assigned it a different preference.
+pub fn (c Candidate) equal(other Candidate) bool {
+	return c.component == other.component && c.transport == other.transport && c.typ == other.typ
+		&& c.address.equal(other.address)
+}
