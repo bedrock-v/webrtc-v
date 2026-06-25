@@ -507,3 +507,13 @@ fn test_unmarshal_enforces_packet_limit() {
 	}
 	assert false, 'the packet count limit must be enforced'
 }
+
+fn test_unmarshal_enforces_size_limit() {
+	sr := SenderReport{}
+	raw := sr.marshal()!
+	unmarshal(raw, max_size: 4) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'the datagram size limit must be enforced'
+}
