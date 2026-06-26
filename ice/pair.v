@@ -106,3 +106,24 @@ fn pairable(local Candidate, remote Candidate) bool {
 	}
 	return true
 }
+
+// sort_pairs orders a check list by descending pair priority, which is the
+// order RFC 8445 section 6.1.2.3 requires checks to be attempted in.
+fn sort_pairs(mut pairs []CandidatePair, local_is_controlling bool) {
+	if pairs.len < 2 {
+		// V 0.5.2 faults inside its stable sort on an empty array, and a check
+		// list is legitimately empty until the peer's candidates arrive.
+		return
+	}
+	pairs.sort_with_compare(fn [local_is_controlling] (a &CandidatePair, b &CandidatePair) int {
+		pa := a.priority(local_is_controlling)
+		pb := b.priority(local_is_controlling)
+		if pa > pb {
+			return -1
+		}
+		if pa < pb {
+			return 1
+		}
+		return 0
+	})
+}
