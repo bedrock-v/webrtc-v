@@ -315,3 +315,22 @@ pub fn (mut a Agent) set_remote_credentials(ufrag string, pwd string) ! {
 	a.form_pairs()
 	return
 }
+
+// state returns the current connection state.
+pub fn (mut a Agent) state() ConnectionState {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.state
+}
+
+// role returns the agent's ICE role, which may have changed since construction
+// if a role conflict was resolved.
+pub fn (mut a Agent) role() Role {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.role
+}
