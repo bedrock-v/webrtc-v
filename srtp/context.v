@@ -110,3 +110,9 @@ pub fn Context.new(master_key []u8, master_salt []u8, profile Profile, options O
 	}
 	return context
 }
+
+// Context.from_keying_material builds a context from one half of the DTLS-SRTP
+// extractor output.
+pub fn Context.from_keying_material(material KeyingMaterial, profile Profile, options Options) !&Context {
+	return Context.new(material.key, material.salt, profile, options)!
+}
