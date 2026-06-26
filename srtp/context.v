@@ -452,3 +452,11 @@ fn (c &Context) rtp_auth_tag(body []u8, roc u32) []u8 {
 	full := hmac.new(c.keys.rtp_auth, input, sha1.sum, sha1.block_size)
 	return full[..c.profile.rtp_auth_tag_len()].clone()
 }
+
+// rtcp_auth_tag computes the SRTCP authentication tag over the whole packet,
+// index field included. SRTCP transmits its index, so there is nothing implicit
+// to bind in.
+fn (c &Context) rtcp_auth_tag(body []u8) []u8 {
+	full := hmac.new(c.keys.rtcp_auth, body, sha1.sum, sha1.block_size)
+	return full[..c.profile.rtcp_auth_tag_len()].clone()
+}
