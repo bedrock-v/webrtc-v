@@ -119,3 +119,49 @@ pub fn (p GatherPolicy) str() string {
 		.relay_only { 'relay-only' }
 	}
 }
+
+@[params]
+pub struct AgentConfig {
+pub:
+	role Role = .controlling
+	// stun_servers are "host:port" addresses used to discover server-reflexive
+	// candidates.
+	stun_servers []string
+	// local_ufrag and local_pwd override the generated ICE credentials. Leave
+	// them empty unless resuming a session: generated credentials come from the
+	// system CSPRNG, and supplying weak ones lets an off-path attacker answer
+	// connectivity checks.
+	local_ufrag string
+	local_pwd   string
+	interfaces  InterfaceOptions
+	// gather_policy limits which candidate types are gathered.
+	gather_policy GatherPolicy = .all
+	// turn_servers are relays to allocate an address on. A relayed candidate is
+	// the last resort and the only one that works when both peers are behind a
+	// NAT that will not hairpin.
+	turn_servers []TurnServer
+	// check_interval is Ta from RFC 8445 section 14.2: the pacing between
+	// connectivity checks. Checks are what ICE spends bandwidth on, so this is
+	// the knob that trades connection setup latency against burst size.
+	check_interval time.Duration = 50 * time.millisecond
+	// max_binding_requests is how many times one pair is probed before it is
+	// declared failed.
+	max_binding_requests int = 7
+	// binding_timeout is how long to wait for a response before retransmitting.
+	binding_timeout time.Duration = 500 * time.millisecond
+	// keepalive_interval paces the consent checks of RFC 7675 on the selected
+	// pair. Without them a NAT mapping expires silently and the connection dies
+	// with no error anywhere.
+	keepalive_interval time.Duration = 2 * time.second
+	// disconnected_timeout is how long the selected pair may go without traffic
+	// before the agent reports disconnected.
+	disconnected_timeout time.Duration = 5 * time.second
+	// failed_timeout is how long the agent stays disconnected before failing.
+	failed_timeout time.Duration  = 25 * time.second
+	logger         logging.Logger = logging.nop()
+	// on_candidate is called for each local candidate as it is gathered, which
+	// is what trickle ICE needs.
+	on_candidate ?fn (Candidate)
+	// on_state_change is called whenever the connection state changes.
+	on_state_change ?fn (ConnectionState)
+}
