@@ -331,3 +331,82 @@ pub fn (mut c Context) protect_rtcp(packet []u8) ![]u8 {
 	out << c.rtcp_auth_tag(out)
 	return out
 }
+
+// unprotect_rtcp verifies and decrypts an SRTCP packet.
+pub fn (mut c Context) unprotect_rtcp(packet []u8) ![]u8 {
+	tag_len := c.profile.rtcp_auth_tag_len()
+	min_len := srtcp_header_size + srtcp_index_size + tag_len
+	if packet.len < min_len {
+		return ProtectionError{
+			reason: .bad_input
+			detail: 'SRTCP packet of ${packet.len} bytes is shorter than the ${min_len} bytes its profile requires'
+		}
+	}
+	ssrc := read_u32(packet, 4)
+
+	// The index field sits at the end for the counter-mode profiles and after
+	// the AEAD tag for the GCM ones.
+	index_offset := if c.profile.is_aead() {
+		packet.len - srtcp_index_size
+	} else {
+		packet.len - tag_len - srtcp_index_size
+	}
+	raw_index := read_u32(packet, index_offset)
+	encrypted := raw_index & 0x80000000 != 0
+	index := raw_index & 0x7FFFFFFF
+
+	mut state := c.srtcp[ssrc] or {
+		SrtcpState{
+			replay: ReplayDetector.new(c.options.replay_window)
+		}
+	}
+	if !state.replay.check(u64(index)) {
+		return ProtectionError{
+			reason: .replayed
+			detail: 'SRTCP index ${index} has already been seen or is outside the replay window'
+		}
+	}
+
+	header := packet[..srtcp_header_size]
+	index_field := packet[index_offset..index_offset + srtcp_index_size]
+	mut plaintext := []u8{}
+
+	if c.profile.is_aead() {
+		mut aad := []u8{cap: srtcp_header_size + srtcp_index_size}
+		aad << header
+		aad << index_field
+		nonce := gcm_nonce(c.keys.rtcp_salt, ssrc, u64(index))
+		body := packet[srtcp_header_size..index_offset]
+		plaintext = c.rtcp_gcm.open(body, nonce, aad) or {
+			return ProtectionError{
+				reason: .auth_failed
+				detail: 'AEAD tag did not verify'
+			}
+		}
+	} else {
+		authenticated := packet[..packet.len - tag_len]
+		received_tag := packet[packet.len - tag_len..]
+		expected := c.rtcp_auth_tag(authenticated)
+		if !hmac.equal(expected, received_tag) {
+			return ProtectionError{
+				reason: .auth_failed
+				detail: 'HMAC did not verify'
+			}
+		}
+		body := authenticated[srtcp_header_size..index_offset]
+		if encrypted {
+			iv := counter_mode_iv(c.keys.rtcp_salt, ssrc, u64(index))
+			plaintext = c.apply_keystream(c.keys.rtcp_key, iv, body)!
+		} else {
+			plaintext = body.clone()
+		}
+	}
+
+	state.replay.accept(u64(index))
+	c.srtcp[ssrc] = state
+
+	mut out := []u8{cap: header.len + plaintext.len}
+	out << header
+	out << plaintext
+	return out
+}
