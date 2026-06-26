@@ -116,3 +116,9 @@ pub fn Context.new(master_key []u8, master_salt []u8, profile Profile, options O
 pub fn Context.from_keying_material(material KeyingMaterial, profile Profile, options Options) !&Context {
 	return Context.new(material.key, material.salt, profile, options)!
 }
+
+// profile returns the protection profile in use.
+@[inline]
+pub fn (c &Context) profile() Profile {
+	return c.profile
+}
