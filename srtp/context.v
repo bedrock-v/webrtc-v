@@ -38,3 +38,11 @@ pub enum Reason {
 	// crypto_failed: an underlying primitive refused the input.
 	crypto_failed
 }
+
+pub fn (e ProtectionError) msg() string {
+	return 'srtp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e ProtectionError) code() int {
+	return int(e.reason) + 1
+}
