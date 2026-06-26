@@ -82,3 +82,9 @@ pub fn (mut d ReplayDetector) accept(index u64) {
 		d.mask |= u64(1) << diff
 	}
 }
+
+// highest_index returns the largest index accepted so far.
+@[inline]
+pub fn (d &ReplayDetector) highest_index() u64 {
+	return d.highest
+}
