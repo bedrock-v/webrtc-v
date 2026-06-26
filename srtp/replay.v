@@ -25,3 +25,15 @@ mut:
 	mask u64
 	seen bool
 }
+
+// ReplayDetector.new returns a detector with the given window size, capped at
+// the 64 indices a single mask word can track.
+pub fn ReplayDetector.new(window_size int) ReplayDetector {
+	mut size := u64(window_size)
+	if size == 0 || size > 64 {
+		size = 64
+	}
+	return ReplayDetector{
+		window_size: size
+	}
+}
