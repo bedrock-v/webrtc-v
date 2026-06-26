@@ -37,3 +37,24 @@ pub fn ReplayDetector.new(window_size int) ReplayDetector {
 		window_size: size
 	}
 }
+
+// check reports whether an index is acceptable, without recording it.
+//
+// Checking and accepting are separate so that a packet whose authentication
+// later fails does not consume an index. A caller that recorded first would
+// give an attacker a way to punch holes in the window with garbage.
+pub fn (d &ReplayDetector) check(index u64) bool {
+	if !d.seen {
+		return true
+	}
+	if index > d.highest {
+		return true
+	}
+	diff := d.highest - index
+	if diff >= d.window_size {
+		// Too old to judge. Accepting it would let an attacker replay anything
+		// older than the window, so it is refused.
+		return false
+	}
+	return d.mask & (u64(1) << diff) == 0
+}
