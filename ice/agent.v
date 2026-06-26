@@ -193,3 +193,48 @@ mut:
 	sent_at    time.Time
 	nominating bool
 }
+
+// Agent runs ICE for one component of one transport.
+//
+// The design is a single-threaded state machine fed by channels. One thread per
+// socket does nothing but read datagrams and forward them; one agent thread
+// owns every piece of mutable state and is the only place checks are sent,
+// responses are matched and the state machine advances. Public methods take a
+// mutex to read or queue work. That leaves exactly one place where ICE's
+// ordering rules have to hold, instead of spreading them across every thread
+// that might receive a packet.
+pub struct Agent {
+mut:
+	config AgentConfig
+	mu     &sync.Mutex = sync.new_mutex()
+	log    logging.Logger
+
+	state      ConnectionState = .new
+	role       Role
+	tiebreaker u64
+
+	local_ufrag  string
+	local_pwd    string
+	remote_ufrag string
+	remote_pwd   string
+
+	sockets []&LocalSocket
+	// socket_for maps a local candidate's address to the socket that owns it.
+	// A server-reflexive candidate shares the socket of the host candidate it
+	// was discovered from, which is what makes the reflexive address usable.
+	socket_for map[string]int
+	locals     []Candidate
+	remotes    []Candidate
+	pairs      []CandidatePair
+	pending    map[string]PendingCheck
+
+	selected      int = -1
+	last_activity time.Time
+
+	gathering_done bool
+	closed         bool
+
+	inbound chan InboundPacket = chan InboundPacket{cap: max_inbound_queue}
+	data    chan []u8          = chan []u8{cap: max_data_queue}
+	threads []thread
+}
