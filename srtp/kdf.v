@@ -64,3 +64,13 @@ fn aes_keystream(key []u8, counter_block []u8, length int) ![]u8 {
 	ctr.xor_key_stream(mut out, src)!
 	return out
 }
+
+// SessionKeys holds every key derived from one master key.
+struct SessionKeys {
+	rtp_key   []u8
+	rtp_salt  []u8
+	rtp_auth  []u8
+	rtcp_key  []u8
+	rtcp_salt []u8
+	rtcp_auth []u8
+}
