@@ -57,3 +57,39 @@ pub fn (s ConnectionState) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// max_datagram is the largest datagram the agent will read. Anything longer is
+// not a WebRTC packet, and reading into a fixed buffer keeps a hostile peer
+// from choosing our allocation size.
+const max_datagram = 2048
+
+// max_remote_candidates bounds how many candidates a peer may signal. Each one
+// multiplies the check list, so an unbounded list is a way to make an agent
+// spend the rest of its life sending probes.
+pub const max_remote_candidates = 64
+
+// max_inbound_queue is how many datagrams may wait for the agent loop.
+const max_inbound_queue = 256
+
+// max_data_queue is how many application payloads may wait to be read.
+//
+// A bulk transfer does overflow this and lose datagrams, and the obvious fix -
+// a deeper queue - measured slower: 1024 dropped loopback throughput from about
+// 6.5 MB/s to 4.8 MB/s. The queue is a buffer in front of a congestion
+// controller, so making it deeper mostly inflates the round-trip estimate that
+// controller is working from. Losing the tail of a burst is the cheaper signal,
+// and it is the one SCTP is designed to read.
+const max_data_queue = 256
+
+// AgentConfig configures an agent. Every field has a working default; a caller
+// that sets nothing gets an agent that gathers host candidates and checks them.
+// TurnServer is a relay to allocate on.
+pub struct TurnServer {
+pub:
+	// url is "host:port", optionally prefixed with "turn:".
+	url string
+	// username and password are the long-term credentials. A relay without them
+	// is an open relay and this client will not use one.
+	username string
+	password string
+}
