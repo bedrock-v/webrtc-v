@@ -93,3 +93,29 @@ pub:
 	username string
 	password string
 }
+
+// GatherPolicy limits which kinds of candidate are gathered.
+//
+// It is a privacy control as much as a connectivity one: every candidate
+// gathered is disclosed to the peer, and a host candidate discloses the
+// machine's local addresses.
+pub enum GatherPolicy {
+	// all gathers host and server-reflexive candidates, and relayed ones once
+	// TURN exists. This is the default and what connects most often.
+	all
+	// no_host omits host candidates, so a peer on the same network learns only
+	// the address a STUN server saw. It costs local-network connectivity.
+	no_host
+	// relay_only gathers nothing but relayed candidates. TURN is not
+	// implemented, so an agent configured this way currently gathers nothing and
+	// says so rather than quietly falling back to a policy that leaks addresses.
+	relay_only
+}
+
+pub fn (p GatherPolicy) str() string {
+	return match p {
+		.all { 'all' }
+		.no_host { 'no-host' }
+		.relay_only { 'relay-only' }
+	}
+}
