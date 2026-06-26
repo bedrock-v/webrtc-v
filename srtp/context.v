@@ -16,3 +16,10 @@ const srtcp_index_size = 4
 // is reached the master key must be replaced; continuing would repeat a counter
 // block and destroy confidentiality.
 const max_srtcp_index = u32(0x7FFFFFFF)
+
+// ProtectionError is returned when a packet cannot be protected or unprotected.
+pub struct ProtectionError {
+pub:
+	reason Reason
+	detail string
+}
