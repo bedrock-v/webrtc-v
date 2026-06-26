@@ -46,3 +46,14 @@ pub fn (e ProtectionError) msg() string {
 pub fn (e ProtectionError) code() int {
 	return int(e.reason) + 1
 }
+
+// srtp_state is the per-source state an SRTP stream needs.
+struct SrtpState {
+mut:
+	// roll_over_count extends the 16-bit sequence number to the 48-bit packet
+	// index the ciphers are keyed on.
+	roll_over_count u32
+	highest_seq     u16
+	started         bool
+	replay          ReplayDetector
+}
