@@ -334,3 +334,37 @@ pub fn (mut a Agent) role() Role {
 	}
 	return a.role
 }
+
+// local_candidates returns the candidates gathered so far.
+pub fn (mut a Agent) local_candidates() []Candidate {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.locals.clone()
+}
+
+// selected_pair returns the pair currently carrying traffic.
+pub fn (mut a Agent) selected_pair() ?CandidatePair {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.selected < 0 || a.selected >= a.pairs.len {
+		return none
+	}
+	return a.pairs[a.selected]
+}
+
+// set_state records a new connection state and notifies the application. The
+// caller must hold the mutex.
+fn (mut a Agent) set_state(state ConnectionState) {
+	if a.state == state {
+		return
+	}
+	a.log.info('state ${a.state} -> ${state}')
+	a.state = state
+	if callback := a.config.on_state_change {
+		callback(state)
+	}
+}
