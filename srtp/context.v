@@ -57,3 +57,11 @@ mut:
 	started         bool
 	replay          ReplayDetector
 }
+
+// srtcp_state is the per-source state an SRTCP stream needs. SRTCP carries its
+// own 31-bit index in the packet, so there is no roll-over count to track.
+struct SrtcpState {
+mut:
+	index  u32
+	replay ReplayDetector
+}
