@@ -286,3 +286,32 @@ fn validate_credentials(ufrag string, pwd string) ! {
 		}
 	}
 }
+
+// local_credentials returns the ufrag and password to signal to the peer.
+pub fn (mut a Agent) local_credentials() (string, string) {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.local_ufrag, a.local_pwd
+}
+
+// set_remote_credentials records the peer's ICE credentials. Checks cannot
+// start until they are known, because every check is authenticated with them.
+pub fn (mut a Agent) set_remote_credentials(ufrag string, pwd string) ! {
+	validate_credentials(ufrag, pwd)!
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return AgentError{
+			reason: .closed
+			detail: 'agent is closed'
+		}
+	}
+	a.remote_ufrag = ufrag
+	a.remote_pwd = pwd
+	a.form_pairs()
+	return
+}
