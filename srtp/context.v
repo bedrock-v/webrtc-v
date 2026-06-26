@@ -122,3 +122,61 @@ pub fn Context.from_keying_material(material KeyingMaterial, profile Profile, op
 pub fn (c &Context) profile() Profile {
 	return c.profile
 }
+
+// protect_rtp encrypts and authenticates an RTP packet.
+pub fn (mut c Context) protect_rtp(packet []u8) ![]u8 {
+	header_len := rtp.header_length(packet) or {
+		return ProtectionError{
+			reason: .bad_input
+			detail: err.msg()
+		}
+	}
+	ssrc := read_u32(packet, 8)
+	sequence := read_u16(packet, 2)
+
+	mut state := c.srtp[ssrc] or {
+		SrtpState{
+			replay: ReplayDetector.new(c.options.replay_window)
+		}
+	}
+	// The sender owns the sequence numbering, so the roll-over count advances
+	// exactly when the sequence number wraps.
+	if !state.started {
+		state.started = true
+		state.highest_seq = sequence
+	} else if sequence < state.highest_seq && u16(state.highest_seq - sequence) > 0x8000 {
+		state.roll_over_count++
+		state.highest_seq = sequence
+	} else if rtp.is_newer_sequence(sequence, state.highest_seq) {
+		state.highest_seq = sequence
+	}
+	roc := state.roll_over_count
+	c.srtp[ssrc] = state
+
+	index := (u64(roc) << 16) | u64(sequence)
+	header := packet[..header_len]
+	payload := packet[header_len..]
+
+	if c.profile.is_aead() {
+		nonce := gcm_nonce(c.keys.rtp_salt, ssrc, index)
+		sealed := c.rtp_gcm.seal(payload, nonce, header) or {
+			return ProtectionError{
+				reason: .crypto_failed
+				detail: err.msg()
+			}
+		}
+		mut out := []u8{cap: header.len + sealed.len}
+		out << header
+		out << sealed
+		return out
+	}
+
+	iv := counter_mode_iv(c.keys.rtp_salt, ssrc, index)
+	encrypted := c.apply_keystream(c.keys.rtp_key, iv, payload)!
+
+	mut out := []u8{cap: packet.len + c.profile.rtp_auth_tag_len()}
+	out << header
+	out << encrypted
+	out << c.rtp_auth_tag(out, roc)
+	return out
+}
