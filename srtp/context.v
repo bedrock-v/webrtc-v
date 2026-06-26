@@ -65,3 +65,10 @@ mut:
 	index  u32
 	replay ReplayDetector
 }
+
+// Options tunes a context.
+@[params]
+pub struct Options {
+pub:
+	replay_window int = default_replay_window
+}
