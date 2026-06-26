@@ -28,3 +28,24 @@ pub fn (s PairState) str() string {
 		.failed { 'failed' }
 	}
 }
+
+// CandidatePair is one local candidate paired with one remote candidate.
+pub struct CandidatePair {
+pub:
+	local  Candidate
+	remote Candidate
+pub mut:
+	state PairState = .frozen
+	// nominated marks the pair the controlling agent has selected. Once a
+	// nominated pair succeeds, checking stops and media flows over it.
+	nominated bool
+	// binding_requests counts how many checks have been sent, so that a pair
+	// can be given up on after a bounded number of attempts.
+	binding_requests int
+	last_sent        time.Time
+	// last_received is when traffic last arrived on this pair. Consent
+	// freshness (RFC 7675) uses it to decide whether the path is still alive.
+	last_received time.Time
+	// round_trip_time is measured from the most recent successful check.
+	round_trip_time time.Duration
+}
