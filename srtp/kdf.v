@@ -108,3 +108,35 @@ fn derive_session_keys(master_key []u8, master_salt []u8, profile Profile) !Sess
 		}
 	}
 }
+
+// counter_mode_iv builds the AES-CM counter block for one packet
+// (RFC 3711 section 4.1.1).
+//
+//	IV = (salt * 2^16) XOR (SSRC * 2^64) XOR (index * 2^16)
+//
+// Laid out over the 16-byte block that means the salt occupies bytes 0-13, the
+// SSRC is XORed into bytes 4-7, the 48-bit index into bytes 8-13, and the last
+// two bytes are the block counter. The index is what makes every packet's
+// keystream distinct; reusing one with the same key is a total break of
+// confidentiality, which is why the index is derived from the roll-over count
+// rather than from the sequence number alone.
+fn counter_mode_iv(salt []u8, ssrc u32, index u64) []u8 {
+	mut iv := []u8{len: aes_block_size}
+	for i, b in salt {
+		if i >= aes_block_size {
+			break
+		}
+		iv[i] = b
+	}
+	iv[4] ^= u8(ssrc >> 24)
+	iv[5] ^= u8(ssrc >> 16)
+	iv[6] ^= u8(ssrc >> 8)
+	iv[7] ^= u8(ssrc)
+	iv[8] ^= u8(index >> 40)
+	iv[9] ^= u8(index >> 32)
+	iv[10] ^= u8(index >> 24)
+	iv[11] ^= u8(index >> 16)
+	iv[12] ^= u8(index >> 8)
+	iv[13] ^= u8(index)
+	return iv
+}
