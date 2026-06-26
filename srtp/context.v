@@ -273,3 +273,61 @@ pub fn (mut c Context) unprotect_rtp(packet []u8) ![]u8 {
 	out << plaintext
 	return out
 }
+
+// protect_rtcp encrypts and authenticates an RTCP packet.
+pub fn (mut c Context) protect_rtcp(packet []u8) ![]u8 {
+	if packet.len < srtcp_header_size {
+		return ProtectionError{
+			reason: .bad_input
+			detail: 'RTCP packet of ${packet.len} bytes is shorter than the ${srtcp_header_size}-byte header'
+		}
+	}
+	ssrc := read_u32(packet, 4)
+	mut state := c.srtcp[ssrc] or {
+		SrtcpState{
+			replay: ReplayDetector.new(c.options.replay_window)
+		}
+	}
+	if state.index >= max_srtcp_index {
+		return ProtectionError{
+			reason: .key_exhausted
+			detail: 'the 31-bit SRTCP index for source ${ssrc} is exhausted; the master key must be replaced'
+		}
+	}
+	state.index++
+	index := state.index
+	c.srtcp[ssrc] = state
+
+	header := packet[..srtcp_header_size]
+	payload := packet[srtcp_header_size..]
+	// The high bit of the index field marks the packet as encrypted.
+	index_field := [u8((index >> 24) | 0x80), u8(index >> 16), u8(index >> 8), u8(index)]
+
+	if c.profile.is_aead() {
+		mut aad := []u8{cap: srtcp_header_size + srtcp_index_size}
+		aad << header
+		aad << index_field
+		nonce := gcm_nonce(c.keys.rtcp_salt, ssrc, u64(index))
+		sealed := c.rtcp_gcm.seal(payload, nonce, aad) or {
+			return ProtectionError{
+				reason: .crypto_failed
+				detail: err.msg()
+			}
+		}
+		mut out := []u8{cap: header.len + sealed.len + srtcp_index_size}
+		out << header
+		out << sealed
+		out << index_field
+		return out
+	}
+
+	iv := counter_mode_iv(c.keys.rtcp_salt, ssrc, u64(index))
+	encrypted := c.apply_keystream(c.keys.rtcp_key, iv, payload)!
+
+	mut out := []u8{cap: packet.len + srtcp_index_size + c.profile.rtcp_auth_tag_len()}
+	out << header
+	out << encrypted
+	out << index_field
+	out << c.rtcp_auth_tag(out)
+	return out
+}
