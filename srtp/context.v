@@ -438,3 +438,17 @@ fn (c &Context) apply_keystream(key []u8, iv []u8, data []u8) ![]u8 {
 	}
 	return out
 }
+
+// rtp_auth_tag computes the SRTP authentication tag.
+//
+// RFC 3711 section 4.2 defines the authenticated portion as the packet followed
+// by the roll-over count. The roll-over count is not transmitted, so including
+// it binds the tag to which cycle the sender believed it was in; without it, a
+// packet from one cycle would authenticate in another.
+fn (c &Context) rtp_auth_tag(body []u8, roc u32) []u8 {
+	mut input := []u8{cap: body.len + 4}
+	input << body
+	input << [u8(roc >> 24), u8(roc >> 16), u8(roc >> 8), u8(roc)]
+	full := hmac.new(c.keys.rtp_auth, input, sha1.sum, sha1.block_size)
+	return full[..c.profile.rtp_auth_tag_len()].clone()
+}
