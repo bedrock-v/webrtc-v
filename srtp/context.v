@@ -466,3 +466,8 @@ fn read_u32(b []u8, offset int) u32 {
 	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
 		offset + 3])
 }
+
+@[inline]
+fn read_u16(b []u8, offset int) u16 {
+	return (u16(b[offset]) << 8) | u16(b[offset + 1])
+}
