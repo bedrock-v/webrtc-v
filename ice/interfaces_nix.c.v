@@ -78,3 +78,57 @@ fn sockaddr_to_ip(sa voidptr) ?netaddr.IpAddr {
 	}
 	return none
 }
+
+// local_interface_addresses returns the usable addresses of every up,
+// non-loopback interface.
+//
+// Loopback is excluded unless asked for: a loopback candidate can only ever
+// pair with the same machine, so offering one to a remote peer leaks the fact
+// that the address exists without any chance of connecting. Tests that run both
+// agents in one process do want it, which is why it is an option rather than a
+// rule.
+pub fn local_interface_addresses(opts InterfaceOptions) ![]netaddr.IpAddr {
+	mut list := &C.ifaddrs(unsafe { nil })
+	if C.getifaddrs(&list) != 0 {
+		return AgentError{
+			reason: .transport
+			detail: 'getifaddrs failed'
+		}
+	}
+	defer {
+		C.freeifaddrs(list)
+	}
+
+	mut out := []netaddr.IpAddr{}
+	mut node := list
+	for node != unsafe { nil } {
+		current := node
+		node = current.ifa_next
+
+		if current.ifa_addr == unsafe { nil } {
+			continue
+		}
+		if current.ifa_flags & iff_up == 0 {
+			continue
+		}
+		is_loopback_iface := current.ifa_flags & iff_loopback != 0
+		if is_loopback_iface && !opts.include_loopback {
+			continue
+		}
+
+		name := unsafe { cstring_to_vstring(current.ifa_name) }
+		if opts.interfaces.len > 0 && name !in opts.interfaces {
+			continue
+		}
+
+		addr := sockaddr_to_ip(current.ifa_addr) or { continue }
+		if !is_candidate_address(addr, opts) {
+			continue
+		}
+		if out.any(it.equal(addr)) {
+			continue
+		}
+		out << addr
+	}
+	return out
+}
