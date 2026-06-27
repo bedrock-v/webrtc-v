@@ -39,3 +39,13 @@ fn test_derived_keys_differ_per_label() {
 		seen[k] = true
 	}
 }
+
+fn test_aead_profile_derives_no_auth_key() {
+	master_key := []u8{len: 16, init: u8(index)}
+	master_salt := []u8{len: 12, init: u8(index)}
+	keys := derive_session_keys(master_key, master_salt, .aead_aes_128_gcm)!
+	// GCM authenticates with the key it encrypts with, so a separate
+	// authentication key would be an unused secret.
+	assert keys.rtp_auth.len == 0
+	assert keys.rtcp_auth.len == 0
+}
