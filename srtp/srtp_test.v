@@ -49,3 +49,14 @@ fn test_aead_profile_derives_no_auth_key() {
 	assert keys.rtp_auth.len == 0
 	assert keys.rtcp_auth.len == 0
 }
+
+fn test_derive_rejects_wrong_key_sizes() {
+	derive_session_keys([]u8{len: 15}, []u8{len: 14}, .aes128_cm_hmac_sha1_80) or {
+		derive_session_keys([]u8{len: 16}, []u8{len: 13}, .aes128_cm_hmac_sha1_80) or {
+			derive_session_keys([]u8{len: 16}, []u8{len: 12}, .aead_aes_256_gcm) or { return }
+			assert false, 'a 16-byte key must be rejected for the 256-bit profile'
+		}
+		assert false, 'a short salt must be rejected'
+	}
+	assert false, 'a short key must be rejected'
+}
