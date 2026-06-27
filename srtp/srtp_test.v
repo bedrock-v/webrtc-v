@@ -60,3 +60,19 @@ fn test_derive_rejects_wrong_key_sizes() {
 	}
 	assert false, 'a short key must be rejected'
 }
+
+fn test_profile_parameters() {
+	assert profile_from_value(0x0001)? == Profile.aes128_cm_hmac_sha1_80
+	assert profile_from_value(0x0008)? == Profile.aead_aes_256_gcm
+	assert profile_from_value(0x1234) == none
+
+	assert Profile.aes128_cm_hmac_sha1_80.rtp_auth_tag_len() == 10
+	assert Profile.aes128_cm_hmac_sha1_32.rtp_auth_tag_len() == 4
+	// RFC 3711 section 5.2 keeps SRTCP at an 80-bit tag even when SRTP is
+	// truncated to 32.
+	assert Profile.aes128_cm_hmac_sha1_32.rtcp_auth_tag_len() == 10
+	assert Profile.aead_aes_256_gcm.master_key_len() == 32
+	assert Profile.aead_aes_128_gcm.master_salt_len() == 12
+	assert !Profile.aes128_cm_hmac_sha1_80.is_aead()
+	assert Profile.aead_aes_128_gcm.is_aead()
+}
