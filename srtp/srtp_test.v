@@ -76,3 +76,23 @@ fn test_profile_parameters() {
 	assert !Profile.aes128_cm_hmac_sha1_80.is_aead()
 	assert Profile.aead_aes_128_gcm.is_aead()
 }
+
+fn test_split_keying_material_order() {
+	// RFC 5764 section 4.2 orders the extractor output as both keys and then
+	// both salts, not as key-salt pairs.
+	profile := Profile.aes128_cm_hmac_sha1_80
+	mut material := []u8{}
+	material << []u8{len: 16, init: 0x11} // client key
+	material << []u8{len: 16, init: 0x22} // server key
+	material << []u8{len: 14, init: 0x33} // client salt
+	material << []u8{len: 14, init: 0x44} // server salt
+
+	client, server := split_keying_material(material, profile)!
+	assert client.key.all(it == 0x11)
+	assert server.key.all(it == 0x22)
+	assert client.salt.all(it == 0x33)
+	assert server.salt.all(it == 0x44)
+
+	split_keying_material(material[..10], profile) or { return }
+	assert false, 'short keying material must be rejected'
+}
