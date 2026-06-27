@@ -460,3 +460,9 @@ fn (c &Context) rtcp_auth_tag(body []u8) []u8 {
 	full := hmac.new(c.keys.rtcp_auth, body, sha1.sum, sha1.block_size)
 	return full[..c.profile.rtcp_auth_tag_len()].clone()
 }
+
+@[inline]
+fn read_u32(b []u8, offset int) u32 {
+	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
+		offset + 3])
+}
