@@ -225,3 +225,16 @@ fn test_reordering_within_the_window_is_accepted() {
 		assert recovered[12] == u8(100 + i)
 	}
 }
+
+fn test_sequence_wrap_keeps_streams_decryptable() {
+	// The roll-over count is not on the wire, so a receiver that fails to track
+	// it stops decrypting the moment the sequence number wraps.
+	mut sender, mut receiver := make_pair(.aes128_cm_hmac_sha1_80)!
+	sequences := [u16(65530), 65531, 65532, 65533, 65534, 65535, 0, 1, 2, 3]
+	for seq in sequences {
+		protected := sender.protect_rtp(make_rtp(seq, 0x77, [u8(seq >> 8), u8(seq), 0, 0]))!
+		recovered := receiver.unprotect_rtp(protected)!
+		assert recovered[2] == u8(seq >> 8)
+		assert recovered[3] == u8(seq)
+	}
+}
