@@ -194,3 +194,20 @@ fn test_wrong_key_is_rejected() {
 		assert false, '${profile}: a packet under the wrong key must not verify'
 	}
 }
+
+fn test_replay_is_rejected() {
+	for profile in all_profiles() {
+		mut sender, mut receiver := make_pair(profile)!
+		protected := sender.protect_rtp(make_rtp(500, 0x1234, [u8(1), 2, 3, 4]))!
+
+		receiver.unprotect_rtp(protected)!
+		receiver.unprotect_rtp(protected) or {
+			assert err is ProtectionError
+			if err is ProtectionError {
+				assert err.reason == .replayed
+			}
+			continue
+		}
+		assert false, '${profile}: a replayed packet must be rejected'
+	}
+}
