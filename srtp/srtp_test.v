@@ -106,3 +106,10 @@ fn make_pair(profile Profile) !(&Context, &Context) {
 	receiver := Context.new(key, salt, profile)!
 	return sender, receiver
 }
+
+fn make_rtp(sequence u16, ssrc u32, payload []u8) []u8 {
+	mut packet := [u8(0x80), 0x60, u8(sequence >> 8), u8(sequence), 0x00, 0x00, 0x00, 0x01,
+		u8(ssrc >> 24), u8(ssrc >> 16), u8(ssrc >> 8), u8(ssrc)]
+	packet << payload
+	return packet
+}
