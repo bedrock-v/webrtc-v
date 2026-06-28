@@ -173,3 +173,24 @@ fn test_tampering_is_detected_everywhere() {
 		}
 	}
 }
+
+fn test_wrong_key_is_rejected() {
+	for profile in all_profiles() {
+		key_len := profile.master_key_len()
+		salt_len := profile.master_salt_len()
+		mut sender := Context.new([]u8{len: key_len, init: 0x01}, []u8{len: salt_len, init: 0x02},
+			profile)!
+		mut receiver := Context.new([]u8{len: key_len, init: 0xFF},
+			[]u8{len: salt_len, init: 0x02}, profile)!
+
+		protected := sender.protect_rtp(make_rtp(1, 1, [u8(9), 9, 9, 9]))!
+		receiver.unprotect_rtp(protected) or {
+			assert err is ProtectionError
+			if err is ProtectionError {
+				assert err.reason == .auth_failed
+			}
+			continue
+		}
+		assert false, '${profile}: a packet under the wrong key must not verify'
+	}
+}
