@@ -113,3 +113,8 @@ fn make_rtp(sequence u16, ssrc u32, payload []u8) []u8 {
 	packet << payload
 	return packet
 }
+
+fn make_rtcp(ssrc u32) []u8 {
+	// A receiver report with no report blocks: header, then the sender's SSRC.
+	return [u8(0x80), 201, 0x00, 0x01, u8(ssrc >> 24), u8(ssrc >> 16), u8(ssrc >> 8), u8(ssrc)]
+}
