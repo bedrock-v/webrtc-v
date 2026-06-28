@@ -141,3 +141,17 @@ fn test_rtp_round_trip_every_profile() {
 		assert recovered == plain, 'round trip failed for ${profile}'
 	}
 }
+
+fn test_rtcp_round_trip_every_profile() {
+	for profile in all_profiles() {
+		mut sender, mut receiver := make_pair(profile)!
+		plain := make_rtcp(0x11223344)
+
+		protected := sender.protect_rtcp(plain)!
+		assert protected[..8] == plain[..8]
+		assert protected.len > plain.len
+
+		recovered := receiver.unprotect_rtcp(protected)!
+		assert recovered == plain, 'RTCP round trip failed for ${profile}'
+	}
+}
