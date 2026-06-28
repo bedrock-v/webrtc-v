@@ -118,3 +118,8 @@ fn make_rtcp(ssrc u32) []u8 {
 	// A receiver report with no report blocks: header, then the sender's SSRC.
 	return [u8(0x80), 201, 0x00, 0x01, u8(ssrc >> 24), u8(ssrc >> 16), u8(ssrc >> 8), u8(ssrc)]
 }
+
+fn all_profiles() []Profile {
+	return [Profile.aes128_cm_hmac_sha1_80, .aes128_cm_hmac_sha1_32, .aead_aes_128_gcm,
+		.aead_aes_256_gcm]
+}
