@@ -155,3 +155,21 @@ fn test_rtcp_round_trip_every_profile() {
 		assert recovered == plain, 'RTCP round trip failed for ${profile}'
 	}
 }
+
+fn test_tampering_is_detected_everywhere() {
+	for profile in all_profiles() {
+		mut sender, mut unused_receiver := make_pair(profile)!
+		plain := make_rtp(7, 0xAABBCCDD, [u8(1), 2, 3, 4, 5, 6, 7, 8])
+		protected := sender.protect_rtp(plain)!
+
+		for i in 0 .. protected.len {
+			mut tampered := protected.clone()
+			tampered[i] ^= 0x01
+			// A fresh receiver per attempt, so a rejected packet cannot be
+			// mistaken for a replay of an earlier one.
+			mut fresh_sender, mut receiver := make_pair(profile)!
+			receiver.unprotect_rtp(tampered) or { continue }
+			assert false, '${profile}: flipping byte ${i} was not detected'
+		}
+	}
+}
