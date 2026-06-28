@@ -211,3 +211,17 @@ fn test_replay_is_rejected() {
 		assert false, '${profile}: a replayed packet must be rejected'
 	}
 }
+
+fn test_reordering_within_the_window_is_accepted() {
+	mut sender, mut receiver := make_pair(.aes128_cm_hmac_sha1_80)!
+	mut packets := [][]u8{}
+	for seq in 100 .. 110 {
+		packets << sender.protect_rtp(make_rtp(u16(seq), 0x99, [u8(seq), 0, 0, 0]))!
+	}
+
+	// Deliver out of order, newest first.
+	for i := packets.len - 1; i >= 0; i-- {
+		recovered := receiver.unprotect_rtp(packets[i])!
+		assert recovered[12] == u8(100 + i)
+	}
+}
