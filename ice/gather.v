@@ -182,3 +182,59 @@ fn (mut a Agent) add_host_candidate(address netaddr.IpAddr, announce bool) ! {
 	}
 	return
 }
+
+// gather_reflexive asks a STUN server what address it sees each local socket
+// coming from.
+fn (mut a Agent) gather_reflexive(server string) ! {
+	a.mu.lock()
+	sockets := a.sockets.clone()
+	a.mu.unlock()
+
+	server_addr := netaddr.SocketAddr.parse(server) or {
+		return AgentError{
+			reason: .transport
+			detail: 'bad STUN server address "${server}": ${err.msg()}'
+		}
+	}
+	destination := transport.socket_addr_to_net(server_addr) or {
+		return AgentError{
+			reason: .transport
+			detail: 'bad STUN server address "${server}": ${err.msg()}'
+		}
+	}
+
+	for index, socket in sockets {
+		if socket.base.family() != server_addr.family() {
+			// A request to an IPv4 server out of an IPv6 socket cannot be
+			// routed, and the reverse is equally hopeless.
+			continue
+		}
+		mapped := a.reflexive_lookup(socket, destination) or {
+			a.log.debug('no reflexive address for ${socket.base} via ${server}: ${err.msg()}')
+			continue
+		}
+		if mapped.equal(socket.base) {
+			// The server saw the same address we bound, so there is no NAT in
+			// the way and the host candidate already covers this path.
+			a.log.debug('${socket.base} is not behind a NAT')
+			continue
+		}
+
+		candidate := Candidate{
+			foundation: compute_foundation(.server_reflexive, socket.base.ip, server, .udp)
+			component:  component_rtp
+			transport:  .udp
+			priority:   compute_priority(.server_reflexive, default_local_preference(mapped.ip),
+				component_rtp)
+			address:    mapped
+			typ:        .server_reflexive
+			related:    socket.base
+		}
+
+		a.mu.lock()
+		a.socket_for[mapped.str()] = index
+		a.mu.unlock()
+		a.add_local_candidate(candidate)
+	}
+	return
+}
