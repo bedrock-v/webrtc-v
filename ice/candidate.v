@@ -67,3 +67,10 @@ pub enum Transport {
 	udp
 	tcp
 }
+
+pub fn (t Transport) str() string {
+	return match t {
+		.udp { 'udp' }
+		.tcp { 'tcp' }
+	}
+}
