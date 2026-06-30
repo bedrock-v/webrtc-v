@@ -623,3 +623,39 @@ fn (mut a Agent) consider_selection(index int) {
 		a.pairs[index].state = .succeeded
 	}
 }
+
+// select_pair makes a pair the one carrying traffic.
+fn (mut a Agent) select_pair(index int) {
+	a.selected = index
+	a.pairs[index].last_received = time.now()
+	a.log.info('selected pair ${a.pairs[index]}')
+	a.evaluate_state()
+}
+
+// send_success_response answers a check with the address it arrived from.
+fn (mut a Agent) send_success_response(request stun.Message, packet InboundPacket) {
+	mut response := stun.Message.response(request, .success_response)
+	response.add_xor_mapped_address(packet.from) or { return }
+	key := stun.short_term_key(a.local_pwd) or { return }
+	raw := response.encode(integrity_key: key, fingerprint: true) or { return }
+	a.send_raw(packet.socket, packet.from, raw)
+}
+
+// send_error_response answers a check with an error.
+fn (mut a Agent) send_error_response(request stun.Message, packet InboundPacket, code int, reason string) {
+	mut response := stun.Message.response(request, .error_response)
+	response.add_error_code(code, reason) or { return }
+	// A 401 is sent when the credentials did not match, so it cannot itself be
+	// authenticated with them.
+	raw := if code == stun.code_unauthenticated {
+		response.encode(fingerprint: true) or { return }
+	} else {
+		key := stun.short_term_key(a.local_pwd) or { return }
+		response.encode(integrity_key: key, fingerprint: true) or { return }
+	}
+	a.send_raw(packet.socket, packet.from, raw)
+}
+
+fn (mut a Agent) send_raw(socket_index int, to netaddr.SocketAddr, raw []u8) {
+	a.transmit(socket_index, to, raw) or { a.log.debug('send to ${to} failed: ${err.msg()}') }
+}
