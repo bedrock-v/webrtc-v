@@ -74,3 +74,11 @@ pub fn (t Transport) str() string {
 		.tcp { 'tcp' }
 	}
 }
+
+// TcpType distinguishes the roles of an ICE-TCP candidate (RFC 6544).
+pub enum TcpType {
+	unspecified
+	active
+	passive
+	simultaneous_open
+}
