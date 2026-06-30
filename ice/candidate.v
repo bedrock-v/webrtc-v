@@ -61,3 +61,9 @@ pub fn (t CandidateType) preference() u32 {
 		.relayed { 0 }
 	}
 }
+
+// Transport is the protocol a candidate uses.
+pub enum Transport {
+	udp
+	tcp
+}
