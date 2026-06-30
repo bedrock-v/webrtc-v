@@ -14,3 +14,10 @@ pub enum Role {
 	controlling
 	controlled
 }
+
+pub fn (r Role) str() string {
+	return match r {
+		.controlling { 'controlling' }
+		.controlled { 'controlled' }
+	}
+}
