@@ -42,3 +42,7 @@ pub enum AgentErrorReason {
 pub fn (e AgentError) msg() string {
 	return 'ice: ${e.reason}: ${e.detail}'
 }
+
+pub fn (e AgentError) code() int {
+	return int(e.reason) + 10
+}
