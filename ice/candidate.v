@@ -40,3 +40,13 @@ pub fn (t CandidateType) str() string {
 		.relayed { 'relay' }
 	}
 }
+
+pub fn candidate_type_from_string(s string) ?CandidateType {
+	return match s {
+		'host' { CandidateType.host }
+		'prflx' { CandidateType.peer_reflexive }
+		'srflx' { CandidateType.server_reflexive }
+		'relay' { CandidateType.relayed }
+		else { none }
+	}
+}
