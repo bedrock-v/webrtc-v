@@ -38,3 +38,7 @@ pub enum AgentErrorReason {
 	// transport: an operating system socket call failed.
 	transport
 }
+
+pub fn (e AgentError) msg() string {
+	return 'ice: ${e.reason}: ${e.detail}'
+}
