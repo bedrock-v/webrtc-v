@@ -101,3 +101,30 @@ pub const component_rtcp = u16(2)
 // max_candidate_line_bytes bounds a candidate attribute from signalling. The
 // peer controls this string, so its length is not to be trusted.
 pub const max_candidate_line_bytes = 1024
+
+// Candidate is one transport address an agent might be reachable at.
+pub struct Candidate {
+pub:
+	// foundation groups candidates that would behave the same way, so that a
+	// check failing on one predicts failure on the others. Candidates share a
+	// foundation when their type, base address, server and transport match.
+	foundation string
+	// component is which part of the media stream this candidate carries.
+	component u16 = component_rtp
+	transport Transport
+	priority  u32
+	address   netaddr.SocketAddr
+	typ       CandidateType
+	// related is the address a derived candidate came from: the base for a
+	// reflexive candidate, the mapped address for a relayed one. It is
+	// diagnostic only and must never be used to route.
+	related  ?netaddr.SocketAddr
+	tcp_type TcpType
+	// extensions preserves unrecognised attributes so a candidate survives a
+	// parse and re-serialise.
+	extensions []string
+	// hostname is set when the candidate named a ".local" host instead of an
+	// address (RFC 8828). The address is meaningless until multicast DNS has
+	// resolved it, and `address` stays zero in the meantime.
+	hostname string
+}
