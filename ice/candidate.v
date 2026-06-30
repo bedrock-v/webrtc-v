@@ -128,3 +128,10 @@ pub:
 	// resolved it, and `address` stays zero in the meantime.
 	hostname string
 }
+
+// needs_resolution reports whether this candidate names a host rather than an
+// address.
+@[inline]
+pub fn (c &Candidate) needs_resolution() bool {
+	return c.hostname != ''
+}
