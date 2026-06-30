@@ -357,3 +357,14 @@ fn test_replay_detector_window() {
 	assert d.check(999)
 	assert d.highest_index() == 1000
 }
+
+fn test_replay_detector_check_does_not_record() {
+	// Checking and recording are separate so that a packet whose authentication
+	// later fails does not consume an index.
+	mut d := ReplayDetector.new(64)
+	assert d.check(5)
+	assert d.check(5)
+	assert d.check(5)
+	d.accept(5)
+	assert !d.check(5)
+}
