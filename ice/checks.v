@@ -319,3 +319,33 @@ fn (mut a Agent) evaluate_state() {
 		a.set_state(.checking)
 	}
 }
+
+// handle_packet dispatches one datagram.
+//
+// A WebRTC socket carries STUN, DTLS, RTP and RTCP on the same port. STUN is
+// the agent's business; everything else is the application's, and is handed
+// over untouched.
+fn (mut a Agent) handle_packet(packet InboundPacket) {
+	if !stun.is_message(packet.data) {
+		a.deliver_application_data(packet)
+		return
+	}
+	message := stun.Message.decode(packet.data) or {
+		a.log.debug('discarded a malformed STUN message from ${packet.from}: ${err.msg()}')
+		return
+	}
+
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return
+	}
+
+	match message.typ.class {
+		.request { a.handle_binding_request(message, packet) }
+		.success_response, .error_response { a.handle_binding_response(message, packet) }
+		.indication {}
+	}
+}
