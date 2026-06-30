@@ -286,3 +286,23 @@ fn (mut a Agent) reflexive_lookup(socket &LocalSocket, destination net.Addr) !ne
 		detail: 'no Binding response within ${gather_timeout.milliseconds()}ms'
 	}
 }
+
+// add_local_candidate records a candidate, pairs it and notifies the
+// application.
+fn (mut a Agent) add_local_candidate(candidate Candidate) {
+	a.mu.lock()
+	for existing in a.locals {
+		if existing.equal(candidate) {
+			a.mu.unlock()
+			return
+		}
+	}
+	a.locals << candidate
+	a.form_pairs()
+	a.mu.unlock()
+
+	a.log.debug('gathered local candidate ${candidate}')
+	if callback := a.config.on_candidate {
+		callback(candidate)
+	}
+}
