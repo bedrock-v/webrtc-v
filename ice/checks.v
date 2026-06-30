@@ -74,3 +74,30 @@ fn (mut a Agent) read_socket(index int) {
 		}
 	}
 }
+
+// read_relay forwards what a TURN allocation hands back, in the same shape as a
+// socket read so the agent loop cannot tell them apart.
+fn (mut a Agent) read_relay(index int, mut relay turn.Client) {
+	for {
+		if a.is_closed() {
+			return
+		}
+		packet := relay.recv(200 * time.millisecond) or {
+			if err is turn.TurnError && err.reason == .closed {
+				return
+			}
+			continue
+		}
+		inbound := InboundPacket{
+			socket: index
+			from:   packet.from.unmap()
+			data:   packet.data
+		}
+		select {
+			a.inbound <- inbound {}
+			else {
+				a.log.warn('inbound queue full, dropped ${packet.data.len} relayed bytes from ${packet.from}')
+			}
+		}
+	}
+}
