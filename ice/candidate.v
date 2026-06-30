@@ -96,3 +96,8 @@ pub fn (t TcpType) str() string {
 // section 4.1.1.1. With rtcp-mux, which every WebRTC endpoint uses, only the
 // RTP component exists.
 pub const component_rtp = u16(1)
+pub const component_rtcp = u16(2)
+
+// max_candidate_line_bytes bounds a candidate attribute from signalling. The
+// peer controls this string, so its length is not to be trusted.
+pub const max_candidate_line_bytes = 1024
