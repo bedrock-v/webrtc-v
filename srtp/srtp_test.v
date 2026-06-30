@@ -295,3 +295,26 @@ fn test_malformed_input_is_rejected_not_crashed() {
 		}
 	}
 }
+
+fn test_unprotect_survives_arbitrary_input() {
+	mut unused_sender, mut receiver := make_pair(.aes128_cm_hmac_sha1_80)!
+	mut gcm_receiver := Context.new([]u8{len: 16, init: 1}, []u8{len: 12, init: 2},
+		.aead_aes_128_gcm)!
+	mut seed := u32(0x5EED)
+	for _ in 0 .. 3000 {
+		seed = seed * 1103515245 + 12345
+		length := int(seed >> 25)
+		mut raw := []u8{len: length}
+		for i in 0 .. length {
+			seed = seed * 1103515245 + 12345
+			raw[i] = u8(seed >> 24)
+		}
+		if length > 0 {
+			raw[0] = (raw[0] & 0x3F) | 0x80
+		}
+		receiver.unprotect_rtp(raw) or {}
+		receiver.unprotect_rtcp(raw) or {}
+		gcm_receiver.unprotect_rtp(raw) or {}
+		gcm_receiver.unprotect_rtcp(raw) or {}
+	}
+}
