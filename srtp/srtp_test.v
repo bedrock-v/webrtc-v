@@ -274,3 +274,11 @@ fn test_rtcp_index_advances_and_replay_is_rejected() {
 	}
 	assert false, 'a replayed SRTCP packet must be rejected'
 }
+
+fn test_rtcp_encrypted_flag_is_set() {
+	mut sender, mut unused_receiver := make_pair(.aes128_cm_hmac_sha1_80)!
+	protected := sender.protect_rtcp(make_rtcp(1))!
+	tag_len := Profile.aes128_cm_hmac_sha1_80.rtcp_auth_tag_len()
+	index_offset := protected.len - tag_len - 4
+	assert protected[index_offset] & 0x80 != 0, 'the E flag must mark the packet as encrypted'
+}
