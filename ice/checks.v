@@ -588,3 +588,38 @@ fn (mut a Agent) handle_binding_response(message stun.Message, packet InboundPac
 	a.unfreeze_by_foundation()
 	a.consider_selection(check.pair_index)
 }
+
+// consider_selection promotes a newly succeeded pair if it is the best so far.
+fn (mut a Agent) consider_selection(index int) {
+	if a.selected == index {
+		if a.pairs[index].nominated {
+			a.set_state(.completed)
+		}
+		return
+	}
+	// A pair the controlling agent has nominated wins outright. The choice is
+	// not ours to second-guess: the two agents must agree on where traffic
+	// goes, and priority is only the tiebreak used until one of them decides.
+	// Comparing priorities here instead would leave a controlled agent sitting
+	// on a pair the peer has stopped using.
+	if !a.pairs[index].nominated && a.selected >= 0 && a.selected < a.pairs.len {
+		current := a.pairs[a.selected]
+		// A nominated pair is final: RFC 8445 section 8.1.1 stops checking once
+		// one is agreed, and switching away from it would desynchronise the two
+		// agents' idea of where traffic is going.
+		if current.nominated {
+			return
+		}
+		if current.priority(a.role == .controlling) >= a.pairs[index].priority(a.role == .controlling) {
+			return
+		}
+	}
+	a.select_pair(index)
+
+	// The controlling agent nominates by repeating the check with
+	// USE-CANDIDATE, which is what tells the peer the choice is final.
+	if a.role == .controlling && !a.pairs[index].nominated {
+		a.send_check(index, true)
+		a.pairs[index].state = .succeeded
+	}
+}
