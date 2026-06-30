@@ -375,3 +375,66 @@ fn (mut a Agent) deliver_application_data(packet InboundPacket) {
 		}
 	}
 }
+
+// handle_binding_request answers a connectivity check from the peer. The caller
+// must hold the mutex.
+fn (mut a Agent) handle_binding_request(message stun.Message, packet InboundPacket) {
+	// Authenticate before doing anything that changes state. An unauthenticated
+	// request must not create a peer-reflexive candidate, must not advance a
+	// pair and must not be answered with anything an attacker could use.
+	key := stun.short_term_key(a.local_pwd) or { return }
+	message.check_message_integrity(key) or {
+		a.log.debug('check from ${packet.from} failed integrity: ${err.msg()}')
+		return
+	}
+	if message.has(stun.attr_fingerprint) {
+		message.check_fingerprint() or {
+			a.log.debug('check from ${packet.from} has a bad FINGERPRINT')
+			return
+		}
+	}
+	username := message.username() or {
+		a.send_error_response(message, packet, stun.code_bad_request, 'USERNAME is required')
+		return
+	}
+	expected := '${a.local_ufrag}:${a.remote_ufrag}'
+	if username != expected {
+		a.log.debug('check from ${packet.from} carries username "${username}", expected "${expected}"')
+		a.send_error_response(message, packet, stun.code_unauthenticated, '')
+		return
+	}
+
+	if a.resolve_role_conflict(message, packet) {
+		return
+	}
+
+	// The source address may be one the peer never signalled, because a NAT
+	// rewrote it. RFC 8445 section 7.3.1.3 calls that a peer-reflexive
+	// candidate; learning it is often the only way a symmetric NAT is
+	// traversed at all.
+	a.learn_peer_reflexive(packet)
+
+	index := a.find_pair_for(packet)
+	if index >= 0 {
+		a.pairs[index].last_received = time.now()
+		a.last_activity = time.now()
+		// RFC 8445 section 7.3.1.4: a check arriving on a pair we have not
+		// probed schedules one, so that the path is confirmed in both
+		// directions rather than only the one it arrived on.
+		if a.pairs[index].state == .frozen || a.pairs[index].state == .failed {
+			a.pairs[index].state = .waiting
+			a.pairs[index].binding_requests = 0
+		}
+		if message.has_use_candidate() && a.role == .controlled {
+			// The controlling agent has chosen this pair. A controlled agent
+			// does not get a say, but it must not act on a pair that has not
+			// been proven to work.
+			a.pairs[index].nominated = true
+			if a.pairs[index].state == .succeeded {
+				a.select_pair(index)
+			}
+		}
+	}
+
+	a.send_success_response(message, packet)
+}
