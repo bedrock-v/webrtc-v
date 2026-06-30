@@ -69,3 +69,9 @@ pub fn (p &CandidatePair) priority(local_is_controlling bool) u64 {
 	tiebreak := if g > d { u64(1) } else { u64(0) }
 	return (min_priority << 32) + 2 * max_priority + tiebreak
 }
+
+// foundation is the pair's foundation: the two candidate foundations joined.
+// Pairs sharing one are redundant with each other.
+pub fn (p &CandidatePair) foundation() string {
+	return '${p.local.foundation}:${p.remote.foundation}'
+}
