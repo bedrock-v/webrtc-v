@@ -282,3 +282,16 @@ fn test_rtcp_encrypted_flag_is_set() {
 	index_offset := protected.len - tag_len - 4
 	assert protected[index_offset] & 0x80 != 0, 'the E flag must mark the packet as encrypted'
 }
+
+fn test_malformed_input_is_rejected_not_crashed() {
+	for profile in all_profiles() {
+		mut sender, mut receiver := make_pair(profile)!
+		for n in 0 .. 40 {
+			buf := []u8{len: n, init: 0x80}
+			sender.protect_rtp(buf) or {}
+			receiver.unprotect_rtp(buf) or {}
+			sender.protect_rtcp(buf) or {}
+			receiver.unprotect_rtcp(buf) or {}
+		}
+	}
+}
