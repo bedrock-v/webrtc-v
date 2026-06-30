@@ -91,3 +91,8 @@ pub fn (t TcpType) str() string {
 		.simultaneous_open { 'so' }
 	}
 }
+
+// component_rtp and component_rtcp are the component identifiers of RFC 8445
+// section 4.1.1.1. With rtcp-mux, which every WebRTC endpoint uses, only the
+// RTP component exists.
+pub const component_rtp = u16(1)
