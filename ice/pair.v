@@ -18,3 +18,13 @@ pub enum PairState {
 	// failed: the check timed out or was answered with an error.
 	failed
 }
+
+pub fn (s PairState) str() string {
+	return match s {
+		.frozen { 'frozen' }
+		.waiting { 'waiting' }
+		.in_progress { 'in-progress' }
+		.succeeded { 'succeeded' }
+		.failed { 'failed' }
+	}
+}
