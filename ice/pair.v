@@ -49,3 +49,23 @@ pub mut:
 	// round_trip_time is measured from the most recent successful check.
 	round_trip_time time.Duration
 }
+
+// priority returns the pair priority (RFC 8445 section 6.1.2.3).
+//
+//	priority = 2^32 * min(G, D) + 2 * max(G, D) + (G > D ? 1 : 0)
+//
+// G is the controlling agent's candidate priority and D the controlled one's.
+// The formula is built so that both agents compute the same ordering from the
+// same two numbers, which is what lets them work through the check list in step
+// without any extra coordination.
+pub fn (p &CandidatePair) priority(local_is_controlling bool) u64 {
+	g, d := if local_is_controlling {
+		u64(p.local.priority), u64(p.remote.priority)
+	} else {
+		u64(p.remote.priority), u64(p.local.priority)
+	}
+	min_priority := if g < d { g } else { d }
+	max_priority := if g > d { g } else { d }
+	tiebreak := if g > d { u64(1) } else { u64(0) }
+	return (min_priority << 32) + 2 * max_priority + tiebreak
+}
