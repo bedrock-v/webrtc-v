@@ -334,3 +334,26 @@ fn test_packet_with_csrc_and_extension_round_trips() {
 		assert receiver.unprotect_rtp(protected)! == packet
 	}
 }
+
+fn test_replay_detector_window() {
+	mut d := ReplayDetector.new(64)
+	assert d.check(100)
+	d.accept(100)
+	assert !d.check(100)
+	assert d.check(101)
+	assert d.check(99)
+
+	d.accept(99)
+	assert !d.check(99)
+
+	// Anything older than the window is refused: it cannot be judged, and
+	// accepting it would let an attacker replay arbitrarily old packets.
+	assert !d.check(100 - 64)
+	assert !d.check(0)
+
+	// A large jump forward slides the window past everything behind it.
+	d.accept(1000)
+	assert !d.check(100)
+	assert d.check(999)
+	assert d.highest_index() == 1000
+}
