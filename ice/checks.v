@@ -101,3 +101,20 @@ fn (mut a Agent) read_relay(index int, mut relay turn.Client) {
 		}
 	}
 }
+
+// run is the agent loop. It owns every mutation of the check list.
+fn (mut a Agent) run() {
+	for {
+		if a.is_closed() {
+			return
+		}
+		select {
+			packet := <-a.inbound {
+				a.handle_packet(packet)
+			}
+			a.config.check_interval {
+				a.tick()
+			}
+		}
+	}
+}
