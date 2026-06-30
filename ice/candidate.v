@@ -385,3 +385,31 @@ pub fn parse_candidate(input string) !Candidate {
 		hostname:   hostname
 	}
 }
+
+// validate_usable_address rejects addresses that cannot be a peer.
+//
+// A multicast or unspecified address in a candidate is either a bug or an
+// attempt to make this agent send traffic somewhere it should not. Refusing
+// them here means the checking code never has to consider the possibility.
+fn validate_usable_address(addr netaddr.SocketAddr) ! {
+	if !addr.is_valid() {
+		return CandidateError{
+			detail: 'candidate address is malformed'
+		}
+	}
+	if addr.ip.is_multicast() {
+		return CandidateError{
+			detail: 'multicast address ${addr} cannot be a candidate'
+		}
+	}
+	if addr.ip.is_unspecified() {
+		return CandidateError{
+			detail: 'unspecified address ${addr} cannot be a candidate'
+		}
+	}
+	if addr.port == 0 {
+		return CandidateError{
+			detail: 'port 0 cannot be a candidate'
+		}
+	}
+}
