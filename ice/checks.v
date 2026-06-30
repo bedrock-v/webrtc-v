@@ -349,3 +349,29 @@ fn (mut a Agent) handle_packet(packet InboundPacket) {
 		.indication {}
 	}
 }
+
+// deliver_application_data queues a non-STUN datagram for the application.
+fn (mut a Agent) deliver_application_data(packet InboundPacket) {
+	a.mu.lock()
+	accepted := a.selected >= 0 && a.selected < a.pairs.len
+		&& a.pairs[a.selected].remote.address.equal(packet.from)
+	if accepted {
+		a.pairs[a.selected].last_received = time.now()
+		a.last_activity = time.now()
+	}
+	a.mu.unlock()
+
+	if !accepted {
+		// Data from anywhere other than the selected pair is either late
+		// traffic from a path that lost, or an injection attempt. Neither is
+		// something to hand to the application.
+		a.log.debug('dropped ${packet.data.len} bytes from ${packet.from}, which is not the selected pair')
+		return
+	}
+	select {
+		a.data <- packet.data {}
+		else {
+			a.log.warn('application queue full, dropped ${packet.data.len} bytes')
+		}
+	}
+}
