@@ -201,3 +201,11 @@ pub fn (c Candidate) str() string {
 	parts << c.extensions
 	return parts.join(' ')
 }
+
+// equal reports whether two candidates describe the same thing. Priority is
+// excluded: the same address learned twice must compare equal even if the
+// second discovery assigned it a different preference.
+pub fn (c Candidate) equal(other Candidate) bool {
+	return c.component == other.component && c.transport == other.transport && c.typ == other.typ
+		&& c.address.equal(other.address)
+}
