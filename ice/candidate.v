@@ -148,3 +148,27 @@ pub fn (c &Candidate) needs_resolution() bool {
 pub fn compute_priority(typ CandidateType, local_preference u16, component u16) u32 {
 	return (typ.preference() << 24) | (u32(local_preference) << 8) | (256 - u32(component))
 }
+
+// default_local_preference returns a local preference that ranks IPv6 above
+// IPv4 and routable addresses above link-local ones.
+//
+// RFC 8445 leaves the value to the implementation. Preferring IPv6 follows
+// RFC 8445 section 5.1.2.2, and demoting link-local addresses keeps checks that
+// can only succeed on the same link from delaying ones that might reach the
+// wider network.
+pub fn default_local_preference(addr netaddr.IpAddr) u16 {
+	mut preference := u16(0)
+	if addr.family == .ipv6 {
+		preference += 40000
+	} else {
+		preference += 20000
+	}
+	if addr.is_link_local() {
+		preference -= 15000
+	} else if addr.is_loopback() {
+		preference -= 18000
+	} else if !addr.is_private() {
+		preference += 10000
+	}
+	return preference
+}
