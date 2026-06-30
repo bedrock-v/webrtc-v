@@ -525,3 +525,66 @@ fn (a &Agent) find_pair_for(packet InboundPacket) int {
 	}
 	return -1
 }
+
+// handle_binding_response matches a response to the check that provoked it.
+fn (mut a Agent) handle_binding_response(message stun.Message, packet InboundPacket) {
+	key := message.transaction_id[..].hex()
+	check := a.pending[key] or {
+		// An unmatched transaction id is either a very late response or a
+		// forgery. Either way there is nothing to do with it.
+		a.log.debug('discarded a response with an unknown transaction id from ${packet.from}')
+		return
+	}
+	a.pending.delete(key)
+
+	if check.pair_index >= a.pairs.len {
+		return
+	}
+
+	integrity_key := stun.short_term_key(a.remote_pwd) or { return }
+	message.check_message_integrity(integrity_key) or {
+		a.log.debug('response from ${packet.from} failed integrity: ${err.msg()}')
+		return
+	}
+
+	if message.typ.class == .error_response {
+		code := message.error_code() or {
+			a.pairs[check.pair_index].state = .failed
+			return
+		}
+		if code.code == stun.code_role_conflict {
+			// The peer refused our role. Switch, and retry the pair with the
+			// role it insisted on.
+			a.role = if a.role == .controlling { Role.controlled } else { Role.controlling }
+			a.log.info('peer reported a role conflict: switching to ${a.role}')
+			sort_pairs(mut a.pairs, a.role == .controlling)
+			a.pairs[check.pair_index].state = .waiting
+			a.pairs[check.pair_index].binding_requests = 0
+			return
+		}
+		a.log.debug('check to ${packet.from} was refused: ${code}')
+		a.pairs[check.pair_index].state = .failed
+		return
+	}
+
+	// A response must come from the address the check was sent to. Accepting
+	// one from elsewhere would let an attacker who can see the transaction id
+	// confirm a path that does not exist.
+	if !a.pairs[check.pair_index].remote.address.equal(packet.from) {
+		a.log.debug('response for ${a.pairs[check.pair_index].remote.address} arrived from ${packet.from}')
+		return
+	}
+
+	now := time.now()
+	a.pairs[check.pair_index].state = .succeeded
+	a.pairs[check.pair_index].last_received = now
+	a.pairs[check.pair_index].round_trip_time = now - check.sent_at
+	a.last_activity = now
+	if check.nominating {
+		a.pairs[check.pair_index].nominated = true
+	}
+	a.log.debug('pair succeeded in ${a.pairs[check.pair_index].round_trip_time.milliseconds()}ms: ${a.pairs[check.pair_index]}')
+
+	a.unfreeze_by_foundation()
+	a.consider_selection(check.pair_index)
+}
