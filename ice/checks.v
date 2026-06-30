@@ -143,3 +143,33 @@ fn (mut a Agent) tick() {
 	a.maintain_consent()
 	a.evaluate_state()
 }
+
+// expire_checks retires checks that have gone unanswered for too long.
+fn (mut a Agent) expire_checks() {
+	now := time.now()
+	mut expired := []string{}
+	for key, check in a.pending {
+		if now - check.sent_at < a.config.binding_timeout {
+			continue
+		}
+		expired << key
+		if check.pair_index >= a.pairs.len {
+			continue
+		}
+		if a.pairs[check.pair_index].binding_requests >= a.config.max_binding_requests {
+			a.pairs[check.pair_index].state = .failed
+			a.log.debug('pair failed after ${a.config.max_binding_requests} checks: ${a.pairs[check.pair_index]}')
+		} else {
+			// Back to waiting so the pair is retried in priority order rather
+			// than immediately, which keeps one dead pair from monopolising the
+			// check pacing.
+			a.pairs[check.pair_index].state = .waiting
+		}
+	}
+	for key in expired {
+		a.pending.delete(key)
+	}
+	if expired.len > 0 {
+		a.unfreeze_by_foundation()
+	}
+}
