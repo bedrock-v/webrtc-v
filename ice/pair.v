@@ -83,3 +83,26 @@ pub fn (p &CandidatePair) str() string {
 		''
 	}}]'
 }
+
+// pairable reports whether two candidates can be paired.
+//
+// RFC 8445 section 6.1.2.2 only pairs candidates of the same component and the
+// same address family. Pairing across families would produce checks that cannot
+// possibly succeed and would crowd out ones that can.
+fn pairable(local Candidate, remote Candidate) bool {
+	if local.component != remote.component {
+		return false
+	}
+	if local.transport != remote.transport {
+		return false
+	}
+	if local.address.family() != remote.address.family() {
+		return false
+	}
+	// A link-local IPv6 address is only reachable within its own scope, and the
+	// zone identifier is not something the peer can meaningfully act on.
+	if local.address.ip.is_link_local() != remote.address.ip.is_link_local() {
+		return false
+	}
+	return true
+}
