@@ -209,3 +209,179 @@ pub fn (c Candidate) equal(other Candidate) bool {
 	return c.component == other.component && c.transport == other.transport && c.typ == other.typ
 		&& c.address.equal(other.address)
 }
+
+// parse_candidate decodes a candidate attribute value.
+//
+// The input arrives over signalling from the peer, so every field is validated:
+// a malformed candidate is rejected rather than half-parsed, and an address
+// that could not be used safely - multicast, or an unspecified address - is
+// refused outright.
+pub fn parse_candidate(input string) !Candidate {
+	if input == '' {
+		return CandidateError{
+			detail: 'empty candidate'
+		}
+	}
+	if input.len > max_candidate_line_bytes {
+		return CandidateError{
+			detail: 'candidate line of ${input.len} bytes exceeds the ${max_candidate_line_bytes}-byte limit'
+		}
+	}
+	// Tolerate the "candidate:" prefix, which appears when a caller passes the
+	// whole SDP attribute rather than its value.
+	mut body := input
+	if body.starts_with('candidate:') {
+		body = body['candidate:'.len..]
+	}
+
+	fields := body.split(' ').filter(it != '')
+	if fields.len < 8 {
+		return CandidateError{
+			detail: 'candidate has ${fields.len} fields, expected at least 8'
+		}
+	}
+	if fields[6] != 'typ' {
+		return CandidateError{
+			detail: 'expected "typ" in field 7, found "${fields[6]}"'
+		}
+	}
+
+	foundation := fields[0]
+	if foundation.len == 0 || foundation.len > 32 {
+		return CandidateError{
+			detail: 'foundation must be 1 to 32 characters, got ${foundation.len}'
+		}
+	}
+	component := parse_u32_field(fields[1], 'component')!
+	if component < 1 || component > 256 {
+		return CandidateError{
+			detail: 'component ${component} is outside the 1-256 range'
+		}
+	}
+	transport := match fields[2].to_lower() {
+		'udp' {
+			Transport.udp
+		}
+		'tcp' {
+			Transport.tcp
+		}
+		else {
+			return CandidateError{
+				detail: 'unsupported transport "${fields[2]}"'
+			}
+		}
+	}
+	priority := parse_u32_field(fields[3], 'priority')!
+	mut hostname := ''
+	mut ip := netaddr.IpAddr{}
+	if parsed := netaddr.IpAddr.parse(fields[4]) {
+		ip = parsed
+	} else {
+		// RFC 8828: a browser signals a random ".local" name instead of its
+		// private addresses. Rejecting it would throw away every local-network
+		// path, so it is kept and resolved later.
+		if !mdns.is_local_name(fields[4]) {
+			return CandidateError{
+				detail: 'bad candidate address "${fields[4]}"'
+			}
+		}
+		hostname = fields[4]
+	}
+	port := parse_u32_field(fields[5], 'port')!
+	if port > 65535 {
+		return CandidateError{
+			detail: 'port ${port} is out of range'
+		}
+	}
+	typ := candidate_type_from_string(fields[7]) or {
+		return CandidateError{
+			detail: 'unknown candidate type "${fields[7]}"'
+		}
+	}
+
+	address := netaddr.SocketAddr.new(ip, u16(port))
+	if hostname == '' {
+		validate_usable_address(address)!
+	}
+
+	mut related := ?netaddr.SocketAddr(none)
+	mut tcp_type := TcpType.unspecified
+	mut extensions := []string{}
+
+	mut i := 8
+	for i < fields.len {
+		name := fields[i]
+		if i + 1 >= fields.len {
+			return CandidateError{
+				detail: 'extension attribute "${name}" has no value'
+			}
+		}
+		value := fields[i + 1]
+		match name {
+			'raddr' {
+				rport_index := i + 2
+				if rport_index + 1 >= fields.len || fields[rport_index] != 'rport' {
+					return CandidateError{
+						detail: 'raddr must be followed by rport'
+					}
+				}
+				rip := netaddr.IpAddr.parse(value) or {
+					return CandidateError{
+						detail: 'bad related address: ${err.msg()}'
+					}
+				}
+				rport := parse_u32_field(fields[rport_index + 1], 'rport')!
+				if rport > 65535 {
+					return CandidateError{
+						detail: 'related port ${rport} is out of range'
+					}
+				}
+				related = netaddr.SocketAddr.new(rip, u16(rport))
+				i = rport_index + 2
+				continue
+			}
+			'tcptype' {
+				tcp_type = match value {
+					'active' {
+						TcpType.active
+					}
+					'passive' {
+						TcpType.passive
+					}
+					'so' {
+						TcpType.simultaneous_open
+					}
+					else {
+						return CandidateError{
+							detail: 'unknown tcptype "${value}"'
+						}
+					}
+				}
+			}
+			else {
+				extensions << name
+				extensions << value
+			}
+		}
+		i += 2
+	}
+
+	if transport == .tcp && tcp_type == .unspecified {
+		return CandidateError{
+			detail: 'a TCP candidate must carry a tcptype'
+		}
+	}
+
+	return Candidate{
+		foundation: foundation
+		component:  u16(component)
+		transport:  transport
+		priority:   priority
+		address:    address
+		typ:        typ
+		related:    related
+		tcp_type:   tcp_type
+		extensions: extensions
+		hostname:   hostname
+	}
+}
