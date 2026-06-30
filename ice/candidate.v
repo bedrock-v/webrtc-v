@@ -50,3 +50,14 @@ pub fn candidate_type_from_string(s string) ?CandidateType {
 		else { none }
 	}
 }
+
+// preference is the type preference used in the priority formula
+// (RFC 8445 section 5.1.2.2). Higher is better.
+pub fn (t CandidateType) preference() u32 {
+	return match t {
+		.host { 126 }
+		.peer_reflexive { 110 }
+		.server_reflexive { 100 }
+		.relayed { 0 }
+	}
+}
