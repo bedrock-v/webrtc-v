@@ -82,3 +82,12 @@ pub enum TcpType {
 	passive
 	simultaneous_open
 }
+
+pub fn (t TcpType) str() string {
+	return match t {
+		.unspecified { '' }
+		.active { 'active' }
+		.passive { 'passive' }
+		.simultaneous_open { 'so' }
+	}
+}
