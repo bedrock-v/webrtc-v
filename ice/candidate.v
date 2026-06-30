@@ -172,3 +172,16 @@ pub fn default_local_preference(addr netaddr.IpAddr) u16 {
 	}
 	return preference
 }
+
+// compute_foundation derives the foundation of a candidate.
+//
+// RFC 8445 section 5.1.1.3 requires that two candidates share a foundation
+// exactly when they have the same type, base address, STUN or TURN server and
+// transport. A hash of those four gives that property without having to carry a
+// registry of assigned identifiers.
+pub fn compute_foundation(typ CandidateType, base netaddr.IpAddr, server string, transport Transport) string {
+	digest := sha256.sum('${typ}|${base}|${server}|${transport}'.bytes())
+	// Foundations are compared, never interpreted, so a short prefix of the
+	// digest is enough and keeps the SDP readable.
+	return digest[..8].hex()
+}
