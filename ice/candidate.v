@@ -12,3 +12,22 @@ module ice
 import crypto.sha256
 import webrtc.netaddr
 import webrtc.mdns
+
+// CandidateType is how a candidate address was learned. The order of the
+// variants matches their default preference, most preferred first.
+pub enum CandidateType {
+	// host: an address on a local interface. Reachable only if the peer is on
+	// the same network or the address is globally routable.
+	host
+	// peer_reflexive: an address a peer observed a check arriving from, which
+	// the local agent did not know it had. Discovered during checking, never
+	// gathered.
+	peer_reflexive
+	// server_reflexive: an address a STUN server observed. This is the outside
+	// of the NAT, and it is what usually works.
+	server_reflexive
+	// relayed: an address allocated on a TURN server, which forwards traffic.
+	// Always works, and always costs the relay's bandwidth, so it is the last
+	// resort.
+	relayed
+}
