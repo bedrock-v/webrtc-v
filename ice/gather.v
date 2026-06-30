@@ -350,3 +350,40 @@ pub fn (mut a Agent) add_remote_candidate(candidate Candidate) ! {
 	}
 	return
 }
+
+// add_remote_candidate_string parses and adds a candidate from its SDP form.
+pub fn (mut a Agent) add_remote_candidate_string(line string) ! {
+	a.add_remote_candidate(parse_candidate(line)!)!
+}
+
+// form_pairs rebuilds the check list from the current candidate sets. The
+// caller must hold the mutex.
+//
+// Existing pairs keep their state, so a candidate arriving mid-session neither
+// restarts checks that are already in flight nor discards one that has already
+// succeeded.
+fn (mut a Agent) form_pairs() {
+	if a.remote_ufrag == '' || a.remote_pwd == '' {
+		// Without the peer's credentials a check cannot be authenticated, so
+		// there is nothing to schedule yet.
+		return
+	}
+
+	for local in a.locals {
+		for remote in a.remotes {
+			if !pairable(local, remote) {
+				continue
+			}
+			if a.find_pair(local.address, remote.address) >= 0 {
+				continue
+			}
+			a.pairs << CandidatePair{
+				local:  local
+				remote: remote
+				state:  .waiting
+			}
+		}
+	}
+	a.unfreeze_by_foundation()
+	sort_pairs(mut a.pairs, a.role == .controlling)
+}
