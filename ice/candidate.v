@@ -8,3 +8,7 @@
 // with credentials that only the signalling channel could have carried, so an
 // off-path attacker cannot answer them.
 module ice
+
+import crypto.sha256
+import webrtc.netaddr
+import webrtc.mdns
