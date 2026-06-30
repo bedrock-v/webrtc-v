@@ -75,3 +75,11 @@ pub fn (p &CandidatePair) priority(local_is_controlling bool) u64 {
 pub fn (p &CandidatePair) foundation() string {
 	return '${p.local.foundation}:${p.remote.foundation}'
 }
+
+pub fn (p &CandidatePair) str() string {
+	return '${p.local.typ}:${p.local.address} -> ${p.remote.typ}:${p.remote.address} [${p.state}${if p.nominated {
+		', nominated'
+	} else {
+		''
+	}}]'
+}
