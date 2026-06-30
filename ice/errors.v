@@ -13,3 +13,10 @@ pub fn (e CandidateError) msg() string {
 pub fn (e CandidateError) code() int {
 	return 1
 }
+
+// AgentError covers the failure modes of the agent itself.
+pub struct AgentError {
+pub:
+	reason AgentErrorReason
+	detail string
+}
