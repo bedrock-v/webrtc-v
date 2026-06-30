@@ -368,3 +368,14 @@ fn test_replay_detector_check_does_not_record() {
 	d.accept(5)
 	assert !d.check(5)
 }
+
+fn test_replay_detector_defaults_to_64() {
+	mut zero := ReplayDetector.new(0)
+	mut huge := ReplayDetector.new(1000)
+	zero.accept(100)
+	huge.accept(100)
+	assert zero.check(37)
+	assert !zero.check(36)
+	assert huge.check(37)
+	assert !huge.check(36)
+}
