@@ -379,3 +379,22 @@ fn test_replay_detector_defaults_to_64() {
 	assert huge.check(37)
 	assert !huge.check(36)
 }
+
+fn test_stream_starting_at_a_high_sequence_number() {
+	// RFC 3550 section 5.1 requires a random initial sequence number, so half
+	// of all streams start above 32768. A receiver that treats its zeroed
+	// watermark as a real sequence number decides the second packet belongs to
+	// the previous roll-over cycle and rejects every packet after the first.
+	for start in [u16(0), 1, 32767, 32768, 40000, 65530] {
+		mut sender, mut receiver := make_pair(.aes128_cm_hmac_sha1_80)!
+		for offset in 0 .. 5 {
+			seq := start + u16(offset)
+			protected := sender.protect_rtp(make_rtp(seq, 0x4242, [u8(offset), 0, 0, 0]))!
+			recovered := receiver.unprotect_rtp(protected) or {
+				assert false, 'stream starting at ${start} failed at offset ${offset}: ${err}'
+				return
+			}
+			assert recovered[12] == u8(offset)
+		}
+	}
+}
