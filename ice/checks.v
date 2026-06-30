@@ -173,3 +173,25 @@ fn (mut a Agent) expire_checks() {
 		a.unfreeze_by_foundation()
 	}
 }
+
+// send_next_check probes the highest-priority pair that is waiting.
+//
+// One check per tick is what implements the Ta pacing of RFC 8445 section 14.2.
+// Sending the whole check list at once would put a burst on the network that
+// looks like a scan and competes with the media it is trying to enable.
+fn (mut a Agent) send_next_check() {
+	if a.remote_ufrag == '' || a.remote_pwd == '' {
+		return
+	}
+	mut index := -1
+	for i, pair in a.pairs {
+		if pair.state == .waiting {
+			index = i
+			break
+		}
+	}
+	if index < 0 {
+		return
+	}
+	a.send_check(index, false)
+}
