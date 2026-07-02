@@ -26,3 +26,6 @@ struct C.ifaddrs {
 	ifa_flags u32
 	ifa_addr  voidptr
 }
+
+fn C.getifaddrs(ifap &&C.ifaddrs) int
+fn C.freeifaddrs(ifa &C.ifaddrs)
