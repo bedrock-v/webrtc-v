@@ -88,3 +88,37 @@ fn (mut a Agent) install_permissions(mut client turn.Client) {
 		}
 	}
 }
+
+// permit_on_relays installs a permission for one remote candidate on every
+// allocation.
+//
+// It runs on its own thread because a permission is a transaction with the
+// relay, and adding a candidate must not block for a round trip to it - a peer
+// trickling ten candidates would otherwise stall the caller for ten round
+// trips.
+fn (mut a Agent) permit_on_relays(address netaddr.SocketAddr) {
+	a.mu.lock()
+	mut clients := []&turn.Client{}
+	for socket in a.sockets {
+		if socket.relay != unsafe { nil } {
+			clients << socket.relay
+		}
+	}
+	a.mu.unlock()
+	if clients.len == 0 {
+		return
+	}
+
+	for mut client in clients {
+		client.create_permission(address) or {
+			a.log.warn('the relay refused a permission for ${address}: ${err.msg()}')
+			continue
+		}
+		// A channel makes the framing four bytes instead of thirty-six. It is
+		// worth binding for a candidate that may end up carrying media, and
+		// harmless for one that does not.
+		client.bind_channel(address) or {
+			a.log.debug('the relay refused a channel for ${address}: ${err.msg()}')
+		}
+	}
+}
