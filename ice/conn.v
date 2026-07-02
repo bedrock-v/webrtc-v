@@ -127,3 +127,16 @@ pub fn (mut a Agent) recv(timeout time.Duration) ![]u8 {
 		detail: 'agent is closed'
 	}
 }
+
+// try_recv returns a datagram if one is already queued.
+pub fn (mut a Agent) try_recv() ?[]u8 {
+	select {
+		data := <-a.data {
+			return data
+		}
+		else {
+			return none
+		}
+	}
+	return none
+}
