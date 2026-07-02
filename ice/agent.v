@@ -111,3 +111,11 @@ pub enum GatherPolicy {
 	// says so rather than quietly falling back to a policy that leaks addresses.
 	relay_only
 }
+
+pub fn (p GatherPolicy) str() string {
+	return match p {
+		.all { 'all' }
+		.no_host { 'no-host' }
+		.relay_only { 'relay-only' }
+	}
+}
