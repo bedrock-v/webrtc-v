@@ -62,3 +62,11 @@ pub fn (s ConnectionState) str() string {
 // not a WebRTC packet, and reading into a fixed buffer keeps a hostile peer
 // from choosing our allocation size.
 const max_datagram = 2048
+
+// max_remote_candidates bounds how many candidates a peer may signal. Each one
+// multiplies the check list, so an unbounded list is a way to make an agent
+// spend the rest of its life sending probes.
+pub const max_remote_candidates = 64
+
+// max_inbound_queue is how many datagrams may wait for the agent loop.
+const max_inbound_queue = 256
