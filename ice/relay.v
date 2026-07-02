@@ -122,3 +122,14 @@ fn (mut a Agent) permit_on_relays(address netaddr.SocketAddr) {
 		}
 	}
 }
+
+// has_relays reports whether any allocation exists. The caller must hold the
+// mutex.
+fn (a &Agent) has_relays() bool {
+	for socket in a.sockets {
+		if socket.relay != unsafe { nil } {
+			return true
+		}
+	}
+	return false
+}
