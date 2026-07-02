@@ -185,3 +185,11 @@ struct InboundPacket {
 	from   netaddr.SocketAddr
 	data   []u8
 }
+
+// pendingCheck records a connectivity check awaiting a response.
+struct PendingCheck {
+mut:
+	pair_index int
+	sent_at    time.Time
+	nominating bool
+}
