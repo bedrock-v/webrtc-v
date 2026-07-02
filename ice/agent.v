@@ -238,3 +238,30 @@ mut:
 	data    chan []u8          = chan []u8{cap: max_data_queue}
 	threads []thread
 }
+
+// Agent.new creates an agent. No socket is opened until gather is called.
+pub fn Agent.new(config AgentConfig) !&Agent {
+	if config.max_binding_requests < 1 {
+		return AgentError{
+			reason: .bad_credentials
+			detail: 'max_binding_requests must be at least 1'
+		}
+	}
+	ufrag := if config.local_ufrag != '' {
+		config.local_ufrag
+	} else {
+		randutil.ice_ufrag()!
+	}
+	pwd := if config.local_pwd != '' { config.local_pwd } else { randutil.ice_pwd()! }
+	validate_credentials(ufrag, pwd)!
+
+	return &Agent{
+		config:        config
+		log:           config.logger.with_scope('ice')
+		role:          config.role
+		tiebreaker:    randutil.next_u64()!
+		local_ufrag:   ufrag
+		local_pwd:     pwd
+		last_activity: time.now()
+	}
+}
