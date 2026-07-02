@@ -80,3 +80,16 @@ const max_inbound_queue = 256
 // controller is working from. Losing the tail of a burst is the cheaper signal,
 // and it is the one SCTP is designed to read.
 const max_data_queue = 256
+
+// AgentConfig configures an agent. Every field has a working default; a caller
+// that sets nothing gets an agent that gathers host candidates and checks them.
+// TurnServer is a relay to allocate on.
+pub struct TurnServer {
+pub:
+	// url is "host:port", optionally prefixed with "turn:".
+	url string
+	// username and password are the long-term credentials. A relay without them
+	// is an open relay and this client will not use one.
+	username string
+	password string
+}
