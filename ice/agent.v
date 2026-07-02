@@ -286,3 +286,12 @@ fn validate_credentials(ufrag string, pwd string) ! {
 		}
 	}
 }
+
+// local_credentials returns the ufrag and password to signal to the peer.
+pub fn (mut a Agent) local_credentials() (string, string) {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.local_ufrag, a.local_pwd
+}
