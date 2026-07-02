@@ -343,3 +343,15 @@ pub fn (mut a Agent) local_candidates() []Candidate {
 	}
 	return a.locals.clone()
 }
+
+// selected_pair returns the pair currently carrying traffic.
+pub fn (mut a Agent) selected_pair() ?CandidatePair {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.selected < 0 || a.selected >= a.pairs.len {
+		return none
+	}
+	return a.pairs[a.selected]
+}
