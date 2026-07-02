@@ -140,3 +140,44 @@ pub fn (mut a Agent) try_recv() ?[]u8 {
 	}
 	return none
 }
+
+// close shuts the agent down: sockets are closed, threads wind down and any
+// blocked reader is released. It is safe to call more than once.
+pub fn (mut a Agent) close() {
+	a.mu.lock()
+	if a.closed {
+		a.mu.unlock()
+		return
+	}
+	a.closed = true
+	a.set_state(.closed)
+	mut sockets := a.sockets.clone()
+	a.mu.unlock()
+
+	for mut socket in sockets {
+		if socket.closed {
+			continue
+		}
+		socket.closed = true
+		if socket.relay != unsafe { nil } {
+			// Closing a relay releases the allocation, which frees the relay's
+			// port and quota now rather than when the lifetime runs out.
+			mut relay := socket.relay
+			relay.close()
+			continue
+		}
+		socket.conn.close() or {}
+	}
+
+	// Closing the channels releases anything blocked on them. The reader
+	// threads notice through is_closed on their next timeout.
+	a.inbound.close()
+	a.data.close()
+
+	for handle in a.threads {
+		handle.wait()
+	}
+	a.mu.lock()
+	a.threads.clear()
+	a.mu.unlock()
+}
