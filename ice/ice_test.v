@@ -17,3 +17,28 @@ fn test_candidate_parse_and_render_round_trip() {
 		assert candidate.str() == line, 'round trip changed "${line}" into "${candidate.str()}"'
 	}
 }
+
+fn test_candidate_accepts_the_sdp_prefix() {
+	with_prefix := parse_candidate('candidate:1 1 udp 100 1.2.3.4 5000 typ host')!
+	without := parse_candidate('1 1 udp 100 1.2.3.4 5000 typ host')!
+	assert with_prefix.str() == without.str()
+}
+
+fn test_candidate_fields() {
+	candidate :=
+		parse_candidate('647372371 1 udp 1685987071 88.99.104.5 46243 typ srflx raddr 192.168.0.196 rport 46243')!
+	assert candidate.foundation == '647372371'
+	assert candidate.component == 1
+	assert candidate.transport == .udp
+	assert candidate.priority == 1685987071
+	assert candidate.address.str() == '88.99.104.5:46243'
+	assert candidate.typ == .server_reflexive
+	related := candidate.related?
+	assert related.str() == '192.168.0.196:46243'
+}
+
+fn test_candidate_preserves_unknown_extensions() {
+	line := '1 1 udp 100 1.2.3.4 5000 typ host generation 0 ufrag abcd network-id 3'
+	candidate := parse_candidate(line)!
+	assert candidate.str() == line
+}
