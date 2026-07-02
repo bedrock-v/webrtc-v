@@ -178,3 +178,10 @@ mut:
 	relay  &turn.Client = unsafe { nil }
 	closed bool
 }
+
+// inboundPacket is a datagram handed from a socket reader to the agent loop.
+struct InboundPacket {
+	socket int
+	from   netaddr.SocketAddr
+	data   []u8
+}
