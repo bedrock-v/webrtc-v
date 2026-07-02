@@ -70,3 +70,13 @@ pub const max_remote_candidates = 64
 
 // max_inbound_queue is how many datagrams may wait for the agent loop.
 const max_inbound_queue = 256
+
+// max_data_queue is how many application payloads may wait to be read.
+//
+// A bulk transfer does overflow this and lose datagrams, and the obvious fix -
+// a deeper queue - measured slower: 1024 dropped loopback throughput from about
+// 6.5 MB/s to 4.8 MB/s. The queue is a buffer in front of a congestion
+// controller, so making it deeper mostly inflates the round-trip estimate that
+// controller is working from. Losing the tail of a burst is the cheaper signal,
+// and it is the one SCTP is designed to read.
+const max_data_queue = 256
