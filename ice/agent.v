@@ -334,3 +334,12 @@ pub fn (mut a Agent) role() Role {
 	}
 	return a.role
 }
+
+// local_candidates returns the candidates gathered so far.
+pub fn (mut a Agent) local_candidates() []Candidate {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.locals.clone()
+}
