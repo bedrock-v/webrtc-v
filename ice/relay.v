@@ -74,3 +74,17 @@ fn (mut a Agent) gather_relayed() {
 		a.install_permissions(mut client)
 	}
 }
+
+// install_permissions lets every known remote candidate through one relay.
+fn (mut a Agent) install_permissions(mut client turn.Client) {
+	a.mu.lock()
+	remotes := a.remotes.clone()
+	a.mu.unlock()
+
+	for remote in remotes {
+		client.create_permission(remote.address) or {
+			a.log.warn('the relay refused a permission for ${remote.address}: ${err.msg()}')
+			continue
+		}
+	}
+}
