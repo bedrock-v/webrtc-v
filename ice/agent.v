@@ -324,3 +324,13 @@ pub fn (mut a Agent) state() ConnectionState {
 	}
 	return a.state
 }
+
+// role returns the agent's ICE role, which may have changed since construction
+// if a role conflict was resolved.
+pub fn (mut a Agent) role() Role {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.role
+}
