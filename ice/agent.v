@@ -44,3 +44,16 @@ pub enum ConnectionState {
 	// closed: shut down by the application.
 	closed
 }
+
+pub fn (s ConnectionState) str() string {
+	return match s {
+		.new { 'new' }
+		.gathering { 'gathering' }
+		.checking { 'checking' }
+		.connected { 'connected' }
+		.completed { 'completed' }
+		.disconnected { 'disconnected' }
+		.failed { 'failed' }
+		.closed { 'closed' }
+	}
+}
