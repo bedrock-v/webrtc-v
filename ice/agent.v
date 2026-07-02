@@ -355,3 +355,16 @@ pub fn (mut a Agent) selected_pair() ?CandidatePair {
 	}
 	return a.pairs[a.selected]
 }
+
+// set_state records a new connection state and notifies the application. The
+// caller must hold the mutex.
+fn (mut a Agent) set_state(state ConnectionState) {
+	if a.state == state {
+		return
+	}
+	a.log.info('state ${a.state} -> ${state}')
+	a.state = state
+	if callback := a.config.on_state_change {
+		callback(state)
+	}
+}
