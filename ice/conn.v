@@ -195,3 +195,36 @@ pub:
 	pending_checks    int
 	selected          ?CandidatePair
 }
+
+// statistics returns a snapshot of the agent's state.
+pub fn (mut a Agent) statistics() Statistics {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	mut succeeded := 0
+	mut failed := 0
+	for pair in a.pairs {
+		match pair.state {
+			.succeeded { succeeded++ }
+			.failed { failed++ }
+			else {}
+		}
+	}
+	selected := if a.selected >= 0 && a.selected < a.pairs.len {
+		?CandidatePair(a.pairs[a.selected])
+	} else {
+		?CandidatePair(none)
+	}
+	return Statistics{
+		state:             a.state
+		role:              a.role
+		local_candidates:  a.locals.len
+		remote_candidates: a.remotes.len
+		pairs:             a.pairs.len
+		succeeded_pairs:   succeeded
+		failed_pairs:      failed
+		pending_checks:    a.pending.len
+		selected:          selected
+	}
+}
