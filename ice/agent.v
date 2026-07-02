@@ -315,3 +315,12 @@ pub fn (mut a Agent) set_remote_credentials(ufrag string, pwd string) ! {
 	a.form_pairs()
 	return
 }
+
+// state returns the current connection state.
+pub fn (mut a Agent) state() ConnectionState {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.state
+}
