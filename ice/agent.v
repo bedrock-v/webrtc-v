@@ -265,3 +265,24 @@ pub fn Agent.new(config AgentConfig) !&Agent {
 		last_activity: time.now()
 	}
 }
+
+// validate_credentials enforces the length floors of RFC 8445 section 5.2.1.
+//
+// The password is the only secret protecting connectivity checks. Anything
+// shorter than 22 characters of ice-char falls below the 128 bits the RFC
+// requires and puts the session within reach of an off-path attacker who can
+// guess it.
+fn validate_credentials(ufrag string, pwd string) ! {
+	if ufrag.len < 4 || ufrag.len > 256 {
+		return AgentError{
+			reason: .bad_credentials
+			detail: 'ufrag must be 4 to 256 characters, got ${ufrag.len}'
+		}
+	}
+	if pwd.len < 22 || pwd.len > 256 {
+		return AgentError{
+			reason: .bad_credentials
+			detail: 'password must be 22 to 256 characters, got ${pwd.len}'
+		}
+	}
+}
