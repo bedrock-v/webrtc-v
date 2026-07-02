@@ -57,3 +57,8 @@ pub fn (s ConnectionState) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// max_datagram is the largest datagram the agent will read. Anything longer is
+// not a WebRTC packet, and reading into a fixed buffer keeps a hostile peer
+// from choosing our allocation size.
+const max_datagram = 2048
