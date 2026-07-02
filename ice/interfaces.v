@@ -27,3 +27,33 @@ pub:
 	// include_ipv4 gathers IPv4 addresses.
 	include_ipv4 bool = true
 }
+
+// is_candidate_address reports whether an address is usable as a host
+// candidate under the given filter.
+fn is_candidate_address(addr netaddr.IpAddr, opts InterfaceOptions) bool {
+	if !addr.is_valid() {
+		return false
+	}
+	if addr.family == .ipv4 && !opts.include_ipv4 {
+		return false
+	}
+	if addr.family == .ipv6 && !opts.include_ipv6 {
+		return false
+	}
+	// These can never be a peer, whatever the caller asks for.
+	if addr.is_unspecified() || addr.is_multicast() {
+		return false
+	}
+	if addr.is_loopback() && !opts.include_loopback {
+		return false
+	}
+	if addr.is_link_local() && !opts.include_link_local {
+		return false
+	}
+	// An IPv4-mapped IPv6 address duplicates an IPv4 address that was gathered
+	// separately, and a pair built on one cannot connect.
+	if addr.is_ipv4_mapped() {
+		return false
+	}
+	return true
+}
