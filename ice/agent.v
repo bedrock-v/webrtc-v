@@ -165,3 +165,16 @@ pub:
 	// on_state_change is called whenever the connection state changes.
 	on_state_change ?fn (ConnectionState)
 }
+
+// localSocket is one bound UDP socket and the base address it represents.
+struct LocalSocket {
+mut:
+	conn &net.UdpConn = unsafe { nil }
+	base netaddr.SocketAddr
+	// relay is set for a socket that reaches peers through a TURN allocation.
+	// Sending then means asking the relay to forward, and receiving means
+	// unwrapping what the relay forwarded back; the check list above does not
+	// know the difference, which is the point.
+	relay  &turn.Client = unsafe { nil }
+	closed bool
+}
