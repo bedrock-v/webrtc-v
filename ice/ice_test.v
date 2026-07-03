@@ -240,3 +240,29 @@ fn test_agent_generates_strong_credentials() {
 	assert pwd.len >= 22
 	assert agent.state() == .new
 }
+
+fn test_agent_rejects_weak_credentials() {
+	Agent.new(local_ufrag: 'ab', local_pwd: 'a-perfectly-long-password') or { return }
+	assert false, 'a short ufrag must be rejected'
+}
+
+fn test_agent_rejects_short_password() {
+	// The password is the only secret protecting connectivity checks.
+	if _ := Agent.new(local_ufrag: 'abcd', local_pwd: 'tooshort') {
+		assert false, 'a short password must be rejected'
+	} else {
+		assert err is AgentError
+	}
+}
+
+fn test_set_remote_credentials_validates() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('ab', 'x') or {
+		agent.set_remote_credentials('abcd', 'a-password-long-enough-for-ice')!
+		return
+	}
+	assert false, 'weak remote credentials must be rejected'
+}
