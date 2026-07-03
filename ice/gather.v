@@ -130,3 +130,55 @@ pub fn (mut a Agent) gather() ! {
 	a.start()
 	return
 }
+
+// add_host_candidate binds a socket to a local address and records the
+// resulting host candidate.
+fn (mut a Agent) add_host_candidate(address netaddr.IpAddr, announce bool) ! {
+	// Binding to port 0 lets the kernel choose; the candidate cannot be
+	// described until we read back which port it picked.
+	bind_target := if address.family == .ipv6 {
+		'[${address}]:0'
+	} else {
+		'${address}:0'
+	}
+	mut conn := net.listen_udp(bind_target) or {
+		return AgentError{
+			reason: .transport
+			detail: 'binding ${bind_target}: ${err.msg()}'
+		}
+	}
+	bound := transport.local_addr(conn) or {
+		conn.close() or {}
+		return AgentError{
+			reason: .transport
+			detail: 'reading the bound address of ${bind_target}: ${err.msg()}'
+		}
+	}
+	// The kernel reports the address it bound, but for a socket bound to a
+	// specific interface address that is the address we asked for; keep the
+	// zone identifier, which the textual round trip drops.
+	base := netaddr.SocketAddr.new(address, bound.port)
+
+	candidate := Candidate{
+		foundation: compute_foundation(.host, address, '', .udp)
+		component:  component_rtp
+		transport:  .udp
+		priority:   compute_priority(.host, default_local_preference(address), component_rtp)
+		address:    base
+		typ:        .host
+	}
+
+	a.mu.lock()
+	a.sockets << &LocalSocket{
+		conn: conn
+		base: base
+	}
+	index := a.sockets.len - 1
+	a.socket_for[base.str()] = index
+	a.mu.unlock()
+
+	if announce {
+		a.add_local_candidate(candidate)
+	}
+	return
+}
