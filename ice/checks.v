@@ -253,3 +253,23 @@ fn (mut a Agent) send_check(index int, nominate bool) {
 		''
 	}}')
 }
+
+// maintain_consent keeps the selected pair alive and notices when it dies.
+//
+// RFC 7675: a WebRTC endpoint must keep proving that the peer still wants the
+// traffic. The same exchange doubles as a NAT keepalive, so stopping it loses
+// the mapping as well as the consent.
+fn (mut a Agent) maintain_consent() {
+	if a.selected < 0 || a.selected >= a.pairs.len {
+		return
+	}
+	now := time.now()
+	pair := a.pairs[a.selected]
+
+	if now - pair.last_sent >= a.config.keepalive_interval {
+		a.send_check(a.selected, a.role == .controlling && !pair.nominated)
+		// The pair is still the selected one; sending a check must not put it
+		// back into the checking sequence.
+		a.pairs[a.selected].state = .succeeded
+	}
+}
