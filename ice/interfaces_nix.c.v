@@ -35,3 +35,17 @@ fn C.freeifaddrs(ifa &C.ifaddrs)
 // and these two values have been 0x1 and 0x8 on every Unix since 4.3BSD.
 const iff_up = u32(0x1)
 const iff_loopback = u32(0x8)
+
+// sockaddr_family reads the address family out of a struct sockaddr.
+fn sockaddr_family(sa voidptr) int {
+	if sa == unsafe { nil } {
+		return 0
+	}
+	$if macos || darwin || freebsd || openbsd || netbsd || dragonfly {
+		// BSD: struct sockaddr starts with a one-byte length, then a one-byte
+		// family.
+		return int(unsafe { (&u8(sa))[1] })
+	} $else {
+		return int(unsafe { *(&u16(sa)) })
+	}
+}
