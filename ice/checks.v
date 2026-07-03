@@ -127,3 +127,19 @@ fn (mut a Agent) is_closed() bool {
 	}
 	return a.closed
 }
+
+// tick advances the state machine: it retires timed-out checks, sends the next
+// one, and maintains consent on the selected pair.
+fn (mut a Agent) tick() {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return
+	}
+	a.expire_checks()
+	a.send_next_check()
+	a.maintain_consent()
+	a.evaluate_state()
+}
