@@ -299,3 +299,40 @@ fn test_remote_candidate_count_is_bounded() {
 	}
 	assert false, 'an unbounded remote candidate list must be refused'
 }
+
+// connect_pair drives two agents through a signalling exchange over loopback
+// and returns once both report connectivity.
+fn connect_pair(timeout time.Duration) !(&Agent, &Agent) {
+	options := InterfaceOptions{
+		include_loopback: true
+	}
+	mut controlling := Agent.new(
+		role:           .controlling
+		interfaces:     options
+		check_interval: 10 * time.millisecond
+	)!
+	mut controlled := Agent.new(
+		role:           .controlled
+		interfaces:     options
+		check_interval: 10 * time.millisecond
+	)!
+
+	a_ufrag, a_pwd := controlling.local_credentials()
+	b_ufrag, b_pwd := controlled.local_credentials()
+	controlling.set_remote_credentials(b_ufrag, b_pwd)!
+	controlled.set_remote_credentials(a_ufrag, a_pwd)!
+
+	controlling.gather()!
+	controlled.gather()!
+
+	for candidate in controlling.local_candidates() {
+		controlled.add_remote_candidate(candidate)!
+	}
+	for candidate in controlled.local_candidates() {
+		controlling.add_remote_candidate(candidate)!
+	}
+
+	controlling.connect(timeout)!
+	controlled.connect(timeout)!
+	return controlling, controlled
+}
