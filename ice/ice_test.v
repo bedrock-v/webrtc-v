@@ -42,3 +42,32 @@ fn test_candidate_preserves_unknown_extensions() {
 	candidate := parse_candidate(line)!
 	assert candidate.str() == line
 }
+
+fn test_candidate_rejects_malformed_input() {
+	bad := {
+		'empty':                 ''
+		'too few fields':        '1 1 udp 100 1.2.3.4 5000 typ'
+		'missing typ keyword':   '1 1 udp 100 1.2.3.4 5000 xyz host'
+		'unknown type':          '1 1 udp 100 1.2.3.4 5000 typ nonsense'
+		'unknown transport':     '1 1 sctp 100 1.2.3.4 5000 typ host'
+		'bad address':           '1 1 udp 100 999.1.1.1 5000 typ host'
+		'bad port':              '1 1 udp 100 1.2.3.4 70000 typ host'
+		'port zero':             '1 1 udp 100 1.2.3.4 0 typ host'
+		'non numeric priority':  '1 1 udp abc 1.2.3.4 5000 typ host'
+		'component zero':        '1 0 udp 100 1.2.3.4 5000 typ host'
+		'component too large':   '1 300 udp 100 1.2.3.4 5000 typ host'
+		'raddr without rport':   '1 1 udp 100 1.2.3.4 5000 typ srflx raddr 1.1.1.1'
+		'dangling extension':    '1 1 udp 100 1.2.3.4 5000 typ host generation'
+		'tcp without tcptype':   '1 1 tcp 100 1.2.3.4 9 typ host'
+		'unknown tcptype':       '1 1 tcp 100 1.2.3.4 9 typ host tcptype sideways'
+		'empty foundation':      ' 1 udp 100 1.2.3.4 5000 typ host'
+		'priority out of range': '1 1 udp 99999999999 1.2.3.4 5000 typ host'
+	}
+	for name, line in bad {
+		if _ := parse_candidate(line) {
+			assert false, 'expected "${name}" to be rejected'
+		} else {
+			assert err is CandidateError, '"${name}" produced ${err}'
+		}
+	}
+}
