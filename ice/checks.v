@@ -118,3 +118,12 @@ fn (mut a Agent) run() {
 		}
 	}
 }
+
+// is_closed reports whether the agent has been shut down.
+fn (mut a Agent) is_closed() bool {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.closed
+}
