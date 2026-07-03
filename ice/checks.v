@@ -195,3 +195,61 @@ fn (mut a Agent) send_next_check() {
 	}
 	a.send_check(index, false)
 }
+
+// send_check sends one connectivity check for a pair.
+fn (mut a Agent) send_check(index int, nominate bool) {
+	if index < 0 || index >= a.pairs.len {
+		return
+	}
+	pair := a.pairs[index]
+	socket_index := a.socket_for[pair.local.address.str()] or {
+		a.log.warn('no socket for local candidate ${pair.local.address}')
+		a.pairs[index].state = .failed
+		return
+	}
+	if socket_index >= a.sockets.len {
+		return
+	}
+
+	mut request := stun.Message.new(.request, .binding) or { return }
+	// RFC 8445 section 7.2.2: the username is the peer's fragment followed by
+	// ours, so the receiver can tell which of its sessions the check belongs to
+	// before it has verified anything.
+	request.add_username('${a.remote_ufrag}:${a.local_ufrag}') or { return }
+	request.add_priority(compute_priority(.peer_reflexive,
+		default_local_preference(pair.local.address.ip), pair.local.component))
+	if a.role == .controlling {
+		request.add_ice_controlling(a.tiebreaker)
+		if nominate {
+			request.add_use_candidate()
+		}
+	} else {
+		request.add_ice_controlled(a.tiebreaker)
+	}
+
+	// The check is keyed with the peer's password, which only the signalling
+	// channel could have carried. That is what makes a connectivity check an
+	// authentication as well as a reachability probe.
+	key := stun.short_term_key(a.remote_pwd) or { return }
+	raw := request.encode(integrity_key: key, fingerprint: true) or { return }
+
+	a.transmit(socket_index, pair.remote.address, raw) or {
+		a.log.debug('sending a check to ${pair.remote.address} failed: ${err.msg()}')
+		a.pairs[index].state = .failed
+		return
+	}
+
+	a.pairs[index].state = .in_progress
+	a.pairs[index].binding_requests++
+	a.pairs[index].last_sent = time.now()
+	a.pending[request.transaction_id[..].hex()] = PendingCheck{
+		pair_index: index
+		sent_at:    time.now()
+		nominating: nominate
+	}
+	a.log.trace('check #${a.pairs[index].binding_requests} to ${pair.remote.address}${if nominate {
+		' (nominating)'
+	} else {
+		''
+	}}')
+}
