@@ -336,3 +336,26 @@ fn connect_pair(timeout time.Duration) !(&Agent, &Agent) {
 	controlled.connect(timeout)!
 	return controlling, controlled
 }
+
+fn test_two_agents_connect_over_loopback() {
+	mut controlling, mut controlled := connect_pair(10 * time.second)!
+	defer {
+		controlling.close()
+		controlled.close()
+	}
+
+	assert controlling.state() in [ConnectionState.connected, .completed]
+	assert controlled.state() in [ConnectionState.connected, .completed]
+
+	pair := controlling.selected_pair()?
+	assert pair.state == .succeeded
+	// Both agents run in this process, so the winning pair is on one of the
+	// local interfaces - which one depends on their relative priority, and
+	// loopback does not necessarily win.
+	assert pair.local.address.family() == pair.remote.address.family()
+
+	stats := controlling.statistics()
+	assert stats.succeeded_pairs >= 1
+	assert stats.local_candidates >= 1
+	assert stats.remote_candidates >= 1
+}
