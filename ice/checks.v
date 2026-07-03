@@ -273,3 +273,49 @@ fn (mut a Agent) maintain_consent() {
 		a.pairs[a.selected].state = .succeeded
 	}
 }
+
+// evaluate_state derives the connection state from the check list.
+fn (mut a Agent) evaluate_state() {
+	if a.state == .closed || a.state == .failed {
+		return
+	}
+	now := time.now()
+
+	if a.selected >= 0 && a.selected < a.pairs.len {
+		silence := now - a.pairs[a.selected].last_received
+		if silence > a.config.failed_timeout {
+			a.log.warn('no traffic on the selected pair for ${silence.seconds():.1f}s, giving up')
+			a.selected = -1
+			a.set_state(.failed)
+			return
+		}
+		if silence > a.config.disconnected_timeout {
+			a.set_state(.disconnected)
+			return
+		}
+		if a.pairs[a.selected].nominated {
+			a.set_state(.completed)
+		} else {
+			a.set_state(.connected)
+		}
+		return
+	}
+
+	if a.pairs.len == 0 {
+		return
+	}
+	mut any_live := false
+	for pair in a.pairs {
+		if pair.state != .failed {
+			any_live = true
+			break
+		}
+	}
+	if !any_live {
+		a.set_state(.failed)
+		return
+	}
+	if a.state == .gathering || a.state == .new {
+		a.set_state(.checking)
+	}
+}
