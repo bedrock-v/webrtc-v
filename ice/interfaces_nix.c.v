@@ -49,3 +49,32 @@ fn sockaddr_family(sa voidptr) int {
 		return int(unsafe { *(&u16(sa)) })
 	}
 }
+
+// sockaddr_to_ip extracts the address from a struct sockaddr_in or
+// sockaddr_in6. The IPv4 address is at offset 4 and the IPv6 address at offset
+// 8 on every platform this compiles for.
+fn sockaddr_to_ip(sa voidptr) ?netaddr.IpAddr {
+	family := sockaddr_family(sa)
+	base := unsafe { &u8(sa) }
+	if family == C.AF_INET {
+		mut octets := []u8{len: 4}
+		unsafe { vmemcpy(octets.data, base + 4, 4) }
+		return netaddr.IpAddr.from_octets(.ipv4, octets) or { return none }
+	}
+	if family == C.AF_INET6 {
+		mut octets := []u8{len: 16}
+		unsafe { vmemcpy(octets.data, base + 8, 16) }
+		mut addr := netaddr.IpAddr.from_octets(.ipv6, octets) or { return none }
+		// The scope identifier follows the 16 address bytes. It only carries
+		// meaning for link-local addresses, where it names the interface the
+		// address is valid on.
+		if addr.is_link_local() {
+			scope := unsafe { *(&u32(base + 24)) }
+			if scope != 0 {
+				addr = addr.with_zone(scope.str())
+			}
+		}
+		return addr
+	}
+	return none
+}
