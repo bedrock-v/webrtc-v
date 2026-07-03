@@ -425,3 +425,18 @@ fn test_agent_fails_when_no_pair_can_connect() {
 	}
 	assert false, 'an unreachable peer must not report a connection'
 }
+
+fn test_send_before_connect_is_refused() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	agent.send('x'.bytes()) or {
+		assert err is AgentError
+		if err is AgentError {
+			assert err.reason == .wrong_state
+		}
+		return
+	}
+	assert false, 'sending without a selected pair must fail'
+}
