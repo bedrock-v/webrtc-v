@@ -306,3 +306,47 @@ fn (mut a Agent) add_local_candidate(candidate Candidate) {
 		callback(candidate)
 	}
 }
+
+// add_remote_candidate records a candidate signalled by the peer.
+//
+// This is the trickle ICE entry point: candidates arrive over time, and each
+// one extends the check list rather than restarting it.
+pub fn (mut a Agent) add_remote_candidate(candidate Candidate) ! {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return AgentError{
+			reason: .closed
+			detail: 'agent is closed'
+		}
+	}
+	if candidate.needs_resolution() {
+		// The candidate names a host rather than an address. Resolving is a
+		// query with a timeout, so it happens on its own thread and the
+		// candidate is added when - and only if - the name resolves.
+		a.threads << spawn a.resolve_and_add(candidate)
+		return
+	}
+	if a.remotes.len >= max_remote_candidates {
+		return AgentError{
+			reason: .wrong_state
+			detail: 'more than ${max_remote_candidates} remote candidates'
+		}
+	}
+	for existing in a.remotes {
+		if existing.equal(candidate) {
+			return
+		}
+	}
+	a.remotes << candidate
+	a.form_pairs()
+	a.log.debug('added remote candidate ${candidate}')
+	if a.has_relays() {
+		// A relay drops traffic from a peer it has no permission for, so the
+		// permission has to exist before the first check goes out.
+		a.threads << spawn a.permit_on_relays(candidate.address)
+	}
+	return
+}
