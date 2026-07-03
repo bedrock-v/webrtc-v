@@ -412,3 +412,13 @@ fn (mut a Agent) unfreeze_by_foundation() {
 		}
 	}
 }
+
+// find_pair returns the index of the pair with the given addresses, or -1.
+fn (a &Agent) find_pair(local netaddr.SocketAddr, remote netaddr.SocketAddr) int {
+	for i, pair in a.pairs {
+		if pair.local.address.equal(local) && pair.remote.address.equal(remote) {
+			return i
+		}
+	}
+	return -1
+}
