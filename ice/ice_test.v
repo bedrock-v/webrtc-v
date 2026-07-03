@@ -399,3 +399,29 @@ fn test_agents_reach_completed_after_nomination() {
 	pair := controlling.selected_pair()?
 	assert pair.nominated
 }
+
+fn test_agent_fails_when_no_pair_can_connect() {
+	mut agent := Agent.new(
+		role:                 .controlling
+		interfaces:           InterfaceOptions{
+			include_loopback: true
+		}
+		check_interval:       5 * time.millisecond
+		binding_timeout:      20 * time.millisecond
+		max_binding_requests: 2
+	)!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('abcd', 'a-password-long-enough-for-ice')!
+	agent.gather()!
+	// 192.0.2.0/24 is TEST-NET-1: reserved for documentation and guaranteed
+	// not to be routable, so the check can only ever time out.
+	agent.add_remote_candidate_string('1 1 udp 100 192.0.2.1 9 typ host')!
+
+	agent.connect(3 * time.second) or {
+		assert err is AgentError
+		return
+	}
+	assert false, 'an unreachable peer must not report a connection'
+}
