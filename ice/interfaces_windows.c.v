@@ -22,3 +22,45 @@ const probe_targets = {
 	'ipv4': '198.51.100.1:9'
 	'ipv6': '[2001:db8::1]:9'
 }
+
+pub fn local_interface_addresses(opts InterfaceOptions) ![]netaddr.IpAddr {
+	mut out := []netaddr.IpAddr{}
+
+	for family, target in probe_targets {
+		if family == 'ipv4' && !opts.include_ipv4 {
+			continue
+		}
+		if family == 'ipv6' && !opts.include_ipv6 {
+			continue
+		}
+		mut conn := net.dial_udp(target) or { continue }
+		addr := transport.local_addr(conn) or {
+			conn.close() or {}
+			continue
+		}
+		conn.close() or {}
+
+		if !is_candidate_address(addr.ip, opts) {
+			continue
+		}
+		if out.any(it.equal(addr.ip)) {
+			continue
+		}
+		out << addr.ip
+	}
+
+	if opts.include_loopback {
+		for candidate in [netaddr.IpAddr.parse('127.0.0.1') or { netaddr.ipv4_unspecified },
+			netaddr.IpAddr.parse('::1') or { netaddr.ipv6_unspecified }] {
+			if !is_candidate_address(candidate, opts) {
+				continue
+			}
+			if out.any(it.equal(candidate)) {
+				continue
+			}
+			out << candidate
+		}
+	}
+
+	return out
+}
