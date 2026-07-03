@@ -113,3 +113,17 @@ fn test_local_preference_ordering() {
 	assert private_v4 > link_local
 	assert link_local > loopback
 }
+
+fn test_foundation_groups_equivalent_candidates() {
+	base := netaddr.IpAddr.parse('192.168.1.1')!
+	other := netaddr.IpAddr.parse('192.168.1.2')!
+
+	same := compute_foundation(.host, base, '', .udp)
+	assert compute_foundation(.host, base, '', .udp) == same
+	// A different type, base, server or transport must give a different
+	// foundation, or unrelated pairs would be frozen against each other.
+	assert compute_foundation(.server_reflexive, base, '', .udp) != same
+	assert compute_foundation(.host, other, '', .udp) != same
+	assert compute_foundation(.host, base, 'stun.example:3478', .udp) != same
+	assert compute_foundation(.host, base, '', .tcp) != same
+}
