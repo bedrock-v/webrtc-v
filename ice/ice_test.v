@@ -87,3 +87,29 @@ fn test_candidate_line_length_is_bounded() {
 	parse_candidate(long) or { return }
 	assert false, 'an over-long candidate line must be rejected'
 }
+
+fn test_priority_formula() {
+	// RFC 8445 section 5.1.2.1.
+	assert compute_priority(.host, 65535, 1) == (126 << 24) | (65535 << 8) | 255
+	assert compute_priority(.server_reflexive, 0, 1) == (100 << 24) | 255
+	assert compute_priority(.relayed, 0, 1) == 255
+
+	// Type dominates: any host candidate outranks any reflexive one.
+	assert compute_priority(.host, 0, 1) > compute_priority(.server_reflexive, 65535, 1)
+	assert compute_priority(.server_reflexive, 0, 1) > compute_priority(.relayed, 65535, 1)
+	// A lower component number is preferred.
+	assert compute_priority(.host, 100, 1) > compute_priority(.host, 100, 2)
+}
+
+fn test_local_preference_ordering() {
+	global_v6 := default_local_preference(netaddr.IpAddr.parse('2001:db8::1')!)
+	global_v4 := default_local_preference(netaddr.IpAddr.parse('8.8.8.8')!)
+	private_v4 := default_local_preference(netaddr.IpAddr.parse('192.168.1.1')!)
+	link_local := default_local_preference(netaddr.IpAddr.parse('169.254.1.1')!)
+	loopback := default_local_preference(netaddr.IpAddr.parse('127.0.0.1')!)
+
+	assert global_v6 > global_v4
+	assert global_v4 > private_v4
+	assert private_v4 > link_local
+	assert link_local > loopback
+}
