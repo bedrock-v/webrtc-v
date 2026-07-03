@@ -376,3 +376,26 @@ fn test_connected_agents_exchange_data() {
 	controlled.send(reply)!
 	assert controlling.recv(5 * time.second)! == reply
 }
+
+fn test_agents_reach_completed_after_nomination() {
+	mut controlling, mut controlled := connect_pair(10 * time.second)!
+	defer {
+		controlling.close()
+		controlled.close()
+	}
+
+	// The controlling agent nominates once a pair succeeds; both sides should
+	// settle on completed shortly afterwards.
+	deadline := time.now().add(5 * time.second)
+	for time.now() < deadline {
+		if controlling.state() == .completed && controlled.state() == .completed {
+			break
+		}
+		time.sleep(20 * time.millisecond)
+	}
+	assert controlling.state() == .completed, 'controlling stayed ${controlling.state()}'
+	assert controlled.state() == .completed, 'controlled stayed ${controlled.state()}'
+
+	pair := controlling.selected_pair()?
+	assert pair.nominated
+}
