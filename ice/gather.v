@@ -350,3 +350,8 @@ pub fn (mut a Agent) add_remote_candidate(candidate Candidate) ! {
 	}
 	return
 }
+
+// add_remote_candidate_string parses and adds a candidate from its SDP form.
+pub fn (mut a Agent) add_remote_candidate_string(line string) ! {
+	a.add_remote_candidate(parse_candidate(line)!)!
+}
