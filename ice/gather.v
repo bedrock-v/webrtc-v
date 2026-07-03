@@ -238,3 +238,51 @@ fn (mut a Agent) gather_reflexive(server string) ! {
 	}
 	return
 }
+
+// reflexive_lookup performs one Binding transaction on an existing socket.
+//
+// This is deliberately not the stunclient package: that one owns its socket,
+// and the whole point here is to reuse the socket a host candidate is bound to.
+fn (mut a Agent) reflexive_lookup(socket &LocalSocket, destination net.Addr) !netaddr.SocketAddr {
+	mut request := stun.Message.new(.request, .binding)!
+	raw := request.encode(fingerprint: true)!
+
+	mut conn := socket.conn
+	deadline := time.now().add(gather_timeout)
+	mut attempt := 0
+	for time.now() < deadline {
+		attempt++
+		conn.write_to(destination, raw) or {
+			return AgentError{
+				reason: .transport
+				detail: 'sending a Binding request: ${err.msg()}'
+			}
+		}
+
+		// Retransmit on a doubling schedule, bounded by the overall deadline.
+		wait := 100 * time.millisecond * i64(1 << (attempt - 1))
+		attempt_deadline := time.now().add(wait)
+		for time.now() < attempt_deadline && time.now() < deadline {
+			remaining := attempt_deadline - time.now()
+			conn.set_read_timeout(remaining)
+			mut buf := []u8{len: max_datagram}
+			n, _ := conn.read(mut buf) or { break }
+
+			response := stun.Message.decode(buf[..n]) or { continue }
+			if response.transaction_id != request.transaction_id {
+				continue
+			}
+			if response.typ.class != .success_response {
+				return AgentError{
+					reason: .transport
+					detail: 'STUN server answered with ${response.typ.class}'
+				}
+			}
+			return response.reflexive_address()!
+		}
+	}
+	return AgentError{
+		reason: .timed_out
+		detail: 'no Binding response within ${gather_timeout.milliseconds()}ms'
+	}
+}
