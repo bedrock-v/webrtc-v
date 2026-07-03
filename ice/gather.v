@@ -387,3 +387,28 @@ fn (mut a Agent) form_pairs() {
 	a.unfreeze_by_foundation()
 	sort_pairs(mut a.pairs, a.role == .controlling)
 }
+
+// unfreeze_by_foundation moves one pair per foundation to waiting.
+//
+// RFC 8445 section 6.1.2.6 freezes redundant pairs so that a foundation is
+// probed once rather than once per pair sharing it. Since checks are the only
+// thing ICE puts on the wire, that is the difference between a handful of
+// probes and a burst that looks like a scan.
+fn (mut a Agent) unfreeze_by_foundation() {
+	mut active := map[string]bool{}
+	for pair in a.pairs {
+		if pair.state == .waiting || pair.state == .in_progress || pair.state == .succeeded {
+			active[pair.foundation()] = true
+		}
+	}
+	for i in 0 .. a.pairs.len {
+		if a.pairs[i].state != .frozen {
+			continue
+		}
+		foundation := a.pairs[i].foundation()
+		if foundation !in active {
+			a.pairs[i].state = .waiting
+			active[foundation] = true
+		}
+	}
+}
