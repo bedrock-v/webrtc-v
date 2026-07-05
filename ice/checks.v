@@ -623,3 +623,11 @@ fn (mut a Agent) consider_selection(index int) {
 		a.pairs[index].state = .succeeded
 	}
 }
+
+// select_pair makes a pair the one carrying traffic.
+fn (mut a Agent) select_pair(index int) {
+	a.selected = index
+	a.pairs[index].last_received = time.now()
+	a.log.info('selected pair ${a.pairs[index]}')
+	a.evaluate_state()
+}
