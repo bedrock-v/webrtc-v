@@ -438,3 +438,41 @@ fn (mut a Agent) handle_binding_request(message stun.Message, packet InboundPack
 
 	a.send_success_response(message, packet)
 }
+
+// resolve_role_conflict implements RFC 8445 section 7.3.1.1.
+//
+// Both agents can believe they are controlling, which would leave nobody to
+// nominate, or both controlled, which would leave nobody either. The conflict is
+// settled by comparing tiebreakers: the larger one keeps its role. Returning
+// true means the request was answered with an error and must not be processed
+// further.
+fn (mut a Agent) resolve_role_conflict(message stun.Message, packet InboundPacket) bool {
+	if remote_tiebreaker := message.ice_controlling() {
+		if a.role != .controlling {
+			return false
+		}
+		if a.tiebreaker >= remote_tiebreaker {
+			// We keep the role and tell the peer to switch.
+			a.send_error_response(message, packet, stun.code_role_conflict, '')
+			return true
+		}
+		a.log.info('role conflict: switching to controlled')
+		a.role = .controlled
+		sort_pairs(mut a.pairs, false)
+		return false
+	}
+	if remote_tiebreaker := message.ice_controlled() {
+		if a.role != .controlled {
+			return false
+		}
+		if a.tiebreaker >= remote_tiebreaker {
+			a.send_error_response(message, packet, stun.code_role_conflict, '')
+			return true
+		}
+		a.log.info('role conflict: switching to controlling')
+		a.role = .controlling
+		sort_pairs(mut a.pairs, true)
+		return false
+	}
+	return false
+}
