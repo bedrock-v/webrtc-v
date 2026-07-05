@@ -476,3 +476,28 @@ fn (mut a Agent) resolve_role_conflict(message stun.Message, packet InboundPacke
 	}
 	return false
 }
+
+// learn_peer_reflexive records a remote candidate for a source address the peer
+// never signalled.
+fn (mut a Agent) learn_peer_reflexive(packet InboundPacket) {
+	for remote in a.remotes {
+		if remote.address.equal(packet.from) {
+			return
+		}
+	}
+	if a.remotes.len >= max_remote_candidates {
+		return
+	}
+	candidate := Candidate{
+		foundation: compute_foundation(.peer_reflexive, packet.from.ip, '', .udp)
+		component:  component_rtp
+		transport:  .udp
+		priority:   compute_priority(.peer_reflexive, default_local_preference(packet.from.ip),
+			component_rtp)
+		address:    packet.from
+		typ:        .peer_reflexive
+	}
+	a.remotes << candidate
+	a.form_pairs()
+	a.log.debug('learned peer-reflexive candidate ${candidate}')
+}
