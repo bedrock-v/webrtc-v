@@ -501,3 +501,27 @@ fn (mut a Agent) learn_peer_reflexive(packet InboundPacket) {
 	a.form_pairs()
 	a.log.debug('learned peer-reflexive candidate ${candidate}')
 }
+
+// find_pair_for returns the index of the pair a datagram belongs to.
+fn (a &Agent) find_pair_for(packet InboundPacket) int {
+	if packet.socket >= a.sockets.len {
+		return -1
+	}
+	local := a.sockets[packet.socket].base
+	for i, pair in a.pairs {
+		if !pair.remote.address.equal(packet.from) {
+			continue
+		}
+		// A server-reflexive local candidate shares the socket of its base, so
+		// match on either.
+		if pair.local.address.equal(local) {
+			return i
+		}
+		if related := pair.local.related {
+			if related.equal(local) {
+				return i
+			}
+		}
+	}
+	return -1
+}
