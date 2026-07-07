@@ -167,3 +167,33 @@ fn test_pair_ordering_is_by_descending_priority() {
 	assert pairs[1].local.priority == 50
 	assert pairs[2].local.priority == 10
 }
+
+fn test_pairable_rejects_mismatched_candidates() {
+	v4 := Candidate{
+		address: netaddr.SocketAddr.parse('1.2.3.4:1')!
+	}
+	v6 := Candidate{
+		address: netaddr.SocketAddr.parse('[2001:db8::1]:1')!
+	}
+	// Pairing across address families produces checks that cannot succeed.
+	assert !pairable(v4, v6)
+	assert pairable(v4, v4)
+
+	other_component := Candidate{
+		component: 2
+		address:   netaddr.SocketAddr.parse('1.2.3.4:1')!
+	}
+	assert !pairable(v4, other_component)
+
+	tcp := Candidate{
+		transport: .tcp
+		address:   netaddr.SocketAddr.parse('1.2.3.4:1')!
+	}
+	assert !pairable(v4, tcp)
+
+	link_local := Candidate{
+		address: netaddr.SocketAddr.parse('169.254.1.1:1')!
+	}
+	assert !pairable(v4, link_local)
+	assert pairable(link_local, link_local)
+}
