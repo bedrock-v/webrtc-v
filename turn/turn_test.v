@@ -83,3 +83,27 @@ fn test_a_bad_server_address_is_refused() {
 		assert false, 'the server address has to parse'
 	}
 }
+
+fn test_an_allocation_is_made_and_released() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		client.close()
+	}
+
+	relayed := client.allocate()!
+	assert relayed.port != 0
+	assert client.relayed_address()? == relayed
+	// The allocation response also reports what the relay saw us coming from,
+	// which is a server-reflexive candidate for free.
+	assert client.mapped_address() != none
+
+	// The first request goes out unauthenticated and is challenged, so the
+	// exchange must have taken two transactions.
+	assert server.allocate_attempts() == 2
+	assert server.last_realm() == 'webrtc-v.test'
+}
