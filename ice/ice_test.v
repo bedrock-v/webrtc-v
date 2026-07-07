@@ -127,3 +127,16 @@ fn test_foundation_groups_equivalent_candidates() {
 	assert compute_foundation(.host, base, 'stun.example:3478', .udp) != same
 	assert compute_foundation(.host, base, '', .tcp) != same
 }
+
+fn make_pair(local_priority u32, remote_priority u32) !CandidatePair {
+	return CandidatePair{
+		local:  Candidate{
+			priority: local_priority
+			address:  netaddr.SocketAddr.parse('1.1.1.1:1')!
+		}
+		remote: Candidate{
+			priority: remote_priority
+			address:  netaddr.SocketAddr.parse('2.2.2.2:2')!
+		}
+	}
+}
