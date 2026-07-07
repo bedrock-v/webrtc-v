@@ -254,3 +254,15 @@ fn test_agent_rejects_short_password() {
 		assert err is AgentError
 	}
 }
+
+fn test_set_remote_credentials_validates() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('ab', 'x') or {
+		agent.set_remote_credentials('abcd', 'a-password-long-enough-for-ice')!
+		return
+	}
+	assert false, 'weak remote credentials must be rejected'
+}
