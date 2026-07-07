@@ -133,3 +133,24 @@ fn test_the_wrong_password_is_rejected() {
 		}
 	}
 }
+
+fn test_a_stale_nonce_is_retried() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		client.close()
+	}
+	client.allocate()!
+
+	// The relay rotates its nonce, as a real one does periodically. The next
+	// request must be answered with 438 and then succeed, without the caller
+	// seeing anything.
+	server.rotate_nonce()
+	peer := netaddr.SocketAddr.parse('203.0.113.7:5000')!
+	client.create_permission(peer)!
+	assert server.has_permission(peer)
+}
