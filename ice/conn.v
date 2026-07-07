@@ -99,3 +99,31 @@ pub fn (mut a Agent) send(data []u8) !int {
 	}
 	return sent
 }
+
+// recv returns the next application datagram, waiting up to timeout.
+//
+// Only datagrams that arrived on the selected pair are returned; STUN is
+// consumed by the agent and traffic from any other source is discarded.
+pub fn (mut a Agent) recv(timeout time.Duration) ![]u8 {
+	if a.is_closed() {
+		return AgentError{
+			reason: .closed
+			detail: 'agent is closed'
+		}
+	}
+	select {
+		data := <-a.data {
+			return data
+		}
+		timeout {
+			return AgentError{
+				reason: .timed_out
+				detail: 'no data within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return AgentError{
+		reason: .closed
+		detail: 'agent is closed'
+	}
+}
