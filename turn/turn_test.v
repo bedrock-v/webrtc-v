@@ -265,3 +265,22 @@ fn test_a_silent_relay_times_out() {
 		}
 	}
 }
+
+fn test_data_for_an_unbound_channel_is_discarded() {
+	// There is no peer address to attribute it to, so it must not be handed to
+	// the application under some guess.
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+	mut client := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		client.close()
+	}
+	client.allocate()!
+
+	server.deliver_on_channel(0x4123, 'unattributable'.bytes())!
+	if _ := client.recv(200 * time.millisecond) {
+		assert false, 'data on an unbound channel has no sender and must be dropped'
+	}
+}
