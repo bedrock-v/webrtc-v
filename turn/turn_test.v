@@ -492,3 +492,55 @@ fn (mut r FakeRelay) run() {
 		r.handle(buf[..n].clone(), from)
 	}
 }
+
+fn (mut r FakeRelay) handle(datagram []u8, from net.Addr) {
+	if is_channel_data(datagram) {
+		framed := decode_channel_data(datagram) or { return }
+		r.mu.lock()
+		mut peer := r.channels[framed.channel] or { '' }
+		if allocation := r.allocations[from.str()] {
+			if bound := allocation.channels[framed.channel] {
+				peer = bound
+			}
+		}
+		r.mu.unlock()
+		if peer == '' {
+			return
+		}
+		address := netaddr.SocketAddr.parse(peer) or { return }
+		r.relayed <- Relayed{
+			peer:    address
+			data:    framed.payload
+			channel: framed.channel
+		}
+		r.forward(address, framed.payload)
+		return
+	}
+
+	message := stun.Message.decode(datagram) or { return }
+	if message.typ.class == .indication {
+		if message.typ.method != .send {
+			return
+		}
+		peer := message.xor_peer_address() or { return }
+		data := message.data() or { return }
+		r.mu.lock()
+		permitted := r.permissions[peer.str()] or { false }
+		r.mu.unlock()
+		if !permitted {
+			// A real relay drops what has no permission, which is the whole
+			// point of permissions.
+			return
+		}
+		r.relayed <- Relayed{
+			peer: peer
+			data: data
+		}
+		r.forward(peer, data)
+		return
+	}
+	if message.typ.class != .request {
+		return
+	}
+	r.handle_request(message, from)
+}
