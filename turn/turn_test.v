@@ -372,3 +372,30 @@ fn (mut r FakeRelay) address() string {
 	bound := transport.local_addr(r.conn) or { panic(err) }
 	return bound.str()
 }
+
+fn (mut r FakeRelay) stop() {
+	r.mu.lock()
+	if r.closed {
+		r.mu.unlock()
+		return
+	}
+	r.closed = true
+	r.mu.unlock()
+	r.conn.close() or {}
+	for handle in r.threads {
+		handle.wait()
+	}
+}
+
+fn (mut r FakeRelay) go_silent() {
+	r.mu.lock()
+	r.silent = true
+	r.mu.unlock()
+}
+
+fn (mut r FakeRelay) refuse_with(code int, reason string) {
+	r.mu.lock()
+	r.refusal = code
+	r.refusal_reason = reason
+	r.mu.unlock()
+}
