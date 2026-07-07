@@ -560,3 +560,29 @@ fn test_the_relay_only_policy_refuses_rather_than_leaking() {
 	}
 	assert false, 'relay-only must not fall back to gathering host candidates'
 }
+
+fn test_the_default_policy_gathers_host_candidates() {
+	mut agent := Agent.new(
+		interfaces: InterfaceOptions{
+			include_loopback: true
+		}
+	)!
+	defer {
+		agent.close()
+	}
+	agent.gather()!
+	assert agent.local_candidates().len > 0
+	assert GatherPolicy.all.str() == 'all'
+	assert GatherPolicy.no_host.str() == 'no-host'
+}
+
+fn test_an_mdns_candidate_is_parsed_rather_than_refused() {
+	// RFC 8828: a browser signals a random ".local" name instead of its private
+	// addresses. Refusing it would throw away every local-network path.
+	candidate :=
+		parse_candidate('candidate:1 1 udp 2130706431 d4f4c2b0-1111-4000-8000-000000000000.local 44444 typ host')!
+	assert candidate.needs_resolution()
+	assert candidate.hostname == 'd4f4c2b0-1111-4000-8000-000000000000.local'
+	assert candidate.address.port == 44444
+	assert candidate.typ == .host
+}
