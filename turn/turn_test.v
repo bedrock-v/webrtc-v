@@ -631,3 +631,52 @@ fn (mut r FakeRelay) answer_allocate(request stun.Message, key []u8, from net.Ad
 	response.add_lifetime(600)
 	r.reply(mut response, key)
 }
+
+// forward delivers a relayed payload to whichever allocation owns the target
+// address, which is what makes two clients on this relay able to reach each
+// other.
+fn (mut r FakeRelay) forward(target netaddr.SocketAddr, data []u8) {
+	r.mu.lock()
+	mut destination := ?Allocation(none)
+	for _, allocation in r.allocations {
+		if allocation.relayed.str() == target.str() {
+			destination = allocation
+			break
+		}
+	}
+	mut sender := netaddr.SocketAddr{}
+	if current := r.client {
+		if allocation := r.allocations[current.str()] {
+			sender = allocation.relayed
+		}
+	}
+	r.mu.unlock()
+
+	allocation := destination or { return }
+	if !allocation.permissions[sender.str()] {
+		// No permission, no delivery. This is the rule that stops an allocation
+		// from being a service for anyone who learns its address.
+		return
+	}
+
+	mut channel := u16(0)
+	for number, peer in allocation.channels {
+		if peer == sender.str() {
+			channel = number
+			break
+		}
+	}
+
+	raw := if channel != 0 {
+		ChannelData{
+			channel: channel
+			payload: data
+		}.encode() or { return }
+	} else {
+		mut indication := stun.Message.new(.indication, .data) or { return }
+		indication.add_xor_peer_address(sender) or { return }
+		indication.add_data(data) or { return }
+		indication.encode() or { return }
+	}
+	r.conn.write_to(allocation.client, raw) or {}
+}
