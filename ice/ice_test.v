@@ -197,3 +197,23 @@ fn test_pairable_rejects_mismatched_candidates() {
 	assert !pairable(v4, link_local)
 	assert pairable(link_local, link_local)
 }
+
+fn test_interface_filter() {
+	loopback := netaddr.IpAddr.parse('127.0.0.1')!
+	link_local := netaddr.IpAddr.parse('169.254.1.1')!
+	global := netaddr.IpAddr.parse('8.8.8.8')!
+	v6 := netaddr.IpAddr.parse('2001:db8::1')!
+	mapped := netaddr.IpAddr.parse('::ffff:1.2.3.4')!
+
+	assert is_candidate_address(global, InterfaceOptions{})
+	assert !is_candidate_address(loopback, InterfaceOptions{})
+	assert is_candidate_address(loopback, InterfaceOptions{ include_loopback: true })
+	assert !is_candidate_address(link_local, InterfaceOptions{})
+	assert is_candidate_address(link_local, InterfaceOptions{ include_link_local: true })
+	assert !is_candidate_address(v6, InterfaceOptions{ include_ipv6: false })
+	assert !is_candidate_address(global, InterfaceOptions{ include_ipv4: false })
+	// An IPv4-mapped address duplicates a candidate gathered separately and
+	// cannot be paired with anything.
+	assert !is_candidate_address(mapped, InterfaceOptions{})
+	assert !is_candidate_address(netaddr.IpAddr{}, InterfaceOptions{})
+}
