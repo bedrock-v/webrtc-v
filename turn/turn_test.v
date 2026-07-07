@@ -356,3 +356,19 @@ mut:
 	closed  bool
 	threads []thread
 }
+
+const relay_realm = 'webrtc-v.test'
+
+fn FakeRelay.start() !&FakeRelay {
+	mut conn := net.listen_udp('127.0.0.1:0')!
+	mut relay := &FakeRelay{
+		conn: conn
+	}
+	relay.threads << spawn relay.run()
+	return relay
+}
+
+fn (mut r FakeRelay) address() string {
+	bound := transport.local_addr(r.conn) or { panic(err) }
+	return bound.str()
+}
