@@ -238,3 +238,30 @@ fn test_sending_without_an_allocation_is_refused() {
 		}
 	}
 }
+
+fn test_a_silent_relay_times_out() {
+	mut server := FakeRelay.start()!
+	server.go_silent()
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(),
+		username:          'user'
+		password:          'pass'
+		rto:               20 * time.millisecond
+		max_transmissions: 3
+	)!
+	defer {
+		client.close()
+	}
+
+	if _ := client.allocate() {
+		assert false, 'a relay that never answers cannot produce an allocation'
+	} else {
+		assert err is TurnError
+		if err is TurnError {
+			assert err.reason == .timed_out
+		}
+	}
+}
