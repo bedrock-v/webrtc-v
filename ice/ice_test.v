@@ -81,3 +81,9 @@ fn test_candidate_rejects_unroutable_addresses() {
 		assert false, 'expected ${line} to be rejected'
 	}
 }
+
+fn test_candidate_line_length_is_bounded() {
+	long := '1 1 udp 100 1.2.3.4 5000 typ host' + ' x y'.repeat(400)
+	parse_candidate(long) or { return }
+	assert false, 'an over-long candidate line must be rejected'
+}
