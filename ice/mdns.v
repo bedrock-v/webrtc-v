@@ -17,3 +17,30 @@ import webrtc.netaddr
 // and every candidate that cannot be resolved is one connection attempt still
 // waiting.
 const mdns_timeout = 2 * time.second
+
+// resolve_and_add turns a hostname candidate into an address one and adds it.
+fn (mut a Agent) resolve_and_add(candidate Candidate) {
+	address := mdns.resolve(candidate.hostname, mdns_timeout) or {
+		a.log.debug('could not resolve ${candidate.hostname}: ${err.msg()}')
+		return
+	}
+	if a.is_closed() {
+		return
+	}
+
+	resolved := Candidate{
+		foundation: candidate.foundation
+		component:  candidate.component
+		transport:  candidate.transport
+		priority:   candidate.priority
+		address:    netaddr.SocketAddr.new(address, candidate.address.port)
+		typ:        candidate.typ
+		related:    candidate.related
+		tcp_type:   candidate.tcp_type
+		extensions: candidate.extensions
+	}
+	a.log.debug('resolved ${candidate.hostname} to ${address}')
+	a.add_remote_candidate(resolved) or {
+		a.log.debug('the resolved candidate was refused: ${err.msg()}')
+	}
+}
