@@ -17,3 +17,9 @@ fn test_candidate_parse_and_render_round_trip() {
 		assert candidate.str() == line, 'round trip changed "${line}" into "${candidate.str()}"'
 	}
 }
+
+fn test_candidate_accepts_the_sdp_prefix() {
+	with_prefix := parse_candidate('candidate:1 1 udp 100 1.2.3.4 5000 typ host')!
+	without := parse_candidate('1 1 udp 100 1.2.3.4 5000 typ host')!
+	assert with_prefix.str() == without.str()
+}
