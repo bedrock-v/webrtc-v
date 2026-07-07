@@ -36,3 +36,9 @@ fn test_candidate_fields() {
 	related := candidate.related?
 	assert related.str() == '192.168.0.196:46243'
 }
+
+fn test_candidate_preserves_unknown_extensions() {
+	line := '1 1 udp 100 1.2.3.4 5000 typ host generation 0 ufrag abcd network-id 3'
+	candidate := parse_candidate(line)!
+	assert candidate.str() == line
+}
