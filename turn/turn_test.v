@@ -429,3 +429,40 @@ fn (mut r FakeRelay) has_permission(peer netaddr.SocketAddr) bool {
 	}
 	return r.permissions[peer.str()] or { false }
 }
+
+fn (mut r FakeRelay) wait_for_relayed(timeout time.Duration) !Relayed {
+	select {
+		item := <-r.relayed {
+			return item
+		}
+		timeout {
+			return error('nothing was relayed within ${timeout.milliseconds()}ms')
+		}
+	}
+	return error('closed')
+}
+
+// deliver_from_peer wraps a payload in a Data indication, which is what a relay
+// does for a peer with a permission but no channel.
+fn (mut r FakeRelay) deliver_from_peer(peer netaddr.SocketAddr, data []u8) ! {
+	mut indication := stun.Message.new(.indication, .data)!
+	indication.add_xor_peer_address(peer)!
+	indication.add_data(data)!
+	r.send(indication.encode()!)!
+}
+
+fn (mut r FakeRelay) deliver_on_channel(channel u16, data []u8) ! {
+	framed := ChannelData{
+		channel: channel
+		payload: data
+	}.encode()!
+	r.send(framed)!
+}
+
+fn (mut r FakeRelay) send(data []u8) ! {
+	r.mu.lock()
+	target := r.client
+	r.mu.unlock()
+	destination := target or { return error('the client has not been seen yet') }
+	r.conn.write_to(destination, data)!
+}
