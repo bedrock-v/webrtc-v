@@ -152,3 +152,10 @@ fn test_pair_priority_is_symmetric_between_agents() {
 	assert pair.priority(true) == mirrored.priority(false)
 	assert pair.priority(false) == mirrored.priority(true)
 }
+
+fn test_pair_priority_formula() {
+	pair := make_pair(100, 200)!
+	// 2^32 * min(G,D) + 2 * max(G,D) + (G > D)
+	assert pair.priority(true) == (u64(100) << 32) + 400 + 0
+	assert pair.priority(false) == (u64(100) << 32) + 400 + 1
+}
