@@ -227,3 +227,16 @@ fn test_local_interface_enumeration_finds_loopback() {
 	routable := local_interface_addresses()!
 	assert !routable.any(it.is_loopback())
 }
+
+fn test_agent_generates_strong_credentials() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	ufrag, pwd := agent.local_credentials()
+	// RFC 8445 section 5.2.1 requires 24 bits in the fragment and 128 in the
+	// password.
+	assert ufrag.len >= 4
+	assert pwd.len >= 22
+	assert agent.state() == .new
+}
