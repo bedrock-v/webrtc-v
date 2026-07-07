@@ -240,3 +240,8 @@ fn test_agent_generates_strong_credentials() {
 	assert pwd.len >= 22
 	assert agent.state() == .new
 }
+
+fn test_agent_rejects_weak_credentials() {
+	Agent.new(local_ufrag: 'ab', local_pwd: 'a-perfectly-long-password') or { return }
+	assert false, 'a short ufrag must be rejected'
+}
