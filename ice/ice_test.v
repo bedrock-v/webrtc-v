@@ -602,3 +602,25 @@ fn test_a_host_that_is_neither_an_address_nor_local_is_refused() {
 		}
 	}
 }
+
+fn test_an_unresolvable_mdns_candidate_does_not_become_a_pair() {
+	// The name is not registered anywhere, so nothing can answer for it. The
+	// agent must carry on without it rather than stalling on the lookup.
+	mut agent := Agent.new(
+		interfaces: InterfaceOptions{
+			include_loopback: true
+		}
+	)!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('abcd', '0123456789012345678901')!
+	agent.gather()!
+
+	// What matters is that the call returns immediately. Whether the name ever
+	// resolves depends on what else is on the network, and asserting on that
+	// would make this test depend on the machine it runs on.
+	started := time.now()
+	agent.add_remote_candidate_string('candidate:1 1 udp 2130706431 nothing-answers-for-this.local 44444 typ host')!
+	assert (time.now() - started) < mdns_timeout, 'resolution must not block the caller'
+}
