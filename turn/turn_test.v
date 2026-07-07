@@ -154,3 +154,31 @@ fn test_a_stale_nonce_is_retried() {
 	client.create_permission(peer)!
 	assert server.has_permission(peer)
 }
+
+fn test_data_is_relayed_through_a_send_indication() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		client.close()
+	}
+	client.allocate()!
+
+	peer := netaddr.SocketAddr.parse('203.0.113.7:5000')!
+	client.create_permission(peer)!
+	client.send_to(peer, 'to the peer'.bytes())!
+
+	sent := server.wait_for_relayed(2 * time.second)!
+	assert sent.data == 'to the peer'.bytes()
+	assert sent.peer.str() == peer.str()
+
+	// And the other direction: the relay wraps what the peer sent in a Data
+	// indication.
+	server.deliver_from_peer(peer, 'from the peer'.bytes())!
+	received := client.recv(2 * time.second)!
+	assert received.data == 'from the peer'.bytes()
+	assert received.from.str() == peer.str()
+}
