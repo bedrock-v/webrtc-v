@@ -217,3 +217,13 @@ fn test_interface_filter() {
 	assert !is_candidate_address(mapped, InterfaceOptions{})
 	assert !is_candidate_address(netaddr.IpAddr{}, InterfaceOptions{})
 }
+
+fn test_local_interface_enumeration_finds_loopback() {
+	addresses := local_interface_addresses(include_loopback: true)!
+	assert addresses.len > 0, 'no local addresses found'
+	assert addresses.any(it.is_loopback()), 'loopback was requested but not returned'
+
+	// Without the option, loopback must not appear.
+	routable := local_interface_addresses()!
+	assert !routable.any(it.is_loopback())
+}
