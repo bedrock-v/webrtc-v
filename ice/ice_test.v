@@ -140,3 +140,15 @@ fn make_pair(local_priority u32, remote_priority u32) !CandidatePair {
 		}
 	}
 }
+
+fn test_pair_priority_is_symmetric_between_agents() {
+	// Both agents must derive the same ordering from the same two priorities,
+	// or they would work through the check list out of step.
+	pair := make_pair(100, 200)!
+	mirrored := CandidatePair{
+		local:  pair.remote
+		remote: pair.local
+	}
+	assert pair.priority(true) == mirrored.priority(false)
+	assert pair.priority(false) == mirrored.priority(true)
+}
