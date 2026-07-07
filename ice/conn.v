@@ -41,3 +41,61 @@ pub fn (mut a Agent) connect(timeout time.Duration) ! {
 		detail: 'no candidate pair connected within ${timeout.milliseconds()}ms'
 	}
 }
+
+// send transmits a datagram over the selected pair.
+//
+// It fails rather than buffering when no pair is selected. Queueing would hide
+// a connectivity failure behind a growing backlog and deliver a burst of stale
+// data if the connection ever recovered.
+pub fn (mut a Agent) send(data []u8) !int {
+	a.mu.lock()
+	if a.closed {
+		a.mu.unlock()
+		return AgentError{
+			reason: .closed
+			detail: 'agent is closed'
+		}
+	}
+	if a.selected < 0 || a.selected >= a.pairs.len {
+		a.mu.unlock()
+		return AgentError{
+			reason: .wrong_state
+			detail: 'no candidate pair is selected'
+		}
+	}
+	pair := a.pairs[a.selected]
+	socket_index := a.socket_for[pair.local.address.str()] or {
+		a.mu.unlock()
+		return AgentError{
+			reason: .wrong_state
+			detail: 'the selected pair has no socket'
+		}
+	}
+	mut socket := a.sockets[socket_index]
+	a.mu.unlock()
+
+	if socket.relay != unsafe { nil } {
+		mut relay := socket.relay
+		return relay.send_to(pair.remote.address, data) or {
+			return AgentError{
+				reason: .transport
+				detail: 'relaying to ${pair.remote.address}: ${err.msg()}'
+			}
+		}
+	}
+
+	mut conn := socket.conn
+	destination := transport.socket_addr_to_net(pair.remote.address) or {
+		return AgentError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+	sent := conn.write_to(destination, data) or {
+		return AgentError{
+			reason: .transport
+			detail: 'send to ${pair.remote.address}: ${err.msg()}'
+		}
+	}
+	return sent
+}
