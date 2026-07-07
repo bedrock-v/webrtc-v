@@ -71,3 +71,13 @@ fn test_candidate_rejects_malformed_input() {
 		}
 	}
 }
+
+fn test_candidate_rejects_unroutable_addresses() {
+	// A multicast or unspecified address in a candidate is either a bug or an
+	// attempt to make this agent send traffic somewhere it should not.
+	for line in ['1 1 udp 100 224.0.0.1 5000 typ host', '1 1 udp 100 0.0.0.0 5000 typ host',
+		'1 1 udp 100 ff02::1 5000 typ host', '1 1 udp 100 :: 5000 typ host'] {
+		parse_candidate(line) or { continue }
+		assert false, 'expected ${line} to be rejected'
+	}
+}
