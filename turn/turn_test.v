@@ -284,3 +284,31 @@ fn test_data_for_an_unbound_channel_is_discarded() {
 		assert false, 'data on an unbound channel has no sender and must be dropped'
 	}
 }
+
+fn test_a_refused_allocation_reports_the_code() {
+	mut server := FakeRelay.start()!
+	server.refuse_with(stun.code_allocation_quota_reached, 'quota reached')
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(),
+		username: 'user'
+		password: 'pass'
+		rto:      50 * time.millisecond
+	)!
+	defer {
+		client.close()
+	}
+
+	if _ := client.allocate() {
+		assert false, 'the relay refused'
+	} else {
+		assert err is TurnError
+		if err is TurnError {
+			assert err.reason == .refused
+			assert err.code == stun.code_allocation_quota_reached
+			assert err.msg().contains('486')
+		}
+	}
+}
