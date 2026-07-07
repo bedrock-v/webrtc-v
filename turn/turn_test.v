@@ -312,3 +312,20 @@ fn test_a_refused_allocation_reports_the_code() {
 		}
 	}
 }
+
+// -- A relay to test against -------------------------------------------------
+
+struct Relayed {
+	peer    netaddr.SocketAddr
+	data    []u8
+	channel u16
+}
+
+// Allocation is one client's allocation on the relay.
+struct Allocation {
+mut:
+	client      net.Addr
+	relayed     netaddr.SocketAddr
+	permissions map[string]bool
+	channels    map[u16]string
+}
