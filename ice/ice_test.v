@@ -245,3 +245,12 @@ fn test_agent_rejects_weak_credentials() {
 	Agent.new(local_ufrag: 'ab', local_pwd: 'a-perfectly-long-password') or { return }
 	assert false, 'a short ufrag must be rejected'
 }
+
+fn test_agent_rejects_short_password() {
+	// The password is the only secret protecting connectivity checks.
+	if _ := Agent.new(local_ufrag: 'abcd', local_pwd: 'tooshort') {
+		assert false, 'a short password must be rejected'
+	} else {
+		assert err is AgentError
+	}
+}
