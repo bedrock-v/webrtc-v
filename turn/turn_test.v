@@ -399,3 +399,33 @@ fn (mut r FakeRelay) refuse_with(code int, reason string) {
 	r.refusal_reason = reason
 	r.mu.unlock()
 }
+
+fn (mut r FakeRelay) rotate_nonce() {
+	r.mu.lock()
+	r.nonce = 'nonce-two'
+	r.mu.unlock()
+}
+
+fn (mut r FakeRelay) allocate_attempts() int {
+	r.mu.lock()
+	defer {
+		r.mu.unlock()
+	}
+	return r.allocate_attempts
+}
+
+fn (mut r FakeRelay) last_realm() string {
+	r.mu.lock()
+	defer {
+		r.mu.unlock()
+	}
+	return r.last_realm
+}
+
+fn (mut r FakeRelay) has_permission(peer netaddr.SocketAddr) bool {
+	r.mu.lock()
+	defer {
+		r.mu.unlock()
+	}
+	return r.permissions[peer.str()] or { false }
+}
