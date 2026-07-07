@@ -282,3 +282,20 @@ fn test_add_remote_candidate_requires_valid_input() {
 	}
 	assert false, 'a malformed candidate must be rejected'
 }
+
+fn test_remote_candidate_count_is_bounded() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	for i in 0 .. max_remote_candidates {
+		agent.add_remote_candidate_string('${i} 1 udp 100 1.2.3.${1 + i % 200} 5000 typ host') or {
+			break
+		}
+	}
+	agent.add_remote_candidate_string('x 1 udp 100 9.9.9.9 5000 typ host') or {
+		assert err is AgentError
+		return
+	}
+	assert false, 'an unbounded remote candidate list must be refused'
+}
