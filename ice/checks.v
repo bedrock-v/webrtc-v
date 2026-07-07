@@ -631,3 +631,12 @@ fn (mut a Agent) select_pair(index int) {
 	a.log.info('selected pair ${a.pairs[index]}')
 	a.evaluate_state()
 }
+
+// send_success_response answers a check with the address it arrived from.
+fn (mut a Agent) send_success_response(request stun.Message, packet InboundPacket) {
+	mut response := stun.Message.response(request, .success_response)
+	response.add_xor_mapped_address(packet.from) or { return }
+	key := stun.short_term_key(a.local_pwd) or { return }
+	raw := response.encode(integrity_key: key, fingerprint: true) or { return }
+	a.send_raw(packet.socket, packet.from, raw)
+}
