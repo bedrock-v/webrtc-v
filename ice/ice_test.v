@@ -266,3 +266,19 @@ fn test_set_remote_credentials_validates() {
 	}
 	assert false, 'weak remote credentials must be rejected'
 }
+
+fn test_add_remote_candidate_requires_valid_input() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	agent.add_remote_candidate_string('nonsense') or {
+		agent.add_remote_candidate_string('1 1 udp 100 1.2.3.4 5000 typ host')!
+		assert agent.statistics().remote_candidates == 1
+		// A duplicate is ignored rather than doubling the check list.
+		agent.add_remote_candidate_string('1 1 udp 100 1.2.3.4 5000 typ host')!
+		assert agent.statistics().remote_candidates == 1
+		return
+	}
+	assert false, 'a malformed candidate must be rejected'
+}
