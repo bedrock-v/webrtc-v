@@ -659,3 +659,38 @@ fn (mut a Agent) send_error_response(request stun.Message, packet InboundPacket,
 fn (mut a Agent) send_raw(socket_index int, to netaddr.SocketAddr, raw []u8) {
 	a.transmit(socket_index, to, raw) or { a.log.debug('send to ${to} failed: ${err.msg()}') }
 }
+
+// transmit sends one datagram from a socket, over the relay if that socket is
+// one. The caller must hold the mutex.
+fn (mut a Agent) transmit(socket_index int, to netaddr.SocketAddr, raw []u8) ! {
+	if socket_index < 0 || socket_index >= a.sockets.len {
+		return AgentError{
+			reason: .wrong_state
+			detail: 'no socket ${socket_index}'
+		}
+	}
+	mut socket := a.sockets[socket_index]
+	if socket.relay != unsafe { nil } {
+		mut relay := socket.relay
+		relay.send_to(to, raw) or {
+			return AgentError{
+				reason: .transport
+				detail: err.msg()
+			}
+		}
+		return
+	}
+	destination := transport.socket_addr_to_net(to) or {
+		return AgentError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+	mut conn := socket.conn
+	conn.write_to(destination, raw) or {
+		return AgentError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+}
