@@ -159,3 +159,11 @@ fn test_pair_priority_formula() {
 	assert pair.priority(true) == (u64(100) << 32) + 400 + 0
 	assert pair.priority(false) == (u64(100) << 32) + 400 + 1
 }
+
+fn test_pair_ordering_is_by_descending_priority() {
+	mut pairs := [make_pair(10, 10)!, make_pair(300, 300)!, make_pair(50, 50)!]
+	sort_pairs(mut pairs, true)
+	assert pairs[0].local.priority == 300
+	assert pairs[1].local.priority == 50
+	assert pairs[2].local.priority == 10
+}
