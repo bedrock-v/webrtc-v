@@ -359,3 +359,20 @@ fn test_two_agents_connect_over_loopback() {
 	assert stats.local_candidates >= 1
 	assert stats.remote_candidates >= 1
 }
+
+fn test_connected_agents_exchange_data() {
+	mut controlling, mut controlled := connect_pair(10 * time.second)!
+	defer {
+		controlling.close()
+		controlled.close()
+	}
+
+	payload := 'hello over ICE'.bytes()
+	controlling.send(payload)!
+	received := controlled.recv(5 * time.second)!
+	assert received == payload
+
+	reply := 'and back again'.bytes()
+	controlled.send(reply)!
+	assert controlling.recv(5 * time.second)! == reply
+}
