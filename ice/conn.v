@@ -181,3 +181,17 @@ pub fn (mut a Agent) close() {
 	a.threads.clear()
 	a.mu.unlock()
 }
+
+// statistics is a snapshot of what the agent is doing, for diagnostics.
+pub struct Statistics {
+pub:
+	state             ConnectionState
+	role              Role
+	local_candidates  int
+	remote_candidates int
+	pairs             int
+	succeeded_pairs   int
+	failed_pairs      int
+	pending_checks    int
+	selected          ?CandidatePair
+}
