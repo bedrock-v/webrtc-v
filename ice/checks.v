@@ -655,3 +655,7 @@ fn (mut a Agent) send_error_response(request stun.Message, packet InboundPacket,
 	}
 	a.send_raw(packet.socket, packet.from, raw)
 }
+
+fn (mut a Agent) send_raw(socket_index int, to netaddr.SocketAddr, raw []u8) {
+	a.transmit(socket_index, to, raw) or { a.log.debug('send to ${to} failed: ${err.msg()}') }
+}
