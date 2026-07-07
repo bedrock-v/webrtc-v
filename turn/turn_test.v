@@ -107,3 +107,29 @@ fn test_an_allocation_is_made_and_released() {
 	assert server.allocate_attempts() == 2
 	assert server.last_realm() == 'webrtc-v.test'
 }
+
+fn test_the_wrong_password_is_rejected() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(),
+		username: 'user'
+		password: 'wrong'
+		rto:      50 * time.millisecond
+	)!
+	defer {
+		client.close()
+	}
+
+	if _ := client.allocate() {
+		assert false, 'the relay must not allocate for a bad password'
+	} else {
+		assert err is TurnError
+		if err is TurnError {
+			assert err.reason == .unauthorized
+			assert err.code == stun.code_wrong_credentials
+		}
+	}
+}
