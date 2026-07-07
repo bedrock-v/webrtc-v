@@ -466,3 +466,29 @@ fn (mut r FakeRelay) send(data []u8) ! {
 	destination := target or { return error('the client has not been seen yet') }
 	r.conn.write_to(destination, data)!
 }
+
+fn (mut r FakeRelay) run() {
+	for {
+		r.mu.lock()
+		closed := r.closed
+		r.mu.unlock()
+		if closed {
+			return
+		}
+
+		r.conn.set_read_timeout(100 * time.millisecond)
+		mut buf := []u8{len: 4096}
+		n, from := r.conn.read(mut buf) or { continue }
+		if n <= 0 {
+			continue
+		}
+		r.mu.lock()
+		r.client = from
+		silent := r.silent
+		r.mu.unlock()
+		if silent {
+			continue
+		}
+		r.handle(buf[..n].clone(), from)
+	}
+}
