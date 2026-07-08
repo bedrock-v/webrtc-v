@@ -560,3 +560,18 @@ fn test_the_relay_only_policy_refuses_rather_than_leaking() {
 	}
 	assert false, 'relay-only must not fall back to gathering host candidates'
 }
+
+fn test_the_default_policy_gathers_host_candidates() {
+	mut agent := Agent.new(
+		interfaces: InterfaceOptions{
+			include_loopback: true
+		}
+	)!
+	defer {
+		agent.close()
+	}
+	agent.gather()!
+	assert agent.local_candidates().len > 0
+	assert GatherPolicy.all.str() == 'all'
+	assert GatherPolicy.no_host.str() == 'no-host'
+}
