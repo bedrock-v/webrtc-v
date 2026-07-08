@@ -541,3 +541,22 @@ fn test_the_no_host_policy_discloses_no_local_addresses() {
 	}
 	assert false, 'with no STUN server the no-host policy has nothing to gather'
 }
+
+fn test_the_relay_only_policy_refuses_rather_than_leaking() {
+	mut agent := Agent.new(
+		interfaces:    InterfaceOptions{
+			include_loopback: true
+		}
+		gather_policy: .relay_only
+	)!
+	defer {
+		agent.close()
+	}
+
+	agent.gather() or {
+		assert err.msg().contains('TURN')
+		assert agent.local_candidates().len == 0
+		return
+	}
+	assert false, 'relay-only must not fall back to gathering host candidates'
+}
