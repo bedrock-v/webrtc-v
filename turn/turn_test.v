@@ -41,3 +41,20 @@ fn test_a_channel_number_outside_the_range_is_refused() {
 		}
 	}
 }
+
+fn test_channel_data_is_told_apart_from_stun() {
+	// RFC 7983 demultiplexes on the first byte, so this is what keeps relayed
+	// data from being parsed as a STUN message and the other way round.
+	message := stun.Message.new(.request, .allocate)!
+	mut copy := message
+	encoded := copy.encode()!
+	assert !is_channel_data(encoded)
+
+	framed := ChannelData{
+		channel: channel_min
+		payload: [u8(0)]
+	}.encode()!
+	assert is_channel_data(framed)
+	assert !is_channel_data([]u8{})
+	assert !is_channel_data([u8(0x40), 0x00])
+}
