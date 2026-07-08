@@ -60,3 +60,20 @@ fn p_hash(secret []u8, seed []u8, length int) []u8 {
 	}
 	return out[..length]
 }
+
+// prf computes PRF(secret, label, seed) truncated to length bytes.
+fn prf(secret []u8, label string, seed []u8, length int) []u8 {
+	mut labelled := []u8{cap: label.len + seed.len}
+	labelled << label.bytes()
+	labelled << seed
+	return p_hash(secret, labelled, length)
+}
+
+// master_secret derives the master secret from the pre-master secret and the
+// two handshake randoms (RFC 5246 section 8.1).
+pub fn master_secret(pre_master_secret []u8, client_random []u8, server_random []u8) []u8 {
+	mut seed := []u8{cap: client_random.len + server_random.len}
+	seed << client_random
+	seed << server_random
+	return prf(pre_master_secret, prf_label_master_secret, seed, master_secret_length)
+}
