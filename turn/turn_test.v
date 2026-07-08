@@ -77,3 +77,9 @@ fn test_credentials_are_required() {
 		assert false, 'a password is required too'
 	}
 }
+
+fn test_a_bad_server_address_is_refused() {
+	if _ := Client.new('not-an-address', username: 'u', password: 'p') {
+		assert false, 'the server address has to parse'
+	}
+}
