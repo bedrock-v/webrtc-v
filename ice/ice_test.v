@@ -517,3 +517,27 @@ fn test_nominated_pair_wins_over_a_higher_priority_one() {
 	assert selected == 1, 'the nominated pair must be selected even though it ranks lower'
 	assert state == .completed
 }
+
+fn test_the_no_host_policy_discloses_no_local_addresses() {
+	// The sockets still have to be bound - a candidate the peer never sees is
+	// still where our traffic comes from - but nothing may be signalled.
+	mut agent := Agent.new(
+		interfaces:    InterfaceOptions{
+			include_loopback: true
+		}
+		gather_policy: .no_host
+	)!
+	defer {
+		agent.close()
+	}
+
+	agent.gather() or {
+		assert err is AgentError
+		if err is AgentError {
+			assert err.reason == .no_candidates
+		}
+		assert agent.local_candidates().len == 0
+		return
+	}
+	assert false, 'with no STUN server the no-host policy has nothing to gather'
+}
