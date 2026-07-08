@@ -470,3 +470,50 @@ fn test_recv_times_out_without_data() {
 	}
 	assert false, 'recv must time out when nothing arrives'
 }
+
+fn test_nominated_pair_wins_over_a_higher_priority_one() {
+	// A controlled agent may already have selected a higher-priority pair when
+	// the controlling agent's nomination lands on a different one. The
+	// nomination has to win: the two ends must agree on where traffic goes, and
+	// priority is only the tiebreak used until one of them decides.
+	mut agent := Agent.new(role: .controlled)!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('abcd', 'a-password-long-enough-for-ice')!
+
+	agent.mu.lock()
+	agent.pairs = [
+		CandidatePair{
+			local:  Candidate{
+				priority: 1000
+				address:  netaddr.SocketAddr.parse('1.1.1.1:1')!
+			}
+			remote: Candidate{
+				priority: 1000
+				address:  netaddr.SocketAddr.parse('2.2.2.2:2')!
+			}
+			state:  .succeeded
+		},
+		CandidatePair{
+			local:     Candidate{
+				priority: 10
+				address:  netaddr.SocketAddr.parse('3.3.3.3:3')!
+			}
+			remote:    Candidate{
+				priority: 10
+				address:  netaddr.SocketAddr.parse('4.4.4.4:4')!
+			}
+			state:     .succeeded
+			nominated: true
+		},
+	]
+	agent.selected = 0
+	agent.consider_selection(1)
+	selected := agent.selected
+	state := agent.state
+	agent.mu.unlock()
+
+	assert selected == 1, 'the nominated pair must be selected even though it ranks lower'
+	assert state == .completed
+}
