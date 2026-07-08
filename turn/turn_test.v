@@ -182,3 +182,38 @@ fn test_data_is_relayed_through_a_send_indication() {
 	assert received.data == 'from the peer'.bytes()
 	assert received.from.str() == peer.str()
 }
+
+fn test_a_bound_channel_uses_the_short_framing() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut client := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		client.close()
+	}
+	client.allocate()!
+
+	peer := netaddr.SocketAddr.parse('203.0.113.9:6000')!
+	channel := client.bind_channel(peer)!
+	assert channel >= channel_min && channel <= channel_max
+	// Binding installs a permission as a side effect.
+	assert server.has_permission(peer)
+
+	client.send_to(peer, 'short header'.bytes())!
+	sent := server.wait_for_relayed(2 * time.second)!
+	assert sent.data == 'short header'.bytes()
+	assert sent.channel == channel, 'a bound peer must use channel data, not an indication'
+
+	// The relay answers on the channel, and the client has to attribute it to
+	// the right peer from the channel number alone.
+	server.deliver_on_channel(channel, 'answer'.bytes())!
+	received := client.recv(2 * time.second)!
+	assert received.data == 'answer'.bytes()
+	assert received.from.str() == peer.str()
+
+	// Binding the same peer again reuses the channel rather than spending a new
+	// number on it.
+	assert client.bind_channel(peer)! == channel
+}
