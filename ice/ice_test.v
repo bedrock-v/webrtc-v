@@ -456,3 +456,17 @@ fn test_operations_after_close_are_refused() {
 	}
 	assert false, 'sending after close must fail'
 }
+
+fn test_recv_times_out_without_data() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+	started := time.now()
+	agent.recv(50 * time.millisecond) or {
+		assert err is AgentError
+		assert time.now() - started >= 40 * time.millisecond
+		return
+	}
+	assert false, 'recv must time out when nothing arrives'
+}
