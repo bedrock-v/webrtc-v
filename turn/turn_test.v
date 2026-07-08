@@ -29,3 +29,15 @@ fn test_channel_data_round_trips() {
 	assert decoded.channel == 0x4001
 	assert decoded.payload == [u8(1), 2, 3, 4, 5]
 }
+
+fn test_a_channel_number_outside_the_range_is_refused() {
+	for channel in [u16(0), 0x3fff, 0x8000, 0xffff] {
+		if _ := ChannelData{
+			channel: channel
+			payload: [u8(1)]
+		}.encode()
+		{
+			assert false, 'channel ${channel} is not a valid channel number'
+		}
+	}
+}
