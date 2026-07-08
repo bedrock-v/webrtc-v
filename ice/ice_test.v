@@ -592,3 +592,13 @@ fn test_an_mdns_candidate_serialises_back_to_its_name() {
 	candidate := parse_candidate(line)!
 	assert 'candidate:${candidate}' == line
 }
+
+fn test_a_host_that_is_neither_an_address_nor_local_is_refused() {
+	// Anything else would be a name this stack has no way to resolve, and
+	// accepting it would mean a candidate that can never be used.
+	for host in ['example.com', 'localhost', 'not an address', '999.999.999.999'] {
+		if _ := parse_candidate('candidate:1 1 udp 2130706431 ${host} 44444 typ host') {
+			assert false, '"${host}" is not usable as a candidate address'
+		}
+	}
+}
