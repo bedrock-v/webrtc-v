@@ -586,3 +586,9 @@ fn test_an_mdns_candidate_is_parsed_rather_than_refused() {
 	assert candidate.address.port == 44444
 	assert candidate.typ == .host
 }
+
+fn test_an_mdns_candidate_serialises_back_to_its_name() {
+	line := 'candidate:1 1 udp 2130706431 abc.local 44444 typ host'
+	candidate := parse_candidate(line)!
+	assert 'candidate:${candidate}' == line
+}
