@@ -440,3 +440,19 @@ fn test_send_before_connect_is_refused() {
 	}
 	assert false, 'sending without a selected pair must fail'
 }
+
+fn test_operations_after_close_are_refused() {
+	mut agent := Agent.new()!
+	agent.close()
+	agent.close()
+
+	assert agent.state() == .closed
+	agent.send('x'.bytes()) or {
+		agent.add_remote_candidate_string('1 1 udp 100 1.2.3.4 5000 typ host') or {
+			agent.set_remote_credentials('abcd', 'a-password-long-enough-for-ice') or { return }
+			assert false, 'setting credentials after close must fail'
+		}
+		assert false, 'adding a candidate after close must fail'
+	}
+	assert false, 'sending after close must fail'
+}
