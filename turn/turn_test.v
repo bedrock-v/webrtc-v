@@ -68,3 +68,12 @@ fn test_truncated_channel_data_is_refused() {
 		assert false, 'the length field must be checked against what arrived'
 	}
 }
+
+fn test_credentials_are_required() {
+	if _ := Client.new('127.0.0.1:3478', ClientConfig{}) {
+		assert false, 'a relay without credentials is an open relay'
+	}
+	if _ := Client.new('127.0.0.1:3478', username: 'u') {
+		assert false, 'a password is required too'
+	}
+}
