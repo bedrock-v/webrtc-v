@@ -100,3 +100,31 @@ pub fn key_block(master []u8, client_random []u8, server_random []u8, length int
 	seed << client_random
 	return prf(master, prf_label_key_expansion, seed, length)
 }
+
+// verify_data computes the contents of a Finished message: a PRF over the hash
+// of every handshake message exchanged so far.
+//
+// Because it covers the whole transcript, a Finished that verifies proves both
+// sides saw the same handshake, which is what makes downgrade and modification
+// of the earlier flights detectable.
+pub fn verify_data(master []u8, handshake_hash []u8, is_client bool) []u8 {
+	label := if is_client { prf_label_client_finished } else { prf_label_server_finished }
+	return prf(master, label, handshake_hash, verify_data_length)
+}
+
+// export_keying_material implements the RFC 5705 exporter.
+//
+// The context argument is the optional context value; DTLS-SRTP passes none, so
+// the seed is just the two randoms.
+pub fn export_keying_material(master []u8, label string, client_random []u8, server_random []u8, length int) []u8 {
+	mut seed := []u8{cap: client_random.len + server_random.len}
+	seed << client_random
+	seed << server_random
+	return prf(master, label, seed, length)
+}
+
+// srtp_keying_material produces the bytes RFC 5764 section 4.2 defines for
+// SRTP, which srtp.split_keying_material then divides into the two directions.
+pub fn srtp_keying_material(master []u8, client_random []u8, server_random []u8, length int) []u8 {
+	return export_keying_material(master, prf_label_dtls_srtp, client_random, server_random, length)
+}
