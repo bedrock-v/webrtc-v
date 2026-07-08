@@ -58,3 +58,13 @@ fn test_channel_data_is_told_apart_from_stun() {
 	assert !is_channel_data([]u8{})
 	assert !is_channel_data([u8(0x40), 0x00])
 }
+
+fn test_truncated_channel_data_is_refused() {
+	if _ := decode_channel_data([u8(0x40), 0x01]) {
+		assert false, 'a two-byte datagram cannot be channel data'
+	}
+	// A length field that claims more than the datagram carries.
+	if _ := decode_channel_data([u8(0x40), 0x01, 0x00, 0x10, 0x01, 0x02]) {
+		assert false, 'the length field must be checked against what arrived'
+	}
+}
