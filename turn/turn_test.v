@@ -217,3 +217,24 @@ fn test_a_bound_channel_uses_the_short_framing() {
 	// number on it.
 	assert client.bind_channel(peer)! == channel
 }
+
+fn test_sending_without_an_allocation_is_refused() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+	mut client := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		client.close()
+	}
+
+	peer := netaddr.SocketAddr.parse('203.0.113.7:5000')!
+	if _ := client.send_to(peer, 'nowhere'.bytes()) {
+		assert false, 'there is no allocation to send through'
+	} else {
+		assert err is TurnError
+		if err is TurnError {
+			assert err.reason == .no_allocation
+		}
+	}
+}
