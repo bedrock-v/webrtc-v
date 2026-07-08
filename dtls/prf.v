@@ -26,3 +26,37 @@ const prf_label_extended_master_secret = 'extended master secret'
 
 // prf_label_key_expansion derives the record protection keys.
 const prf_label_key_expansion = 'key expansion'
+
+// prf_label_client_finished and prf_label_server_finished derive the verify
+// data that proves each side saw the same handshake.
+const prf_label_client_finished = 'client finished'
+const prf_label_server_finished = 'server finished'
+
+// prf_label_dtls_srtp is the RFC 5764 exporter label. The keying material for
+// SRTP comes out of the same PRF as everything else, under a label reserved for
+// it, so that it is cryptographically separated from the record keys.
+const prf_label_dtls_srtp = 'EXTRACTOR-dtls_srtp'
+
+// master_secret_length is fixed at 48 bytes by TLS 1.2.
+const master_secret_length = 48
+
+// verify_data_length is 12 bytes for every suite in TLS 1.2.
+const verify_data_length = 12
+
+// p_hash expands a secret into length bytes (RFC 5246 section 5).
+//
+//	A(0) = seed
+//	A(i) = HMAC(secret, A(i-1))
+//	P_hash = HMAC(secret, A(1) + seed) + HMAC(secret, A(2) + seed) + ...
+fn p_hash(secret []u8, seed []u8, length int) []u8 {
+	mut out := []u8{cap: length}
+	mut a := seed.clone()
+	for out.len < length {
+		a = hmac.new(secret, a, sha256.sum, sha256.block_size)
+		mut block_input := []u8{cap: a.len + seed.len}
+		block_input << a
+		block_input << seed
+		out << hmac.new(secret, block_input, sha256.sum, sha256.block_size)
+	}
+	return out[..length]
+}
