@@ -705,3 +705,39 @@ fn (mut r FakeRelay) answer_create_permission(request stun.Message, key []u8, fr
 	mut response := stun.Message.response(request, .success_response)
 	r.reply(mut response, key)
 }
+
+fn (mut r FakeRelay) answer_channel_bind(request stun.Message, key []u8, from net.Addr) {
+	peer := request.xor_peer_address() or { return }
+	channel := request.channel_number() or { return }
+	r.mu.lock()
+	r.channels[channel] = peer.str()
+	r.permissions[peer.str()] = true
+	if mut allocation := r.allocations[from.str()] {
+		allocation.channels[channel] = peer.str()
+		allocation.permissions[peer.str()] = true
+		r.allocations[from.str()] = allocation
+	}
+	r.mu.unlock()
+	mut response := stun.Message.response(request, .success_response)
+	r.reply(mut response, key)
+}
+
+fn (mut r FakeRelay) challenge(request stun.Message, code int, nonce string) {
+	mut response := stun.Message.response(request, .error_response)
+	response.add_error_code(code, 'authentication required') or { return }
+	response.add_realm(relay_realm) or { return }
+	response.add_nonce(nonce) or { return }
+	raw := response.encode() or { return }
+	r.send(raw) or {}
+}
+
+fn (mut r FakeRelay) error_response(request stun.Message, code int, reason string, key []u8) {
+	mut response := stun.Message.response(request, .error_response)
+	response.add_error_code(code, reason) or { return }
+	r.reply(mut response, key)
+}
+
+fn (mut r FakeRelay) reply(mut response stun.Message, key []u8) {
+	raw := response.encode(integrity_key: key) or { return }
+	r.send(raw) or {}
+}
