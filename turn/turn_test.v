@@ -320,3 +320,12 @@ struct Relayed {
 	data    []u8
 	channel u16
 }
+
+// Allocation is one client's allocation on the relay.
+struct Allocation {
+mut:
+	client      net.Addr
+	relayed     netaddr.SocketAddr
+	permissions map[string]bool
+	channels    map[u16]string
+}
