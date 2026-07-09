@@ -399,3 +399,9 @@ fn (mut r FakeRelay) refuse_with(code int, reason string) {
 	r.refusal_reason = reason
 	r.mu.unlock()
 }
+
+fn (mut r FakeRelay) rotate_nonce() {
+	r.mu.lock()
+	r.nonce = 'nonce-two'
+	r.mu.unlock()
+}
