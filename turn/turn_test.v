@@ -441,3 +441,12 @@ fn (mut r FakeRelay) wait_for_relayed(timeout time.Duration) !Relayed {
 	}
 	return error('closed')
 }
+
+// deliver_from_peer wraps a payload in a Data indication, which is what a relay
+// does for a peer with a permission but no channel.
+fn (mut r FakeRelay) deliver_from_peer(peer netaddr.SocketAddr, data []u8) ! {
+	mut indication := stun.Message.new(.indication, .data)!
+	indication.add_xor_peer_address(peer)!
+	indication.add_data(data)!
+	r.send(indication.encode()!)!
+}
