@@ -421,3 +421,11 @@ fn (mut r FakeRelay) last_realm() string {
 	}
 	return r.last_realm
 }
+
+fn (mut r FakeRelay) has_permission(peer netaddr.SocketAddr) bool {
+	r.mu.lock()
+	defer {
+		r.mu.unlock()
+	}
+	return r.permissions[peer.str()] or { false }
+}
