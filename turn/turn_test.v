@@ -372,3 +372,17 @@ fn (mut r FakeRelay) address() string {
 	bound := transport.local_addr(r.conn) or { panic(err) }
 	return bound.str()
 }
+
+fn (mut r FakeRelay) stop() {
+	r.mu.lock()
+	if r.closed {
+		r.mu.unlock()
+		return
+	}
+	r.closed = true
+	r.mu.unlock()
+	r.conn.close() or {}
+	for handle in r.threads {
+		handle.wait()
+	}
+}
