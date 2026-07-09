@@ -356,3 +356,5 @@ mut:
 	closed  bool
 	threads []thread
 }
+
+const relay_realm = 'webrtc-v.test'
