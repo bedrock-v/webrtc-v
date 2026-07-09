@@ -312,3 +312,11 @@ fn test_a_refused_allocation_reports_the_code() {
 		}
 	}
 }
+
+// -- A relay to test against -------------------------------------------------
+
+struct Relayed {
+	peer    netaddr.SocketAddr
+	data    []u8
+	channel u16
+}
