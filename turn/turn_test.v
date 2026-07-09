@@ -329,3 +329,30 @@ mut:
 	permissions map[string]bool
 	channels    map[u16]string
 }
+
+struct FakeRelay {
+mut:
+	conn   &net.UdpConn = unsafe { nil }
+	mu     &sync.Mutex  = sync.new_mutex()
+	nonce  string       = 'nonce-one'
+	client ?net.Addr
+
+	allocated         bool
+	allocate_attempts int
+	last_realm        string
+	permissions       map[string]bool
+	channels          map[u16]string
+	// allocations is keyed by the client's transport address, which is what
+	// makes this relay able to forward between two clients rather than merely
+	// record what one of them sent.
+	allocations map[string]Allocation
+	next_port   u16 = 49200
+
+	relayed        chan Relayed = chan Relayed{cap: 16}
+	silent         bool
+	refusal        int
+	refusal_reason string
+
+	closed  bool
+	threads []thread
+}
