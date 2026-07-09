@@ -386,3 +386,9 @@ fn (mut r FakeRelay) stop() {
 		handle.wait()
 	}
 }
+
+fn (mut r FakeRelay) go_silent() {
+	r.mu.lock()
+	r.silent = true
+	r.mu.unlock()
+}
