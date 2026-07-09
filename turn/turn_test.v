@@ -392,3 +392,10 @@ fn (mut r FakeRelay) go_silent() {
 	r.silent = true
 	r.mu.unlock()
 }
+
+fn (mut r FakeRelay) refuse_with(code int, reason string) {
+	r.mu.lock()
+	r.refusal = code
+	r.refusal_reason = reason
+	r.mu.unlock()
+}
