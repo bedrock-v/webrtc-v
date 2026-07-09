@@ -367,3 +367,8 @@ fn FakeRelay.start() !&FakeRelay {
 	relay.threads << spawn relay.run()
 	return relay
 }
+
+fn (mut r FakeRelay) address() string {
+	bound := transport.local_addr(r.conn) or { panic(err) }
+	return bound.str()
+}
