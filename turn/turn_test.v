@@ -405,3 +405,11 @@ fn (mut r FakeRelay) rotate_nonce() {
 	r.nonce = 'nonce-two'
 	r.mu.unlock()
 }
+
+fn (mut r FakeRelay) allocate_attempts() int {
+	r.mu.lock()
+	defer {
+		r.mu.unlock()
+	}
+	return r.allocate_attempts
+}
