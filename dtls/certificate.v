@@ -47,3 +47,38 @@ pub fn (h HashAlgorithm) str() string {
 		.sha512 { 'sha-512' }
 	}
 }
+
+// hash_algorithm_from_string parses the name used in an SDP fingerprint line.
+pub fn hash_algorithm_from_string(s string) ?HashAlgorithm {
+	return match s.to_lower() {
+		'sha-1' { HashAlgorithm.sha1 }
+		'sha-256' { HashAlgorithm.sha256 }
+		'sha-384' { HashAlgorithm.sha384 }
+		'sha-512' { HashAlgorithm.sha512 }
+		else { none }
+	}
+}
+
+fn (h HashAlgorithm) sum(data []u8) []u8 {
+	return match h {
+		.sha1 { sha1.sum(data) }
+		.sha256 { sha256.sum(data) }
+		.sha384 { sha512.sum384(data) }
+		.sha512 { sha512.sum512(data) }
+	}
+}
+
+// CertificateError is returned when a certificate cannot be generated, parsed
+// or verified.
+pub struct CertificateError {
+pub:
+	detail string
+}
+
+pub fn (e CertificateError) msg() string {
+	return 'dtls: ${e.detail}'
+}
+
+pub fn (e CertificateError) code() int {
+	return 2
+}
