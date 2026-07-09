@@ -413,3 +413,11 @@ fn (mut r FakeRelay) allocate_attempts() int {
 	}
 	return r.allocate_attempts
 }
+
+fn (mut r FakeRelay) last_realm() string {
+	r.mu.lock()
+	defer {
+		r.mu.unlock()
+	}
+	return r.last_realm
+}
