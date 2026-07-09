@@ -429,3 +429,15 @@ fn (mut r FakeRelay) has_permission(peer netaddr.SocketAddr) bool {
 	}
 	return r.permissions[peer.str()] or { false }
 }
+
+fn (mut r FakeRelay) wait_for_relayed(timeout time.Duration) !Relayed {
+	select {
+		item := <-r.relayed {
+			return item
+		}
+		timeout {
+			return error('nothing was relayed within ${timeout.milliseconds()}ms')
+		}
+	}
+	return error('closed')
+}
