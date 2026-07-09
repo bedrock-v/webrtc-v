@@ -258,3 +258,15 @@ fn der_parse(input []u8, offset int) !DerElement {
 		end:   offset + header + length
 	}
 }
+
+// der_children decodes the elements inside a constructed value.
+fn der_children(value []u8) ![]DerElement {
+	mut out := []DerElement{}
+	mut offset := 0
+	for offset < value.len {
+		element := der_parse(value, offset)!
+		out << element
+		offset = element.end
+	}
+	return out
+}
