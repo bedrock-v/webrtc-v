@@ -194,3 +194,60 @@ pub fn Certificate.generate(opts CertificateOptions) !Certificate {
 	}
 	return Certificate.from_key(private_key, public_key, opts)!
 }
+
+// Certificate.from_key builds a self-signed certificate around an existing key,
+// for an application that wants to keep one identity across restarts.
+pub fn Certificate.from_key(private_key ecdsa.PrivateKey, public_key ecdsa.PublicKey, opts CertificateOptions) !Certificate {
+	common_name := if opts.common_name != '' {
+		opts.common_name
+	} else {
+		'WebRTC-${randutil.alphanumeric_string(16)!}'
+	}
+
+	// A serial number must be positive and unique per issuer. Since every
+	// certificate here is its own issuer, random is sufficient; 20 bytes is the
+	// maximum X.509 allows.
+	serial := randutil.bytes(20)!
+
+	now := time.now()
+	not_before := now.add(-opts.not_before_skew)
+	not_after := now.add(opts.lifetime)
+
+	point := public_key.uncompressed_bytes() or {
+		return CertificateError{
+			detail: 'reading the public key point: ${err.msg()}'
+		}
+	}
+
+	algorithm := der_sequence_of(der_oid(oid_ecdsa_with_sha256)!)
+	subject_public_key_info := der_sequence_of(der_sequence_of(der_oid(oid_ec_public_key)!,
+		der_oid(oid_prime256v1)!), der_bit_string(point))
+	name := encode_common_name(common_name)!
+	validity := der_sequence_of(encode_time(not_before), encode_time(not_after))
+
+	tbs := der_sequence_of(
+		// [0] EXPLICIT version, 2 meaning v3.
+		der_tlv(der_context_constructed(0), der_integer_from_bytes([u8(2)])),
+		der_integer_from_bytes(serial),
+		algorithm,
+		name,
+		validity,
+		name,
+		subject_public_key_info,
+	)
+
+	// The signature is over the DER of the TBSCertificate, with SHA-256 chosen
+	// by the recommended-hash setting for a P-256 key.
+	signature := private_key.sign(tbs) or {
+		return CertificateError{
+			detail: 'signing the certificate: ${err.msg()}'
+		}
+	}
+
+	der := der_sequence_of(tbs, algorithm, der_bit_string(signature))
+	return Certificate{
+		der:         der
+		private_key: private_key
+		public_key:  public_key
+	}
+}
