@@ -730,3 +730,9 @@ fn (mut r FakeRelay) challenge(request stun.Message, code int, nonce string) {
 	raw := response.encode() or { return }
 	r.send(raw) or {}
 }
+
+fn (mut r FakeRelay) error_response(request stun.Message, code int, reason string, key []u8) {
+	mut response := stun.Message.response(request, .error_response)
+	response.add_error_code(code, reason) or { return }
+	r.reply(mut response, key)
+}
