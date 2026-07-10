@@ -680,3 +680,15 @@ fn (mut r FakeRelay) forward(target netaddr.SocketAddr, data []u8) {
 	}
 	r.conn.write_to(allocation.client, raw) or {}
 }
+
+fn (mut r FakeRelay) answer_refresh(request stun.Message, key []u8) {
+	lifetime := request.lifetime() or { u32(600) }
+	mut response := stun.Message.response(request, .success_response)
+	response.add_lifetime(lifetime)
+	if lifetime == 0 {
+		r.mu.lock()
+		r.allocated = false
+		r.mu.unlock()
+	}
+	r.reply(mut response, key)
+}
