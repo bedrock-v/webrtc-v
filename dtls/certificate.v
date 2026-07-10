@@ -169,3 +169,28 @@ fn colon_hex(digest []u8) string {
 	}
 	return parts.join(':')
 }
+
+// CertificateOptions configures generation.
+@[params]
+pub struct CertificateOptions {
+pub:
+	// common_name goes in the subject and issuer. It carries no meaning here -
+	// nothing validates it - so it defaults to a random string rather than to
+	// anything identifying.
+	common_name string
+	lifetime    time.Duration = default_certificate_lifetime
+	// not_before_skew backdates the validity period to tolerate a peer whose
+	// clock is behind ours. Without it, two machines a minute apart can fail to
+	// connect for reasons neither can see.
+	not_before_skew time.Duration = time.hour
+}
+
+// Certificate.generate creates a self-signed P-256 certificate.
+pub fn Certificate.generate(opts CertificateOptions) !Certificate {
+	public_key, private_key := ecdsa.generate_key(nid: .prime256v1) or {
+		return CertificateError{
+			detail: 'generating a P-256 key: ${err.msg()}'
+		}
+	}
+	return Certificate.from_key(private_key, public_key, opts)!
+}
