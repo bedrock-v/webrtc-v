@@ -133,3 +133,39 @@ pub fn Fingerprint.parse(input string) !Fingerprint {
 		value:     value
 	}
 }
+
+// matches reports whether two fingerprints are the same.
+//
+// The comparison is on the normalised hex text rather than on raw bytes,
+// because a fingerprint arrives as text from signalling. It is deliberately not
+// constant-time: a certificate fingerprint is public, and the value being
+// compared against is one the peer just sent us.
+pub fn (f Fingerprint) matches(other Fingerprint) bool {
+	return f.algorithm == other.algorithm && f.value == other.value
+}
+
+// fingerprint computes the certificate's fingerprint under the given hash.
+pub fn (c &Certificate) fingerprint(algorithm HashAlgorithm) Fingerprint {
+	digest := algorithm.sum(c.der)
+	return Fingerprint{
+		algorithm: algorithm
+		value:     colon_hex(digest)
+	}
+}
+
+// fingerprint_of computes the fingerprint of a DER certificate we did not
+// generate, which is how a peer's certificate is checked against the SDP.
+pub fn fingerprint_of(der []u8, algorithm HashAlgorithm) Fingerprint {
+	return Fingerprint{
+		algorithm: algorithm
+		value:     colon_hex(algorithm.sum(der))
+	}
+}
+
+fn colon_hex(digest []u8) string {
+	mut parts := []string{cap: digest.len}
+	for b in digest {
+		parts << b.hex()
+	}
+	return parts.join(':')
+}
