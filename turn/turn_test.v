@@ -705,3 +705,19 @@ fn (mut r FakeRelay) answer_create_permission(request stun.Message, key []u8, fr
 	mut response := stun.Message.response(request, .success_response)
 	r.reply(mut response, key)
 }
+
+fn (mut r FakeRelay) answer_channel_bind(request stun.Message, key []u8, from net.Addr) {
+	peer := request.xor_peer_address() or { return }
+	channel := request.channel_number() or { return }
+	r.mu.lock()
+	r.channels[channel] = peer.str()
+	r.permissions[peer.str()] = true
+	if mut allocation := r.allocations[from.str()] {
+		allocation.channels[channel] = peer.str()
+		allocation.permissions[peer.str()] = true
+		r.allocations[from.str()] = allocation
+	}
+	r.mu.unlock()
+	mut response := stun.Message.response(request, .success_response)
+	r.reply(mut response, key)
+}
