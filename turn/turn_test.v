@@ -721,3 +721,12 @@ fn (mut r FakeRelay) answer_channel_bind(request stun.Message, key []u8, from ne
 	mut response := stun.Message.response(request, .success_response)
 	r.reply(mut response, key)
 }
+
+fn (mut r FakeRelay) challenge(request stun.Message, code int, nonce string) {
+	mut response := stun.Message.response(request, .error_response)
+	response.add_error_code(code, 'authentication required') or { return }
+	response.add_realm(relay_realm) or { return }
+	response.add_nonce(nonce) or { return }
+	raw := response.encode() or { return }
+	r.send(raw) or {}
+}
