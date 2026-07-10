@@ -544,3 +544,61 @@ fn (mut r FakeRelay) handle(datagram []u8, from net.Addr) {
 	}
 	r.handle_request(message, from)
 }
+
+fn (mut r FakeRelay) handle_request(message stun.Message, from net.Addr) {
+	if message.typ.method == .allocate {
+		r.mu.lock()
+		r.allocate_attempts++
+		r.mu.unlock()
+	}
+
+	// Every request must be authenticated. An unauthenticated one, or one
+	// carrying a nonce we have rotated away from, is challenged.
+	r.mu.lock()
+	current_nonce := r.nonce
+	r.mu.unlock()
+
+	username := message.username() or {
+		r.challenge(message, stun.code_unauthenticated, current_nonce)
+		return
+	}
+	nonce := message.nonce() or {
+		r.challenge(message, stun.code_unauthenticated, current_nonce)
+		return
+	}
+	realm := message.realm() or {
+		r.challenge(message, stun.code_unauthenticated, current_nonce)
+		return
+	}
+	if nonce != current_nonce {
+		r.challenge(message, stun.code_stale_nonce, current_nonce)
+		return
+	}
+
+	r.mu.lock()
+	r.last_realm = realm
+	r.mu.unlock()
+
+	key := stun.long_term_key(username, realm, 'pass') or { return }
+	message.check_message_integrity(key) or {
+		r.error_response(message, stun.code_wrong_credentials, 'bad credentials', key)
+		return
+	}
+
+	r.mu.lock()
+	refusal := r.refusal
+	refusal_reason := r.refusal_reason
+	r.mu.unlock()
+	if refusal != 0 {
+		r.error_response(message, refusal, refusal_reason, key)
+		return
+	}
+
+	match message.typ.method {
+		.allocate { r.answer_allocate(message, key, from) }
+		.refresh { r.answer_refresh(message, key) }
+		.create_permission { r.answer_create_permission(message, key, from) }
+		.channel_bind { r.answer_channel_bind(message, key, from) }
+		else {}
+	}
+}
