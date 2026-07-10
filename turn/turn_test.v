@@ -458,3 +458,11 @@ fn (mut r FakeRelay) deliver_on_channel(channel u16, data []u8) ! {
 	}.encode()!
 	r.send(framed)!
 }
+
+fn (mut r FakeRelay) send(data []u8) ! {
+	r.mu.lock()
+	target := r.client
+	r.mu.unlock()
+	destination := target or { return error('the client has not been seen yet') }
+	r.conn.write_to(destination, data)!
+}
