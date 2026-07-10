@@ -602,3 +602,32 @@ fn (mut r FakeRelay) handle_request(message stun.Message, from net.Addr) {
 		else {}
 	}
 }
+
+fn (mut r FakeRelay) answer_allocate(request stun.Message, key []u8, from net.Addr) {
+	r.mu.lock()
+	// One relayed address per client, so two clients on this relay can be told
+	// apart and forwarded between.
+	mut relayed := netaddr.SocketAddr{}
+	if existing := r.allocations[from.str()] {
+		relayed = existing.relayed
+	} else {
+		relayed = netaddr.SocketAddr.parse('127.0.0.1:${r.next_port}') or {
+			r.mu.unlock()
+			return
+		}
+		r.next_port++
+		r.allocations[from.str()] = Allocation{
+			client:  from
+			relayed: relayed
+		}
+	}
+	r.allocated = true
+	r.mu.unlock()
+
+	mut response := stun.Message.response(request, .success_response)
+	response.add_xor_relayed_address(relayed) or { return }
+	mapped := netaddr.SocketAddr.parse('198.51.100.4:33000') or { return }
+	response.add_xor_mapped_address(mapped) or { return }
+	response.add_lifetime(600)
+	r.reply(mut response, key)
+}
