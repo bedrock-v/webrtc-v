@@ -450,3 +450,11 @@ fn (mut r FakeRelay) deliver_from_peer(peer netaddr.SocketAddr, data []u8) ! {
 	indication.add_data(data)!
 	r.send(indication.encode()!)!
 }
+
+fn (mut r FakeRelay) deliver_on_channel(channel u16, data []u8) ! {
+	framed := ChannelData{
+		channel: channel
+		payload: data
+	}.encode()!
+	r.send(framed)!
+}
