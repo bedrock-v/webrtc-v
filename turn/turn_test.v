@@ -692,3 +692,16 @@ fn (mut r FakeRelay) answer_refresh(request stun.Message, key []u8) {
 	}
 	r.reply(mut response, key)
 }
+
+fn (mut r FakeRelay) answer_create_permission(request stun.Message, key []u8, from net.Addr) {
+	peer := request.xor_peer_address() or { return }
+	r.mu.lock()
+	r.permissions[peer.str()] = true
+	if mut allocation := r.allocations[from.str()] {
+		allocation.permissions[peer.str()] = true
+		r.allocations[from.str()] = allocation
+	}
+	r.mu.unlock()
+	mut response := stun.Message.response(request, .success_response)
+	r.reply(mut response, key)
+}
