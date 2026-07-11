@@ -369,3 +369,36 @@ pub fn parse_certificate(der []u8) !ParsedCertificate {
 		not_after:  not_after
 	}
 }
+
+// decode_time reads a UTCTime or GeneralizedTime.
+fn decode_time(element DerElement) !time.Time {
+	text := element.value.bytestr()
+	match element.tag {
+		der_utc_time {
+			if text.len != 13 || !text.ends_with('Z') {
+				return CertificateError{
+					detail: 'UTCTime "${text}" is not in the DER form YYMMDDHHMMSSZ'
+				}
+			}
+			// RFC 5280 section 4.1.2.5.1: years 50 through 99 mean 19xx, and 00
+			// through 49 mean 20xx.
+			two_digit := two_digits(text, 0)!
+			year := if two_digit >= 50 { 1900 + two_digit } else { 2000 + two_digit }
+			return build_time(year, text, 2)!
+		}
+		der_generalized_time {
+			if text.len != 15 || !text.ends_with('Z') {
+				return CertificateError{
+					detail: 'GeneralizedTime "${text}" is not in the DER form YYYYMMDDHHMMSSZ'
+				}
+			}
+			year := two_digits(text, 0)! * 100 + two_digits(text, 2)!
+			return build_time(year, text, 4)!
+		}
+		else {
+			return CertificateError{
+				detail: 'validity field has tag 0x${element.tag.hex()}, expected a time'
+			}
+		}
+	}
+}
