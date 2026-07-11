@@ -775,3 +775,27 @@ fn test_two_clients_reach_each_other_through_the_relay() {
 	back := left.recv(2 * time.second)!
 	assert back.data == 'and from the right'.bytes()
 }
+
+fn test_a_peer_without_a_permission_is_not_delivered() {
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut left := Client.new(server.address(), username: 'user', password: 'pass')!
+	mut right := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		left.close()
+		right.close()
+	}
+	left.allocate()!
+	right_address := right.allocate()!
+
+	// The left side may send, but the right has installed no permission for it.
+	left.create_permission(right_address)!
+	left.send_to(right_address, 'unwanted'.bytes())!
+
+	if _ := right.recv(300 * time.millisecond) {
+		assert false, 'a relay must not deliver from a peer with no permission'
+	}
+}
