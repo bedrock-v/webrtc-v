@@ -26,3 +26,8 @@ const prf_label_extended_master_secret = 'extended master secret'
 
 // prf_label_key_expansion derives the record protection keys.
 const prf_label_key_expansion = 'key expansion'
+
+// prf_label_client_finished and prf_label_server_finished derive the verify
+// data that proves each side saw the same handshake.
+const prf_label_client_finished = 'client finished'
+const prf_label_server_finished = 'server finished'
