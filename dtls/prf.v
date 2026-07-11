@@ -77,3 +77,14 @@ pub fn master_secret(pre_master_secret []u8, client_random []u8, server_random [
 	seed << server_random
 	return prf(pre_master_secret, prf_label_master_secret, seed, master_secret_length)
 }
+
+// extended_master_secret derives the master secret from the handshake
+// transcript instead of the randoms (RFC 7627).
+//
+// This is what closes the triple-handshake attack: binding the secret to a hash
+// of the handshake means two sessions cannot be made to share a master secret
+// by replaying the randoms into a third connection.
+pub fn extended_master_secret(pre_master_secret []u8, handshake_hash []u8) []u8 {
+	return prf(pre_master_secret, prf_label_extended_master_secret, handshake_hash,
+		master_secret_length)
+}
