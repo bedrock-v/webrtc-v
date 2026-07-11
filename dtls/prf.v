@@ -100,3 +100,14 @@ pub fn key_block(master []u8, client_random []u8, server_random []u8, length int
 	seed << client_random
 	return prf(master, prf_label_key_expansion, seed, length)
 }
+
+// verify_data computes the contents of a Finished message: a PRF over the hash
+// of every handshake message exchanged so far.
+//
+// Because it covers the whole transcript, a Finished that verifies proves both
+// sides saw the same handshake, which is what makes downgrade and modification
+// of the earlier flights detectable.
+pub fn verify_data(master []u8, handshake_hash []u8, is_client bool) []u8 {
+	label := if is_client { prf_label_client_finished } else { prf_label_server_finished }
+	return prf(master, label, handshake_hash, verify_data_length)
+}
