@@ -19,3 +19,10 @@ import crypto.sha256
 
 // prf_label_master_secret derives the master secret from the pre-master secret.
 const prf_label_master_secret = 'master secret'
+
+// prf_label_extended_master_secret derives it from the handshake transcript
+// instead (RFC 7627), which binds the secret to the handshake that produced it.
+const prf_label_extended_master_secret = 'extended master secret'
+
+// prf_label_key_expansion derives the record protection keys.
+const prf_label_key_expansion = 'key expansion'
