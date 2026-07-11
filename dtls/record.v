@@ -76,3 +76,21 @@ pub:
 	reason RecordErrorReason
 	detail string
 }
+
+pub enum RecordErrorReason {
+	// too_short: fewer bytes than the header requires.
+	too_short
+	// bad_content_type: a content type outside the four defined values.
+	bad_content_type
+	// bad_version: a version this implementation does not speak.
+	bad_version
+	// bad_length: the declared fragment length disagrees with the datagram, or
+	// exceeds the maximum.
+	bad_length
+	// replayed: the sequence number has already been seen in this epoch.
+	replayed
+	// wrong_epoch: the record belongs to an epoch we have no keys for.
+	wrong_epoch
+	// decrypt_failed: the record did not authenticate.
+	decrypt_failed
+}
