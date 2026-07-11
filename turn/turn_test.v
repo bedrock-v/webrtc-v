@@ -736,3 +736,8 @@ fn (mut r FakeRelay) error_response(request stun.Message, code int, reason strin
 	response.add_error_code(code, reason) or { return }
 	r.reply(mut response, key)
 }
+
+fn (mut r FakeRelay) reply(mut response stun.Message, key []u8) {
+	raw := response.encode(integrity_key: key) or { return }
+	r.send(raw) or {}
+}
