@@ -5,3 +5,6 @@
 // the peer against the certificate fingerprint carried in the SDP, and it
 // produces the keying material the srtp package needs.
 module dtls
+
+import crypto.hmac
+import crypto.sha256
