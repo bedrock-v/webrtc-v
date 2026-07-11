@@ -54,3 +54,25 @@ pub enum ProtocolVersion as u16 {
 	dtls_1_0 = 0xFEFF
 	dtls_1_2 = 0xFEFD
 }
+
+pub fn (v ProtocolVersion) str() string {
+	return match v {
+		.dtls_1_0 { 'DTLS 1.0' }
+		.dtls_1_2 { 'DTLS 1.2' }
+	}
+}
+
+fn protocol_version_from_value(v u16) ?ProtocolVersion {
+	return match v {
+		0xFEFF { ProtocolVersion.dtls_1_0 }
+		0xFEFD { ProtocolVersion.dtls_1_2 }
+		else { none }
+	}
+}
+
+// RecordError describes why a datagram is not a usable DTLS record.
+pub struct RecordError {
+pub:
+	reason RecordErrorReason
+	detail string
+}
