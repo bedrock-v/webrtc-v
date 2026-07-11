@@ -741,3 +741,37 @@ fn (mut r FakeRelay) reply(mut response stun.Message, key []u8) {
 	raw := response.encode(integrity_key: key) or { return }
 	r.send(raw) or {}
 }
+
+fn test_two_clients_reach_each_other_through_the_relay() {
+	// The point of a relay: two endpoints that have no path to each other still
+	// exchange traffic, because both have a path to the relay.
+	mut server := FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	mut left := Client.new(server.address(), username: 'user', password: 'pass')!
+	mut right := Client.new(server.address(), username: 'user', password: 'pass')!
+	defer {
+		left.close()
+		right.close()
+	}
+
+	left_address := left.allocate()!
+	right_address := right.allocate()!
+	assert left_address.str() != right_address.str(), 'each allocation needs its own address'
+
+	// Each side permits the other. Without this the relay drops the traffic,
+	// which is what the permission mechanism is for.
+	left.create_permission(right_address)!
+	right.create_permission(left_address)!
+
+	left.send_to(right_address, 'hello from the left'.bytes())!
+	received := right.recv(2 * time.second)!
+	assert received.data == 'hello from the left'.bytes()
+	assert received.from.str() == left_address.str()
+
+	right.send_to(left_address, 'and from the right'.bytes())!
+	back := left.recv(2 * time.second)!
+	assert back.data == 'and from the right'.bytes()
+}
