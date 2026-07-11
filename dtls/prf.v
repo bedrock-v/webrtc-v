@@ -88,3 +88,15 @@ pub fn extended_master_secret(pre_master_secret []u8, handshake_hash []u8) []u8 
 	return prf(pre_master_secret, prf_label_extended_master_secret, handshake_hash,
 		master_secret_length)
 }
+
+// key_block expands the master secret into the record protection keys.
+//
+// Note the seed order: server random first, then client. It is the opposite of
+// the master secret derivation, and getting it backwards produces two peers
+// that complete a handshake and then cannot decrypt each other.
+pub fn key_block(master []u8, client_random []u8, server_random []u8, length int) []u8 {
+	mut seed := []u8{cap: server_random.len + client_random.len}
+	seed << server_random
+	seed << client_random
+	return prf(master, prf_label_key_expansion, seed, length)
+}
