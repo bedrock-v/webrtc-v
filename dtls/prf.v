@@ -60,3 +60,11 @@ fn p_hash(secret []u8, seed []u8, length int) []u8 {
 	}
 	return out[..length]
 }
+
+// prf computes PRF(secret, label, seed) truncated to length bytes.
+fn prf(secret []u8, label string, seed []u8, length int) []u8 {
+	mut labelled := []u8{cap: label.len + seed.len}
+	labelled << label.bytes()
+	labelled << seed
+	return p_hash(secret, labelled, length)
+}
