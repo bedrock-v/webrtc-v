@@ -36,3 +36,9 @@ const prf_label_server_finished = 'server finished'
 // SRTP comes out of the same PRF as everything else, under a label reserved for
 // it, so that it is cryptographically separated from the record keys.
 const prf_label_dtls_srtp = 'EXTRACTOR-dtls_srtp'
+
+// master_secret_length is fixed at 48 bytes by TLS 1.2.
+const master_secret_length = 48
+
+// verify_data_length is 12 bytes for every suite in TLS 1.2.
+const verify_data_length = 12
