@@ -31,3 +31,8 @@ const prf_label_key_expansion = 'key expansion'
 // data that proves each side saw the same handshake.
 const prf_label_client_finished = 'client finished'
 const prf_label_server_finished = 'server finished'
+
+// prf_label_dtls_srtp is the RFC 5764 exporter label. The keying material for
+// SRTP comes out of the same PRF as everything else, under a label reserved for
+// it, so that it is cryptographically separated from the record keys.
+const prf_label_dtls_srtp = 'EXTRACTOR-dtls_srtp'
