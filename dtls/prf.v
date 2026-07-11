@@ -42,3 +42,21 @@ const master_secret_length = 48
 
 // verify_data_length is 12 bytes for every suite in TLS 1.2.
 const verify_data_length = 12
+
+// p_hash expands a secret into length bytes (RFC 5246 section 5).
+//
+//	A(0) = seed
+//	A(i) = HMAC(secret, A(i-1))
+//	P_hash = HMAC(secret, A(1) + seed) + HMAC(secret, A(2) + seed) + ...
+fn p_hash(secret []u8, seed []u8, length int) []u8 {
+	mut out := []u8{cap: length}
+	mut a := seed.clone()
+	for out.len < length {
+		a = hmac.new(secret, a, sha256.sum, sha256.block_size)
+		mut block_input := []u8{cap: a.len + seed.len}
+		block_input << a
+		block_input << seed
+		out << hmac.new(secret, block_input, sha256.sum, sha256.block_size)
+	}
+	return out[..length]
+}
