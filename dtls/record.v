@@ -26,3 +26,31 @@ pub enum ContentType as u8 {
 	handshake          = 22
 	application_data   = 23
 }
+
+pub fn (c ContentType) str() string {
+	return match c {
+		.change_cipher_spec { 'change_cipher_spec' }
+		.alert { 'alert' }
+		.handshake { 'handshake' }
+		.application_data { 'application_data' }
+	}
+}
+
+fn content_type_from_value(v u8) ?ContentType {
+	return match v {
+		20 { ContentType.change_cipher_spec }
+		21 { ContentType.alert }
+		22 { ContentType.handshake }
+		23 { ContentType.application_data }
+		else { none }
+	}
+}
+
+// ProtocolVersion is the DTLS version, encoded as the ones' complement of the
+// TLS version it corresponds to. DTLS 1.2 is 0xFEFD, which is "TLS 1.2"
+// inverted, and the ordering is therefore reversed: a numerically smaller value
+// is a newer version.
+pub enum ProtocolVersion as u16 {
+	dtls_1_0 = 0xFEFF
+	dtls_1_2 = 0xFEFD
+}
