@@ -73,3 +73,12 @@ fn der_tlv(tag u8, value []u8) []u8 {
 	out << value
 	return out
 }
+
+// der_sequence_of concatenates the elements and wraps them in a SEQUENCE.
+fn der_sequence_of(elements ...[]u8) []u8 {
+	mut body := []u8{}
+	for element in elements {
+		body << element
+	}
+	return der_tlv(der_sequence, body)
+}
