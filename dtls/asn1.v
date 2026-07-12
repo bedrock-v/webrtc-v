@@ -10,3 +10,7 @@ module dtls
 
 // DER tag numbers, with the class and constructed bits already applied.
 const der_boolean = u8(0x01)
+const der_integer = u8(0x02)
+const der_bit_string = u8(0x03)
+const der_octet_string = u8(0x04)
+const der_null = u8(0x05)
