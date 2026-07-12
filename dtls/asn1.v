@@ -82,3 +82,22 @@ fn der_sequence_of(elements ...[]u8) []u8 {
 	}
 	return der_tlv(der_sequence, body)
 }
+
+// der_integer_from_bytes encodes an unsigned big-endian value as an INTEGER.
+//
+// DER integers are signed, so a value whose top bit is set needs a leading zero
+// byte or it would decode as negative. Leading zeros are otherwise stripped,
+// because DER requires the minimal encoding.
+fn der_integer_from_bytes(value []u8) []u8 {
+	mut start := 0
+	for start < value.len - 1 && value[start] == 0 {
+		start++
+	}
+	mut body := value[start..].clone()
+	if body.len == 0 {
+		body = [u8(0)]
+	} else if body[0] & 0x80 != 0 {
+		body.prepend(u8(0))
+	}
+	return der_tlv(der_integer, body)
+}
