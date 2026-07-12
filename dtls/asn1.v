@@ -47,3 +47,20 @@ pub fn (e Asn1Error) msg() string {
 pub fn (e Asn1Error) code() int {
 	return 1
 }
+
+// der_length encodes a length in DER's definite form: short for values under
+// 128, and otherwise a byte count followed by the big-endian minimal encoding.
+fn der_length(n int) []u8 {
+	if n < 0x80 {
+		return [u8(n)]
+	}
+	mut bytes := []u8{}
+	mut value := n
+	for value > 0 {
+		bytes.prepend(u8(value))
+		value >>= 8
+	}
+	mut out := [u8(0x80 | bytes.len)]
+	out << bytes
+	return out
+}
