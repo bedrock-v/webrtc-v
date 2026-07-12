@@ -139,3 +139,29 @@ pub fn (r &Record) marshal() ![]u8 {
 	w.bytes(r.fragment)
 	return w.buf
 }
+
+// header_bytes returns the 13-byte header on its own.
+//
+// AEAD record protection needs it as additional authenticated data, and needs
+// it before the ciphertext length is known, so it is built separately from
+// marshal.
+pub fn (r &Record) header_bytes(fragment_length int) []u8 {
+	mut w := codec.Writer.with_capacity(record_header_size)
+	w.u8(u8(r.content_type))
+	w.u16(u16(r.version))
+	w.u16(r.epoch)
+	w.u48(r.sequence_number)
+	w.u16(u16(fragment_length))
+	return w.buf
+}
+
+// is_dtls reports whether a datagram plausibly holds a DTLS record.
+//
+// This is the RFC 7983 demultiplexing test: on a WebRTC socket the same port
+// carries STUN, DTLS, RTP and RTCP, and DTLS is the first-byte range 20 to 63.
+pub fn is_dtls(b []u8) bool {
+	if b.len < record_header_size {
+		return false
+	}
+	return b[0] >= 20 && b[0] <= 63
+}
