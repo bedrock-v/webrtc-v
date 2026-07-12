@@ -122,3 +122,9 @@ pub fn export_keying_material(master []u8, label string, client_random []u8, ser
 	seed << server_random
 	return prf(master, label, seed, length)
 }
+
+// srtp_keying_material produces the bytes RFC 5764 section 4.2 defines for
+// SRTP, which srtp.split_keying_material then divides into the two directions.
+pub fn srtp_keying_material(master []u8, client_random []u8, server_random []u8, length int) []u8 {
+	return export_keying_material(master, prf_label_dtls_srtp, client_random, server_random, length)
+}
