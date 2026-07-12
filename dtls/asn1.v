@@ -28,3 +28,8 @@ const der_set = u8(0x31)
 fn der_context_constructed(number u8) u8 {
 	return 0xA0 | (number & 0x1F)
 }
+
+// max_der_length bounds a decoded length field. A certificate is a few hundred
+// bytes; anything claiming megabytes is either corrupt or an attempt to make us
+// allocate.
+const max_der_length = 1 << 20
