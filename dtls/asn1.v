@@ -64,3 +64,12 @@ fn der_length(n int) []u8 {
 	out << bytes
 	return out
 }
+
+// der_tlv wraps a value in a tag and length.
+fn der_tlv(tag u8, value []u8) []u8 {
+	mut out := []u8{cap: 2 + value.len}
+	out << tag
+	out << der_length(value.len)
+	out << value
+	return out
+}
