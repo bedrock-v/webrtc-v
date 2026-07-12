@@ -33,3 +33,9 @@ fn der_context_constructed(number u8) u8 {
 // bytes; anything claiming megabytes is either corrupt or an attempt to make us
 // allocate.
 const max_der_length = 1 << 20
+
+// Asn1Error is returned when input is not valid DER.
+pub struct Asn1Error {
+pub:
+	detail string
+}
