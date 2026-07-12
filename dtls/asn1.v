@@ -21,3 +21,10 @@ const der_utc_time = u8(0x17)
 const der_generalized_time = u8(0x18)
 const der_sequence = u8(0x30)
 const der_set = u8(0x31)
+
+// der_context_constructed builds a constructed context-specific tag, which
+// X.509 uses for its optional fields: [0] for the version, [3] for extensions.
+@[inline]
+fn der_context_constructed(number u8) u8 {
+	return 0xA0 | (number & 0x1F)
+}
