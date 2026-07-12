@@ -111,3 +111,14 @@ pub fn verify_data(master []u8, handshake_hash []u8, is_client bool) []u8 {
 	label := if is_client { prf_label_client_finished } else { prf_label_server_finished }
 	return prf(master, label, handshake_hash, verify_data_length)
 }
+
+// export_keying_material implements the RFC 5705 exporter.
+//
+// The context argument is the optional context value; DTLS-SRTP passes none, so
+// the seed is just the two randoms.
+pub fn export_keying_material(master []u8, label string, client_random []u8, server_random []u8, length int) []u8 {
+	mut seed := []u8{cap: client_random.len + server_random.len}
+	seed << client_random
+	seed << server_random
+	return prf(master, label, seed, length)
+}
