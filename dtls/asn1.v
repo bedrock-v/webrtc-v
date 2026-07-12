@@ -39,3 +39,11 @@ pub struct Asn1Error {
 pub:
 	detail string
 }
+
+pub fn (e Asn1Error) msg() string {
+	return 'dtls: asn1: ${e.detail}'
+}
+
+pub fn (e Asn1Error) code() int {
+	return 1
+}
