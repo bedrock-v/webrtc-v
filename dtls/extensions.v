@@ -92,3 +92,17 @@ pub struct SupportedSignatureAlgorithms {
 pub:
 	schemes []SignatureScheme
 }
+
+// UseSrtp negotiates the SRTP protection profile (RFC 5764 section 4.1).
+//
+// This extension is what makes DTLS-SRTP work: the DTLS handshake agrees an
+// SRTP profile and then, instead of carrying the media itself, exports keying
+// material for it.
+pub struct UseSrtp {
+pub:
+	profiles []srtp.Profile
+	// mki is the master key identifier. WebRTC does not use one, and this
+	// implementation sends it empty; a non-empty value from a peer is preserved
+	// so it can be echoed.
+	mki []u8
+}
