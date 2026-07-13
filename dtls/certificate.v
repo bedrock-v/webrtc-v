@@ -22,3 +22,10 @@ const oid_ec_public_key = '1.2.840.10045.2.1'
 const oid_prime256v1 = '1.2.840.10045.3.1.7'
 const oid_ecdsa_with_sha256 = '1.2.840.10045.4.3.2'
 const oid_common_name = '2.5.4.3'
+
+// default_certificate_lifetime is how long a generated certificate is valid.
+//
+// Thirty days is far longer than any call and short enough that a leaked key
+// stops being useful. The value matters less than it would with a CA, because
+// the fingerprint in the SDP is what actually authenticates the peer.
+pub const default_certificate_lifetime = 30 * 24 * time.hour
