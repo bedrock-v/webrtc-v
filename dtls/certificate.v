@@ -19,3 +19,6 @@ import webrtc.internal.randutil
 
 // Object identifiers used in the certificates this package produces.
 const oid_ec_public_key = '1.2.840.10045.2.1'
+const oid_prime256v1 = '1.2.840.10045.3.1.7'
+const oid_ecdsa_with_sha256 = '1.2.840.10045.4.3.2'
+const oid_common_name = '2.5.4.3'
