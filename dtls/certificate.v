@@ -29,3 +29,12 @@ const oid_common_name = '2.5.4.3'
 // stops being useful. The value matters less than it would with a CA, because
 // the fingerprint in the SDP is what actually authenticates the peer.
 pub const default_certificate_lifetime = 30 * 24 * time.hour
+
+// HashAlgorithm is a certificate fingerprint hash. RFC 8122 registers several;
+// SHA-256 is what every browser signals.
+pub enum HashAlgorithm {
+	sha1
+	sha256
+	sha384
+	sha512
+}
