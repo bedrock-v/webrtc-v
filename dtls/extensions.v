@@ -106,3 +106,35 @@ pub:
 	// so it can be echoed.
 	mki []u8
 }
+
+// ExtendedMasterSecret is a flag: its presence asks for RFC 7627 key
+// derivation, which binds the master secret to the handshake transcript.
+pub struct ExtendedMasterSecret {}
+
+// RenegotiationInfo signals that the sender understands RFC 5746. WebRTC never
+// renegotiates, so the payload is always empty, but several stacks refuse a
+// handshake that omits the extension entirely.
+pub struct RenegotiationInfo {
+pub:
+	renegotiated_connection []u8
+}
+
+// RawExtension is an extension this implementation does not interpret.
+pub struct RawExtension {
+pub:
+	typ  u16
+	data []u8
+}
+
+// extension_type returns the wire type number of an extension.
+pub fn (e Extension) extension_type() u16 {
+	return match e {
+		SupportedGroups { ext_supported_groups }
+		SupportedEcPointFormats { ext_ec_point_formats }
+		SupportedSignatureAlgorithms { ext_signature_algorithms }
+		UseSrtp { ext_use_srtp }
+		ExtendedMasterSecret { ext_extended_master_secret }
+		RenegotiationInfo { ext_renegotiation_info }
+		RawExtension { e.typ }
+	}
+}
