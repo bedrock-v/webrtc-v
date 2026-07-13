@@ -143,3 +143,17 @@ fn der_oid(dotted string) ![]u8 {
 	}
 	return der_tlv(der_object_identifier, body)
 }
+
+fn parse_arc(s string) ?u64 {
+	if s == '' || s.len > 19 {
+		return none
+	}
+	mut value := u64(0)
+	for c in s {
+		if c < `0` || c > `9` {
+			return none
+		}
+		value = value * 10 + u64(c - `0`)
+	}
+	return value
+}
