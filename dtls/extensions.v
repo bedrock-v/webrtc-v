@@ -43,3 +43,22 @@ pub enum HashAlgorithmId as u8 {
 	sha384 = 5
 	sha512 = 6
 }
+
+pub enum SignatureAlgorithmId as u8 {
+	rsa   = 1
+	ecdsa = 3
+}
+
+// SignatureScheme pairs a hash with a signature algorithm.
+pub struct SignatureScheme {
+pub:
+	hash      HashAlgorithmId
+	signature SignatureAlgorithmId
+}
+
+// ecdsa_sha256 is the only scheme this implementation signs with. It is what a
+// P-256 certificate calls for and what every browser offers.
+pub const ecdsa_sha256 = SignatureScheme{
+	hash:      .sha256
+	signature: .ecdsa
+}
