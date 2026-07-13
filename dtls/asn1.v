@@ -110,3 +110,36 @@ fn der_bit_string(value []u8) []u8 {
 	body << value
 	return der_tlv(der_bit_string, body)
 }
+
+// der_oid encodes an object identifier from its dotted arc form.
+//
+// The first two arcs are packed into one byte as 40*a + b, and every arc is
+// then base-128 with the continuation bit set on all but the last byte.
+fn der_oid(dotted string) ![]u8 {
+	parts := dotted.split('.')
+	if parts.len < 2 {
+		return Asn1Error{
+			detail: 'object identifier "${dotted}" needs at least two arcs'
+		}
+	}
+	mut arcs := []u64{cap: parts.len}
+	for part in parts {
+		arcs << parse_arc(part) or {
+			return Asn1Error{
+				detail: 'bad arc "${part}" in object identifier "${dotted}"'
+			}
+		}
+	}
+	if arcs[0] > 2 || (arcs[0] < 2 && arcs[1] > 39) {
+		return Asn1Error{
+			detail: 'object identifier "${dotted}" cannot be packed'
+		}
+	}
+
+	mut body := []u8{}
+	body << u8(arcs[0] * 40 + arcs[1])
+	for arc in arcs[2..] {
+		body << base128(arc)
+	}
+	return der_tlv(der_object_identifier, body)
+}
