@@ -174,3 +174,11 @@ fn base128(value u64) []u8 {
 	}
 	return bytes
 }
+
+// DerElement is one decoded tag-length-value triple.
+struct DerElement {
+	tag   u8
+	value []u8
+	// end is the offset just past this element in the buffer it came from.
+	end int
+}
