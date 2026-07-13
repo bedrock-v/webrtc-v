@@ -62,3 +62,33 @@ pub const ecdsa_sha256 = SignatureScheme{
 	hash:      .sha256
 	signature: .ecdsa
 }
+
+// Extension is one entry in a hello's extension list.
+//
+// The typed variants carry the extensions this implementation acts on; Raw
+// keeps everything else intact.
+pub type Extension = ExtendedMasterSecret
+	| RawExtension
+	| RenegotiationInfo
+	| SupportedEcPointFormats
+	| SupportedGroups
+	| SupportedSignatureAlgorithms
+	| UseSrtp
+
+// SupportedGroups lists the curves the sender will accept for key exchange.
+pub struct SupportedGroups {
+pub:
+	curves []NamedCurve
+}
+
+// SupportedEcPointFormats lists the point encodings the sender accepts.
+pub struct SupportedEcPointFormats {
+pub:
+	formats []EcPointFormat
+}
+
+// SupportedSignatureAlgorithms lists the signature schemes the sender accepts.
+pub struct SupportedSignatureAlgorithms {
+pub:
+	schemes []SignatureScheme
+}
