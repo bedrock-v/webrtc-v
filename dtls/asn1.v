@@ -157,3 +157,20 @@ fn parse_arc(s string) ?u64 {
 	}
 	return value
 }
+
+// base128 encodes an arc in the variable-length form DER uses for OIDs.
+fn base128(value u64) []u8 {
+	if value == 0 {
+		return [u8(0)]
+	}
+	mut bytes := []u8{}
+	mut v := value
+	for v > 0 {
+		bytes.prepend(u8(v & 0x7F))
+		v >>= 7
+	}
+	for i in 0 .. bytes.len - 1 {
+		bytes[i] |= 0x80
+	}
+	return bytes
+}
