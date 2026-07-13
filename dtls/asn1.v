@@ -182,3 +182,79 @@ struct DerElement {
 	// end is the offset just past this element in the buffer it came from.
 	end int
 }
+
+// der_parse reads one element starting at offset.
+fn der_parse(input []u8, offset int) !DerElement {
+	if offset < 0 || offset >= input.len {
+		return Asn1Error{
+			detail: 'read past the end of the input'
+		}
+	}
+	tag := input[offset]
+	// High-tag-number form is not used anywhere in an X.509 certificate this
+	// code needs to read, and supporting it would only widen the parser.
+	if tag & 0x1F == 0x1F {
+		return Asn1Error{
+			detail: 'high tag numbers are not supported'
+		}
+	}
+	if offset + 1 >= input.len {
+		return Asn1Error{
+			detail: 'truncated length'
+		}
+	}
+
+	first := input[offset + 1]
+	mut length := 0
+	mut header := 2
+	if first & 0x80 == 0 {
+		length = int(first)
+	} else {
+		count := int(first & 0x7F)
+		if count == 0 {
+			return Asn1Error{
+				detail: 'indefinite length is not valid DER'
+			}
+		}
+		if count > 4 {
+			return Asn1Error{
+				detail: 'length of ${count} bytes exceeds what this decoder accepts'
+			}
+		}
+		if offset + 2 + count > input.len {
+			return Asn1Error{
+				detail: 'truncated long-form length'
+			}
+		}
+		if input[offset + 2] == 0 {
+			return Asn1Error{
+				detail: 'non-minimal length encoding'
+			}
+		}
+		for i in 0 .. count {
+			length = int((u32(length) << 8) | u32(input[offset + 2 + i]))
+		}
+		if length < 0x80 {
+			return Asn1Error{
+				detail: 'long-form length used for a value that fits the short form'
+			}
+		}
+		header = 2 + count
+	}
+
+	if length > max_der_length {
+		return Asn1Error{
+			detail: 'element of ${length} bytes exceeds the ${max_der_length}-byte limit'
+		}
+	}
+	if offset + header + length > input.len {
+		return Asn1Error{
+			detail: 'element declares ${length} bytes but only ${input.len - offset - header} remain'
+		}
+	}
+	return DerElement{
+		tag:   tag
+		value: input[offset + header..offset + header + length]
+		end:   offset + header + length
+	}
+}
