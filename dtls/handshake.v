@@ -246,3 +246,21 @@ pub fn fragment_message(typ HandshakeType, message_seq u16, body []u8, max_fragm
 	}
 	return out
 }
+
+// Random is a hello random: 32 bytes, conventionally four of timestamp and 28
+// of entropy.
+pub struct Random {
+pub:
+	bytes []u8
+}
+
+// Random.generate returns a fresh hello random.
+//
+// RFC 5246 puts a timestamp in the first four bytes. That leaks the sender's
+// clock, and TLS 1.3 removed it for that reason; since nothing verifies it,
+// this implementation fills all 32 bytes from the CSPRNG.
+pub fn Random.generate() !Random {
+	return Random{
+		bytes: randutil.bytes(random_size)!
+	}
+}
