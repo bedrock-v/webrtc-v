@@ -355,3 +355,30 @@ pub enum ClientCertificateType as u8 {
 	rsa_sign   = 1
 	ecdsa_sign = 64
 }
+
+// CertificateRequest asks the client for a certificate.
+//
+// WebRTC always authenticates both ends: each side has a fingerprint for the
+// other from the SDP, and a fingerprint is only worth checking if the peer had
+// to prove it holds the matching key. A server that omitted this message would
+// have nothing to check.
+pub struct CertificateRequest {
+pub mut:
+	certificate_types []ClientCertificateType = [ClientCertificateType.ecdsa_sign]
+	signature_schemes []SignatureScheme       = [ecdsa_sha256]
+	// certificate_authorities is always empty here: there is no CA, so there is
+	// no list of acceptable issuers to send.
+	certificate_authorities [][]u8
+}
+
+// HandshakeMessage is any handshake message.
+pub type HandshakeMessage = CertificateMessage
+	| CertificateRequest
+	| CertificateVerify
+	| ClientHello
+	| ClientKeyExchange
+	| Finished
+	| HelloVerifyRequest
+	| ServerHello
+	| ServerHelloDone
+	| ServerKeyExchange
