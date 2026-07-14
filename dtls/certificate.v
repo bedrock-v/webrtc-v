@@ -402,3 +402,14 @@ fn decode_time(element DerElement) !time.Time {
 		}
 	}
 }
+
+fn build_time(year int, text string, offset int) !time.Time {
+	return time.new(
+		year:   year
+		month:  two_digits(text, offset)!
+		day:    two_digits(text, offset + 2)!
+		hour:   two_digits(text, offset + 4)!
+		minute: two_digits(text, offset + 6)!
+		second: two_digits(text, offset + 8)!
+	)
+}
