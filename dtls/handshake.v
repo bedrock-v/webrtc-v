@@ -382,3 +382,35 @@ pub type HandshakeMessage = CertificateMessage
 	| ServerHello
 	| ServerHelloDone
 	| ServerKeyExchange
+
+// handshake_type returns the wire type of a message.
+pub fn (m HandshakeMessage) handshake_type() HandshakeType {
+	return match m {
+		ClientHello { HandshakeType.client_hello }
+		ServerHello { HandshakeType.server_hello }
+		HelloVerifyRequest { HandshakeType.hello_verify_request }
+		CertificateMessage { HandshakeType.certificate }
+		ServerKeyExchange { HandshakeType.server_key_exchange }
+		CertificateRequest { HandshakeType.certificate_request }
+		ServerHelloDone { HandshakeType.server_hello_done }
+		CertificateVerify { HandshakeType.certificate_verify }
+		ClientKeyExchange { HandshakeType.client_key_exchange }
+		Finished { HandshakeType.finished }
+	}
+}
+
+// marshal serialises the message body, without the handshake header.
+pub fn (m HandshakeMessage) marshal() ![]u8 {
+	match m {
+		ClientHello { return marshal_client_hello(m)! }
+		ServerHello { return marshal_server_hello(m)! }
+		HelloVerifyRequest { return marshal_hello_verify_request(m)! }
+		CertificateMessage { return marshal_certificate(m)! }
+		ServerKeyExchange { return marshal_server_key_exchange(m)! }
+		CertificateRequest { return marshal_certificate_request(m)! }
+		ServerHelloDone { return []u8{} }
+		CertificateVerify { return marshal_certificate_verify(m)! }
+		ClientKeyExchange { return marshal_client_key_exchange(m)! }
+		Finished { return m.verify_data.clone() }
+	}
+}
