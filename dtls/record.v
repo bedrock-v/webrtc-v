@@ -139,3 +139,18 @@ pub fn (r &Record) marshal() ![]u8 {
 	w.bytes(r.fragment)
 	return w.buf
 }
+
+// header_bytes returns the 13-byte header on its own.
+//
+// AEAD record protection needs it as additional authenticated data, and needs
+// it before the ciphertext length is known, so it is built separately from
+// marshal.
+pub fn (r &Record) header_bytes(fragment_length int) []u8 {
+	mut w := codec.Writer.with_capacity(record_header_size)
+	w.u8(u8(r.content_type))
+	w.u16(u16(r.version))
+	w.u16(r.epoch)
+	w.u48(r.sequence_number)
+	w.u16(u16(fragment_length))
+	return w.buf
+}
