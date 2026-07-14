@@ -165,3 +165,61 @@ pub fn is_dtls(b []u8) bool {
 	}
 	return b[0] >= 20 && b[0] <= 63
 }
+
+// unmarshal_records decodes every record in a datagram.
+//
+// A single datagram may carry several records, and RFC 6347 section 4.1.1
+// requires a receiver to process all of them. It also requires that a record
+// which cannot be parsed causes the rest of the datagram to be discarded rather
+// than resynchronised: there is no framing to resynchronise to.
+pub fn unmarshal_records(data []u8) ![]Record {
+	mut out := []Record{}
+	mut r := codec.Reader.new(data)
+
+	for r.remaining() > 0 {
+		if r.remaining() < record_header_size {
+			return RecordError{
+				reason: .too_short
+				detail: '${r.remaining()} trailing bytes are not a record header'
+			}
+		}
+		raw_type := r.u8('content type')!
+		content_type := content_type_from_value(raw_type) or {
+			return RecordError{
+				reason: .bad_content_type
+				detail: 'content type ${raw_type} is not defined'
+			}
+		}
+		raw_version := r.u16('version')!
+		version := protocol_version_from_value(raw_version) or {
+			return RecordError{
+				reason: .bad_version
+				detail: 'version 0x${raw_version.hex()} is not DTLS 1.0 or 1.2'
+			}
+		}
+		epoch := r.u16('epoch')!
+		sequence_number := r.u48('sequence number')!
+		length := int(r.u16('length')!)
+		if length > max_record_payload {
+			return RecordError{
+				reason: .bad_length
+				detail: 'fragment of ${length} bytes exceeds the ${max_record_payload}-byte maximum'
+			}
+		}
+		fragment := r.bytes(length, 'fragment') or {
+			return RecordError{
+				reason: .bad_length
+				detail: 'record declares ${length} bytes but only ${r.remaining()} remain'
+			}
+		}
+
+		out << Record{
+			content_type:    content_type
+			version:         version
+			epoch:           epoch
+			sequence_number: sequence_number
+			fragment:        fragment
+		}
+	}
+	return out
+}
