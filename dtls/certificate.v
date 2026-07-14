@@ -74,3 +74,11 @@ pub struct CertificateError {
 pub:
 	detail string
 }
+
+pub fn (e CertificateError) msg() string {
+	return 'dtls: ${e.detail}'
+}
+
+pub fn (e CertificateError) code() int {
+	return 2
+}
