@@ -25,3 +25,34 @@ pub const random_size = 32
 
 // max_cookie_size is the RFC 6347 limit on a HelloVerifyRequest cookie.
 pub const max_cookie_size = 255
+
+// HandshakeType identifies a handshake message.
+pub enum HandshakeType as u8 {
+	hello_request        = 0
+	client_hello         = 1
+	server_hello         = 2
+	hello_verify_request = 3
+	certificate          = 11
+	server_key_exchange  = 12
+	certificate_request  = 13
+	server_hello_done    = 14
+	certificate_verify   = 15
+	client_key_exchange  = 16
+	finished             = 20
+}
+
+pub fn (t HandshakeType) str() string {
+	return match t {
+		.hello_request { 'HelloRequest' }
+		.client_hello { 'ClientHello' }
+		.server_hello { 'ServerHello' }
+		.hello_verify_request { 'HelloVerifyRequest' }
+		.certificate { 'Certificate' }
+		.server_key_exchange { 'ServerKeyExchange' }
+		.certificate_request { 'CertificateRequest' }
+		.server_hello_done { 'ServerHelloDone' }
+		.certificate_verify { 'CertificateVerify' }
+		.client_key_exchange { 'ClientKeyExchange' }
+		.finished { 'Finished' }
+	}
+}
