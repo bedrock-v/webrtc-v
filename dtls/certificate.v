@@ -184,3 +184,13 @@ pub:
 	// connect for reasons neither can see.
 	not_before_skew time.Duration = time.hour
 }
+
+// Certificate.generate creates a self-signed P-256 certificate.
+pub fn Certificate.generate(opts CertificateOptions) !Certificate {
+	public_key, private_key := ecdsa.generate_key(nid: .prime256v1) or {
+		return CertificateError{
+			detail: 'generating a P-256 key: ${err.msg()}'
+		}
+	}
+	return Certificate.from_key(private_key, public_key, opts)!
+}
