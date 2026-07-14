@@ -61,3 +61,11 @@ pub fn (v ProtocolVersion) str() string {
 		.dtls_1_2 { 'DTLS 1.2' }
 	}
 }
+
+fn protocol_version_from_value(v u16) ?ProtocolVersion {
+	return match v {
+		0xFEFF { ProtocolVersion.dtls_1_0 }
+		0xFEFD { ProtocolVersion.dtls_1_2 }
+		else { none }
+	}
+}
