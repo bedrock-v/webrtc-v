@@ -223,3 +223,18 @@ pub fn unmarshal_records(data []u8) ![]Record {
 	}
 	return out
 }
+
+// AntiReplay rejects a record whose sequence number has already been accepted.
+//
+// This is the sliding window of RFC 6347 section 4.1.2.6, and the same
+// construction as the SRTP one: a bitmask covering the window below the highest
+// sequence number seen. Checking and accepting are separate operations, because
+// a record must not consume a sequence number until it has been authenticated -
+// otherwise an attacker could punch holes in the window with forged records.
+pub struct AntiReplay {
+mut:
+	window_size u64
+	highest     u64
+	mask        u64
+	seen        bool
+}
