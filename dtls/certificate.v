@@ -47,3 +47,14 @@ pub fn (h HashAlgorithm) str() string {
 		.sha512 { 'sha-512' }
 	}
 }
+
+// hash_algorithm_from_string parses the name used in an SDP fingerprint line.
+pub fn hash_algorithm_from_string(s string) ?HashAlgorithm {
+	return match s.to_lower() {
+		'sha-1' { HashAlgorithm.sha1 }
+		'sha-256' { HashAlgorithm.sha256 }
+		'sha-384' { HashAlgorithm.sha384 }
+		'sha-512' { HashAlgorithm.sha512 }
+		else { none }
+	}
+}
