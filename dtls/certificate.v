@@ -105,3 +105,31 @@ pub:
 pub fn (f Fingerprint) str() string {
 	return '${f.algorithm} ${f.value}'
 }
+
+// Fingerprint.parse reads an SDP fingerprint value such as
+// "sha-256 AB:CD:...".
+pub fn Fingerprint.parse(input string) !Fingerprint {
+	fields := input.split(' ').filter(it != '')
+	if fields.len != 2 {
+		return CertificateError{
+			detail: 'fingerprint "${input}" has ${fields.len} fields, expected 2'
+		}
+	}
+	algorithm := hash_algorithm_from_string(fields[0]) or {
+		return CertificateError{
+			detail: 'unsupported fingerprint hash "${fields[0]}"'
+		}
+	}
+	value := fields[1].to_lower()
+	for c in value {
+		if !((c >= `0` && c <= `9`) || (c >= `a` && c <= `f`) || c == `:`) {
+			return CertificateError{
+				detail: 'fingerprint value contains an unexpected character'
+			}
+		}
+	}
+	return Fingerprint{
+		algorithm: algorithm
+		value:     value
+	}
+}
