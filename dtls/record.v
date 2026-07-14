@@ -69,3 +69,10 @@ fn protocol_version_from_value(v u16) ?ProtocolVersion {
 		else { none }
 	}
 }
+
+// RecordError describes why a datagram is not a usable DTLS record.
+pub struct RecordError {
+pub:
+	reason RecordErrorReason
+	detail string
+}
