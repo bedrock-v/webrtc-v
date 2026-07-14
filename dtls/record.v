@@ -45,3 +45,12 @@ fn content_type_from_value(v u8) ?ContentType {
 		else { none }
 	}
 }
+
+// ProtocolVersion is the DTLS version, encoded as the ones' complement of the
+// TLS version it corresponds to. DTLS 1.2 is 0xFEFD, which is "TLS 1.2"
+// inverted, and the ordering is therefore reversed: a numerically smaller value
+// is a newer version.
+pub enum ProtocolVersion as u16 {
+	dtls_1_0 = 0xFEFF
+	dtls_1_2 = 0xFEFD
+}
