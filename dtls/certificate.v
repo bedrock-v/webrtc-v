@@ -67,3 +67,10 @@ fn (h HashAlgorithm) sum(data []u8) []u8 {
 		.sha512 { sha512.sum512(data) }
 	}
 }
+
+// CertificateError is returned when a certificate cannot be generated, parsed
+// or verified.
+pub struct CertificateError {
+pub:
+	detail string
+}
