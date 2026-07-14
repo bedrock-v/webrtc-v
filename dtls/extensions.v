@@ -264,3 +264,48 @@ fn unmarshal_extensions(data []u8) ![]Extension {
 	}
 	return out
 }
+
+fn decode_extension(typ u16, body []u8) Extension {
+	// Each arm falls through to RawExtension when the body does not decode, so
+	// an extension we cannot parse is preserved rather than fatal.
+	match typ {
+		ext_supported_groups {
+			if decoded := decode_supported_groups(body) {
+				return decoded
+			}
+		}
+		ext_ec_point_formats {
+			if decoded := decode_ec_point_formats(body) {
+				return decoded
+			}
+		}
+		ext_signature_algorithms {
+			if decoded := decode_signature_algorithms(body) {
+				return decoded
+			}
+		}
+		ext_use_srtp {
+			if decoded := decode_use_srtp(body) {
+				return decoded
+			}
+		}
+		ext_extended_master_secret {
+			// The extension is a flag; a non-empty body is malformed.
+			if body.len == 0 {
+				return ExtendedMasterSecret{}
+			}
+		}
+		ext_renegotiation_info {
+			if body.len >= 1 && int(body[0]) == body.len - 1 {
+				return RenegotiationInfo{
+					renegotiated_connection: body[1..].clone()
+				}
+			}
+		}
+		else {}
+	}
+	return RawExtension{
+		typ:  typ
+		data: body
+	}
+}
