@@ -56,3 +56,41 @@ pub fn (t HandshakeType) str() string {
 		.finished { 'Finished' }
 	}
 }
+
+fn handshake_type_from_value(v u8) ?HandshakeType {
+	return match v {
+		0 { HandshakeType.hello_request }
+		1 { HandshakeType.client_hello }
+		2 { HandshakeType.server_hello }
+		3 { HandshakeType.hello_verify_request }
+		11 { HandshakeType.certificate }
+		12 { HandshakeType.server_key_exchange }
+		13 { HandshakeType.certificate_request }
+		14 { HandshakeType.server_hello_done }
+		15 { HandshakeType.certificate_verify }
+		16 { HandshakeType.client_key_exchange }
+		20 { HandshakeType.finished }
+		else { none }
+	}
+}
+
+// CipherSuite is a TLS cipher suite identifier.
+pub enum CipherSuite as u16 {
+	// The suite browsers negotiate, and the only one this implementation
+	// offers. ECDHE gives forward secrecy, ECDSA matches the P-256 certificate
+	// we generate, and GCM authenticates and encrypts in one pass.
+	ecdhe_ecdsa_with_aes_128_gcm_sha256 = 0xC02B
+}
+
+pub fn (c CipherSuite) str() string {
+	return match c {
+		.ecdhe_ecdsa_with_aes_128_gcm_sha256 { 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256' }
+	}
+}
+
+fn cipher_suite_from_value(v u16) ?CipherSuite {
+	return match v {
+		0xC02B { CipherSuite.ecdhe_ecdsa_with_aes_128_gcm_sha256 }
+		else { none }
+	}
+}
