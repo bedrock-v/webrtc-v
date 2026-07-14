@@ -38,3 +38,12 @@ pub enum HashAlgorithm {
 	sha384
 	sha512
 }
+
+pub fn (h HashAlgorithm) str() string {
+	return match h {
+		.sha1 { 'sha-1' }
+		.sha256 { 'sha-256' }
+		.sha384 { 'sha-384' }
+		.sha512 { 'sha-512' }
+	}
+}
