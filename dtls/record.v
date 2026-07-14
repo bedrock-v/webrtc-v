@@ -102,3 +102,16 @@ pub fn (e RecordError) msg() string {
 pub fn (e RecordError) code() int {
 	return int(e.reason) + 10
 }
+
+// Record is one DTLS record.
+pub struct Record {
+pub mut:
+	content_type ContentType
+	version      ProtocolVersion = .dtls_1_2
+	epoch        u16
+	// sequence_number is 48 bits on the wire.
+	sequence_number u64
+	// fragment is the record payload: ciphertext when the epoch is protected,
+	// plaintext otherwise.
+	fragment []u8
+}
