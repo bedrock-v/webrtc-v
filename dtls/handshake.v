@@ -453,3 +453,38 @@ fn marshal_client_hello(m ClientHello) ![]u8 {
 	w.bytes(marshal_extensions(m.extensions)!)
 	return w.buf
 }
+
+fn marshal_server_hello(m ServerHello) ![]u8 {
+	if m.random.bytes.len != random_size {
+		return HandshakeError{
+			detail: 'ServerHello random is ${m.random.bytes.len} bytes, expected ${random_size}'
+		}
+	}
+	if m.session_id.len > 32 {
+		return HandshakeError{
+			detail: 'session id of ${m.session_id.len} bytes exceeds 32'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u16(u16(m.version))
+	w.bytes(m.random.bytes)
+	w.u8(u8(m.session_id.len))
+	w.bytes(m.session_id)
+	w.u16(u16(m.cipher_suite))
+	w.u8(m.compression_method)
+	w.bytes(marshal_extensions(m.extensions)!)
+	return w.buf
+}
+
+fn marshal_hello_verify_request(m HelloVerifyRequest) ![]u8 {
+	if m.cookie.len > max_cookie_size {
+		return HandshakeError{
+			detail: 'cookie of ${m.cookie.len} bytes exceeds ${max_cookie_size}'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u16(u16(m.version))
+	w.u8(u8(m.cookie.len))
+	w.bytes(m.cookie)
+	return w.buf
+}
