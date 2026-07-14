@@ -35,3 +35,13 @@ pub fn (c ContentType) str() string {
 		.application_data { 'application_data' }
 	}
 }
+
+fn content_type_from_value(v u8) ?ContentType {
+	return match v {
+		20 { ContentType.change_cipher_spec }
+		21 { ContentType.alert }
+		22 { ContentType.handshake }
+		23 { ContentType.application_data }
+		else { none }
+	}
+}
