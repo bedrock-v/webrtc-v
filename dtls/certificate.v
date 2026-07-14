@@ -413,3 +413,19 @@ fn build_time(year int, text string, offset int) !time.Time {
 		second: two_digits(text, offset + 8)!
 	)
 }
+
+fn two_digits(s string, offset int) !int {
+	if offset + 1 >= s.len {
+		return CertificateError{
+			detail: 'truncated time field'
+		}
+	}
+	hi := s[offset]
+	lo := s[offset + 1]
+	if hi < `0` || hi > `9` || lo < `0` || lo > `9` {
+		return CertificateError{
+			detail: 'non-digit in a time field'
+		}
+	}
+	return int(hi - `0`) * 10 + int(lo - `0`)
+}
