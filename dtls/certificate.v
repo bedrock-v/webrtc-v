@@ -133,3 +133,13 @@ pub fn Fingerprint.parse(input string) !Fingerprint {
 		value:     value
 	}
 }
+
+// matches reports whether two fingerprints are the same.
+//
+// The comparison is on the normalised hex text rather than on raw bytes,
+// because a fingerprint arrives as text from signalling. It is deliberately not
+// constant-time: a certificate fingerprint is public, and the value being
+// compared against is one the peer just sent us.
+pub fn (f Fingerprint) matches(other Fingerprint) bool {
+	return f.algorithm == other.algorithm && f.value == other.value
+}
