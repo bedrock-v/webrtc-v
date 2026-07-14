@@ -82,3 +82,14 @@ pub fn (e CertificateError) msg() string {
 pub fn (e CertificateError) code() int {
 	return 2
 }
+
+// Certificate is a self-signed certificate and the key that signed it.
+pub struct Certificate {
+pub:
+	// der is the certificate in its DER encoding, which is what goes on the
+	// wire and what the fingerprint is computed over.
+	der []u8
+pub mut:
+	private_key ecdsa.PrivateKey
+	public_key  ecdsa.PublicKey
+}
