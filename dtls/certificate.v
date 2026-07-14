@@ -251,3 +251,15 @@ pub fn Certificate.from_key(private_key ecdsa.PrivateKey, public_key ecdsa.Publi
 		public_key:  public_key
 	}
 }
+
+// encode_common_name builds the Name structure for a single CN attribute.
+fn encode_common_name(name string) ![]u8 {
+	bytes := name.bytes()
+	if bytes.len == 0 || bytes.len > 64 {
+		return CertificateError{
+			detail: 'common name must be 1 to 64 bytes, got ${bytes.len}'
+		}
+	}
+	attribute := der_sequence_of(der_oid(oid_common_name)!, der_tlv(der_utf8_string, bytes))
+	return der_tlv(der_sequence, der_tlv(der_set, attribute))
+}
