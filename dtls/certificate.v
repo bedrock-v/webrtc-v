@@ -101,3 +101,7 @@ pub:
 	// value is the lowercase, colon-separated hex of the digest.
 	value string
 }
+
+pub fn (f Fingerprint) str() string {
+	return '${f.algorithm} ${f.value}'
+}
