@@ -26,3 +26,12 @@ pub enum ContentType as u8 {
 	handshake          = 22
 	application_data   = 23
 }
+
+pub fn (c ContentType) str() string {
+	return match c {
+		.change_cipher_spec { 'change_cipher_spec' }
+		.alert { 'alert' }
+		.handshake { 'handshake' }
+		.application_data { 'application_data' }
+	}
+}
