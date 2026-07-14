@@ -289,3 +289,24 @@ pub mut:
 	compression_method u8
 	extensions         []Extension
 }
+
+// HelloVerifyRequest carries the stateless cookie that proves the client can
+// receive at the address it claims.
+//
+// This is DTLS's answer to being a datagram protocol: without it, a single
+// spoofed ClientHello would make a server allocate state and send a much larger
+// flight to a forged address, which is an amplification attack.
+pub struct HelloVerifyRequest {
+pub mut:
+	// The version here is DTLS 1.0 by convention, even for a 1.2 handshake;
+	// RFC 6347 section 4.2.1 keeps it that way for backward compatibility.
+	version ProtocolVersion = .dtls_1_0
+	cookie  []u8
+}
+
+// CertificateMessage carries the sender's certificate chain. WebRTC endpoints
+// send exactly one self-signed certificate.
+pub struct CertificateMessage {
+pub mut:
+	certificates [][]u8
+}
