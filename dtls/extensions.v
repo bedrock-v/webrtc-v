@@ -343,3 +343,23 @@ fn decode_ec_point_formats(body []u8) ?SupportedEcPointFormats {
 		formats: formats
 	}
 }
+
+fn decode_signature_algorithms(body []u8) ?SupportedSignatureAlgorithms {
+	mut r := codec.Reader.new(body)
+	length := int(r.u16('algorithms length') or { return none })
+	if length % 2 != 0 || r.remaining() < length {
+		return none
+	}
+	mut schemes := []SignatureScheme{cap: length / 2}
+	for _ in 0 .. length / 2 {
+		hash := r.u8('hash') or { return none }
+		signature := r.u8('signature') or { return none }
+		schemes << SignatureScheme{
+			hash:      unsafe { HashAlgorithmId(hash) }
+			signature: unsafe { SignatureAlgorithmId(signature) }
+		}
+	}
+	return SupportedSignatureAlgorithms{
+		schemes: schemes
+	}
+}
