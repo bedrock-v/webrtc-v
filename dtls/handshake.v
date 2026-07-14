@@ -94,3 +94,31 @@ fn cipher_suite_from_value(v u16) ?CipherSuite {
 		else { none }
 	}
 }
+
+// HandshakeError describes a handshake message that cannot be built or parsed.
+pub struct HandshakeError {
+pub:
+	detail string
+}
+
+pub fn (e HandshakeError) msg() string {
+	return 'dtls: handshake: ${e.detail}'
+}
+
+pub fn (e HandshakeError) code() int {
+	return 20
+}
+
+// HandshakeHeader is the per-fragment header.
+pub struct HandshakeHeader {
+pub mut:
+	typ HandshakeType
+	// length is the size of the whole reassembled message, not of this
+	// fragment.
+	length u32
+	// message_seq numbers logical messages, so a retransmission is recognisable
+	// and so out-of-order delivery can be reordered.
+	message_seq     u16
+	fragment_offset u32
+	fragment_length u32
+}
