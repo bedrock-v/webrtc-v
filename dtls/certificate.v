@@ -294,3 +294,78 @@ pub:
 	not_before time.Time
 	not_after  time.Time
 }
+
+// parse_certificate reads the fields needed from a DER certificate.
+pub fn parse_certificate(der []u8) !ParsedCertificate {
+	certificate := der_parse(der, 0)!
+	if certificate.tag != der_sequence {
+		return CertificateError{
+			detail: 'certificate is not a SEQUENCE'
+		}
+	}
+	if certificate.end != der.len {
+		return CertificateError{
+			detail: 'trailing bytes after the certificate'
+		}
+	}
+
+	top := der_children(certificate.value)!
+	if top.len != 3 {
+		return CertificateError{
+			detail: 'certificate has ${top.len} fields, expected 3'
+		}
+	}
+	tbs := der_children(top[0].value)!
+
+	// The version is an optional [0] field; when present it shifts every later
+	// field along by one.
+	mut index := 0
+	if tbs.len > 0 && tbs[0].tag == der_context_constructed(0) {
+		index = 1
+	}
+	// serial, signature algorithm, issuer, validity, subject, spki
+	if tbs.len < index + 6 {
+		return CertificateError{
+			detail: 'certificate is missing required fields'
+		}
+	}
+
+	validity := der_children(tbs[index + 3].value)!
+	if validity.len != 2 {
+		return CertificateError{
+			detail: 'validity has ${validity.len} fields, expected 2'
+		}
+	}
+	not_before := decode_time(validity[0])!
+	not_after := decode_time(validity[1])!
+
+	spki := der_children(tbs[index + 5].value)!
+	if spki.len != 2 {
+		return CertificateError{
+			detail: 'subjectPublicKeyInfo has ${spki.len} fields, expected 2'
+		}
+	}
+	if spki[1].tag != der_bit_string || spki[1].value.len < 2 {
+		return CertificateError{
+			detail: 'subjectPublicKey is not a usable BIT STRING'
+		}
+	}
+	if spki[1].value[0] != 0 {
+		return CertificateError{
+			detail: 'subjectPublicKey has unused trailing bits'
+		}
+	}
+	point := spki[1].value[1..]
+	public_key := ecdsa.PublicKey.from_uncompressed_bytes(point, nid: .prime256v1) or {
+		return CertificateError{
+			detail: 'peer public key is not a valid P-256 point: ${err.msg()}'
+		}
+	}
+
+	return ParsedCertificate{
+		der:        der.clone()
+		public_key: public_key
+		not_before: not_before
+		not_after:  not_after
+	}
+}
