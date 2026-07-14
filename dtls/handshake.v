@@ -264,3 +264,28 @@ pub fn Random.generate() !Random {
 		bytes: randutil.bytes(random_size)!
 	}
 }
+
+// ClientHello is the first message of a handshake.
+pub struct ClientHello {
+pub mut:
+	version    ProtocolVersion = .dtls_1_2
+	random     Random
+	session_id []u8
+	// cookie is empty in the first ClientHello and echoes the server's
+	// HelloVerifyRequest in the second.
+	cookie              []u8
+	cipher_suites       []CipherSuite
+	compression_methods []u8 = [u8(0)]
+	extensions          []Extension
+}
+
+// ServerHello selects the parameters for the connection.
+pub struct ServerHello {
+pub mut:
+	version            ProtocolVersion = .dtls_1_2
+	random             Random
+	session_id         []u8
+	cipher_suite       CipherSuite
+	compression_method u8
+	extensions         []Extension
+}
