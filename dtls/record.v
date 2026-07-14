@@ -154,3 +154,14 @@ pub fn (r &Record) header_bytes(fragment_length int) []u8 {
 	w.u16(u16(fragment_length))
 	return w.buf
 }
+
+// is_dtls reports whether a datagram plausibly holds a DTLS record.
+//
+// This is the RFC 7983 demultiplexing test: on a WebRTC socket the same port
+// carries STUN, DTLS, RTP and RTCP, and DTLS is the first-byte range 20 to 63.
+pub fn is_dtls(b []u8) bool {
+	if b.len < record_header_size {
+		return false
+	}
+	return b[0] >= 20 && b[0] <= 63
+}
