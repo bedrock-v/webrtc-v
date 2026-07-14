@@ -18,3 +18,11 @@ pub const record_header_size = 13
 // section 4.1). Nothing in WebRTC approaches it; the limit exists so a hostile
 // length field cannot choose our allocation size.
 pub const max_record_payload = 16384
+
+// ContentType identifies what a record carries.
+pub enum ContentType as u8 {
+	change_cipher_spec = 20
+	alert              = 21
+	handshake          = 22
+	application_data   = 23
+}
