@@ -238,3 +238,7 @@ mut:
 	mask        u64
 	seen        bool
 }
+
+// default_replay_window is the number of records behind the highest accepted
+// one that are still acceptable.
+pub const default_replay_window = 64
