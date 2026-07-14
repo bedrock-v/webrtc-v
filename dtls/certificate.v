@@ -93,3 +93,11 @@ pub mut:
 	private_key ecdsa.PrivateKey
 	public_key  ecdsa.PublicKey
 }
+
+// Fingerprint is a certificate hash as it appears in an SDP a=fingerprint line.
+pub struct Fingerprint {
+pub:
+	algorithm HashAlgorithm
+	// value is the lowercase, colon-separated hex of the digest.
+	value string
+}
