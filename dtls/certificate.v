@@ -58,3 +58,12 @@ pub fn hash_algorithm_from_string(s string) ?HashAlgorithm {
 		else { none }
 	}
 }
+
+fn (h HashAlgorithm) sum(data []u8) []u8 {
+	return match h {
+		.sha1 { sha1.sum(data) }
+		.sha256 { sha256.sum(data) }
+		.sha384 { sha512.sum384(data) }
+		.sha512 { sha512.sum512(data) }
+	}
+}
