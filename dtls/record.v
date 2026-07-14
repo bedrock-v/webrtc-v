@@ -94,3 +94,11 @@ pub enum RecordErrorReason {
 	// decrypt_failed: the record did not authenticate.
 	decrypt_failed
 }
+
+pub fn (e RecordError) msg() string {
+	return 'dtls: record ${e.reason}: ${e.detail}'
+}
+
+pub fn (e RecordError) code() int {
+	return int(e.reason) + 10
+}
