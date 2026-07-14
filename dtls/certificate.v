@@ -152,3 +152,12 @@ pub fn (c &Certificate) fingerprint(algorithm HashAlgorithm) Fingerprint {
 		value:     colon_hex(digest)
 	}
 }
+
+// fingerprint_of computes the fingerprint of a DER certificate we did not
+// generate, which is how a peer's certificate is checked against the SDP.
+pub fn fingerprint_of(der []u8, algorithm HashAlgorithm) Fingerprint {
+	return Fingerprint{
+		algorithm: algorithm
+		value:     colon_hex(algorithm.sum(der))
+	}
+}
