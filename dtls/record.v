@@ -115,3 +115,27 @@ pub mut:
 	// plaintext otherwise.
 	fragment []u8
 }
+
+// marshal serialises a record.
+pub fn (r &Record) marshal() ![]u8 {
+	if r.fragment.len > max_record_payload {
+		return RecordError{
+			reason: .bad_length
+			detail: 'fragment of ${r.fragment.len} bytes exceeds the ${max_record_payload}-byte maximum'
+		}
+	}
+	if r.sequence_number > 0xFFFFFFFFFFFF {
+		return RecordError{
+			reason: .bad_length
+			detail: 'sequence number ${r.sequence_number} does not fit 48 bits'
+		}
+	}
+	mut w := codec.Writer.with_capacity(record_header_size + r.fragment.len)
+	w.u8(u8(r.content_type))
+	w.u16(u16(r.version))
+	w.u16(r.epoch)
+	w.u48(r.sequence_number)
+	w.u16(u16(r.fragment.len))
+	w.bytes(r.fragment)
+	return w.buf
+}
