@@ -363,3 +363,27 @@ fn decode_signature_algorithms(body []u8) ?SupportedSignatureAlgorithms {
 		schemes: schemes
 	}
 }
+
+fn decode_use_srtp(body []u8) ?UseSrtp {
+	mut r := codec.Reader.new(body)
+	length := int(r.u16('profiles length') or { return none })
+	if length % 2 != 0 || r.remaining() < length {
+		return none
+	}
+	mut profiles := []srtp.Profile{cap: length / 2}
+	for _ in 0 .. length / 2 {
+		value := r.u16('profile') or { return none }
+		// A profile we do not implement is dropped rather than kept: the point
+		// of this list is to intersect it with ours, and an unusable entry
+		// would only have to be filtered out later.
+		if profile := srtp.profile_from_value(value) {
+			profiles << profile
+		}
+	}
+	mki_length := int(r.u8('mki length') or { return none })
+	mki := r.bytes(mki_length, 'mki') or { return none }
+	return UseSrtp{
+		profiles: profiles
+		mki:      mki
+	}
+}
