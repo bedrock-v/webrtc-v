@@ -143,3 +143,12 @@ pub fn Fingerprint.parse(input string) !Fingerprint {
 pub fn (f Fingerprint) matches(other Fingerprint) bool {
 	return f.algorithm == other.algorithm && f.value == other.value
 }
+
+// fingerprint computes the certificate's fingerprint under the given hash.
+pub fn (c &Certificate) fingerprint(algorithm HashAlgorithm) Fingerprint {
+	digest := algorithm.sum(c.der)
+	return Fingerprint{
+		algorithm: algorithm
+		value:     colon_hex(digest)
+	}
+}
