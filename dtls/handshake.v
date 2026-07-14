@@ -143,3 +143,59 @@ pub mut:
 	header HandshakeHeader
 	body   []u8
 }
+
+// unmarshal_handshake_fragments decodes every fragment in a record payload.
+//
+// One record can carry several handshake messages, which is how a server packs
+// ServerHello, Certificate, ServerKeyExchange and ServerHelloDone into a single
+// flight.
+pub fn unmarshal_handshake_fragments(data []u8) ![]HandshakeFragment {
+	mut out := []HandshakeFragment{}
+	mut r := codec.Reader.new(data)
+
+	for r.remaining() > 0 {
+		if r.remaining() < handshake_header_size {
+			return HandshakeError{
+				detail: '${r.remaining()} trailing bytes are not a handshake header'
+			}
+		}
+		raw_type := r.u8('handshake type')!
+		typ := handshake_type_from_value(raw_type) or {
+			return HandshakeError{
+				detail: 'handshake type ${raw_type} is not defined'
+			}
+		}
+		length := r.u24('length')!
+		message_seq := r.u16('message sequence')!
+		fragment_offset := r.u24('fragment offset')!
+		fragment_length := r.u24('fragment length')!
+
+		if length > max_handshake_body {
+			return HandshakeError{
+				detail: '${typ} declares ${length} bytes, over the ${max_handshake_body}-byte limit'
+			}
+		}
+		if u64(fragment_offset) + u64(fragment_length) > u64(length) {
+			return HandshakeError{
+				detail: '${typ} fragment at ${fragment_offset} of ${fragment_length} bytes runs past the ${length}-byte message'
+			}
+		}
+		body := r.bytes(int(fragment_length), 'fragment body') or {
+			return HandshakeError{
+				detail: '${typ} fragment declares ${fragment_length} bytes but only ${r.remaining()} remain'
+			}
+		}
+
+		out << HandshakeFragment{
+			header: HandshakeHeader{
+				typ:             typ
+				length:          length
+				message_seq:     message_seq
+				fragment_offset: fragment_offset
+				fragment_length: fragment_length
+			}
+			body:   body
+		}
+	}
+	return out
+}
