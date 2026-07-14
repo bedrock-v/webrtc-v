@@ -278,3 +278,19 @@ fn encode_time(t time.Time) []u8 {
 	text := '${utc.year:04d}${utc.month:02d}${utc.day:02d}${utc.hour:02d}${utc.minute:02d}${utc.second:02d}Z'
 	return der_tlv(der_generalized_time, text.bytes())
 }
+
+// ParsedCertificate is what this package reads back out of a peer's
+// certificate: enough to complete the handshake and no more.
+//
+// There is deliberately no path validation, no name checking and no expiry
+// enforcement beyond what is described below. In WebRTC the certificate is not
+// trusted because of who signed it; it is trusted because its fingerprint
+// matches the one that arrived over the signalling channel.
+pub struct ParsedCertificate {
+pub:
+	der []u8
+	// public_key is the peer's key, used to verify its CertificateVerify.
+	public_key ecdsa.PublicKey
+	not_before time.Time
+	not_after  time.Time
+}
