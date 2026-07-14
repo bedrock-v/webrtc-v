@@ -13,3 +13,8 @@ import webrtc.internal.codec
 
 // record_header_size is the fixed 13-byte header.
 pub const record_header_size = 13
+
+// max_record_payload is the largest fragment a record may carry (RFC 6347
+// section 4.1). Nothing in WebRTC approaches it; the limit exists so a hostile
+// length field cannot choose our allocation size.
+pub const max_record_payload = 16384
