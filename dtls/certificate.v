@@ -161,3 +161,11 @@ pub fn fingerprint_of(der []u8, algorithm HashAlgorithm) Fingerprint {
 		value:     colon_hex(algorithm.sum(der))
 	}
 }
+
+fn colon_hex(digest []u8) string {
+	mut parts := []string{cap: digest.len}
+	for b in digest {
+		parts << b.hex()
+	}
+	return parts.join(':')
+}
