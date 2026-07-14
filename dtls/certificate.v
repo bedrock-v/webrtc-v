@@ -263,3 +263,18 @@ fn encode_common_name(name string) ![]u8 {
 	attribute := der_sequence_of(der_oid(oid_common_name)!, der_tlv(der_utf8_string, bytes))
 	return der_tlv(der_sequence, der_tlv(der_set, attribute))
 }
+
+// encode_time writes a validity bound.
+//
+// X.509 requires UTCTime for years through 2049 and GeneralizedTime after, and
+// DER requires the seconds field and the trailing Z.
+fn encode_time(t time.Time) []u8 {
+	// time.now() is local; the certificate must carry UTC.
+	utc := t.local_to_utc()
+	if utc.year < 2050 {
+		text := '${utc.year % 100:02d}${utc.month:02d}${utc.day:02d}${utc.hour:02d}${utc.minute:02d}${utc.second:02d}Z'
+		return der_tlv(der_utc_time, text.bytes())
+	}
+	text := '${utc.year:04d}${utc.month:02d}${utc.day:02d}${utc.hour:02d}${utc.minute:02d}${utc.second:02d}Z'
+	return der_tlv(der_generalized_time, text.bytes())
+}
