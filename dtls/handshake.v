@@ -13,3 +13,9 @@ import webrtc.internal.randutil
 
 // handshake_header_size is the fixed 12-byte header.
 pub const handshake_header_size = 12
+
+// max_handshake_body bounds one reassembled message. A certificate is the
+// largest thing that crosses this layer and is a few hundred bytes; the limit
+// is what stops a peer from declaring a 16 MiB message and making us hold a
+// buffer for it.
+pub const max_handshake_body = 65536
