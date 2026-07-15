@@ -86,3 +86,9 @@ pub struct SupportedEcPointFormats {
 pub:
 	formats []EcPointFormat
 }
+
+// SupportedSignatureAlgorithms lists the signature schemes the sender accepts.
+pub struct SupportedSignatureAlgorithms {
+pub:
+	schemes []SignatureScheme
+}
