@@ -151,3 +151,41 @@ pub enum ConnErrorReason {
 	// alert: the peer sent a fatal alert.
 	alert
 }
+
+pub fn (e ConnError) msg() string {
+	return 'dtls: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e ConnError) code() int {
+	return int(e.reason) + 40
+}
+
+// pendingMessage reassembles a fragmented handshake message.
+struct PendingMessage {
+mut:
+	typ    HandshakeType
+	length u32
+	body   []u8
+	// received tracks which byte ranges have arrived, as sorted,
+	// non-overlapping half-open spans. A bitmap would be simpler but would
+	// allocate proportionally to the declared length, which the peer chooses.
+	received []ByteRange
+}
+
+// ByteRange is a half-open span of a message body.
+struct ByteRange {
+	start u32
+	end   u32
+}
+
+// add records a fragment and reports whether the message is now complete.
+fn (mut p PendingMessage) add(offset u32, fragment []u8) bool {
+	if u64(offset) + u64(fragment.len) > u64(p.length) {
+		return p.is_complete()
+	}
+	for i, b in fragment {
+		p.body[int(offset) + i] = b
+	}
+	p.merge(offset, offset + u32(fragment.len))
+	return p.is_complete()
+}
