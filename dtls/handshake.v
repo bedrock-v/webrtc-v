@@ -94,3 +94,9 @@ fn cipher_suite_from_value(v u16) ?CipherSuite {
 		else { none }
 	}
 }
+
+// HandshakeError describes a handshake message that cannot be built or parsed.
+pub struct HandshakeError {
+pub:
+	detail string
+}
