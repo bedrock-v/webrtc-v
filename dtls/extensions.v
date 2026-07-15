@@ -118,3 +118,10 @@ pub struct RenegotiationInfo {
 pub:
 	renegotiated_connection []u8
 }
+
+// RawExtension is an extension this implementation does not interpret.
+pub struct RawExtension {
+pub:
+	typ  u16
+	data []u8
+}
