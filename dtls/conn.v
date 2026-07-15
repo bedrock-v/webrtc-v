@@ -116,3 +116,38 @@ pub:
 	mtu                 int            = default_mtu
 	logger              logging.Logger = logging.nop()
 }
+
+// ConnError is returned when a connection cannot be established or used.
+pub struct ConnError {
+pub:
+	reason ConnErrorReason
+	detail string
+}
+
+pub enum ConnErrorReason {
+	// closed: the connection has been shut down.
+	closed
+	// wrong_state: the operation is not valid yet, most often reading before
+	// the handshake completed.
+	wrong_state
+	// timed_out: the peer did not answer within the handshake timeout.
+	timed_out
+	// handshake_failure: the peer sent something the handshake cannot proceed
+	// from.
+	handshake_failure
+	// fingerprint_mismatch: the peer's certificate does not match what the
+	// signalling channel said it would be. This is the check that authenticates
+	// the peer; a mismatch means talking to someone else.
+	fingerprint_mismatch
+	// bad_certificate: the peer's certificate could not be parsed or its key
+	// could not be used.
+	bad_certificate
+	// bad_signature: a signature in the handshake did not verify.
+	bad_signature
+	// no_srtp_profile: DTLS-SRTP was requested and no common profile was found.
+	no_srtp_profile
+	// transport: the underlying datagram channel failed.
+	transport
+	// alert: the peer sent a fatal alert.
+	alert
+}
