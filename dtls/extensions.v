@@ -397,3 +397,18 @@ pub fn find_extension(extensions []Extension, typ u16) ?Extension {
 	}
 	return none
 }
+
+// negotiate_srtp_profile picks the profile to use from what the peer offered.
+//
+// The server chooses, and it chooses by our preference order rather than the
+// peer's: a peer that lists a weak profile first should not be able to talk us
+// into it. Returning none means no common profile, which is fatal for a WebRTC
+// media transport.
+pub fn negotiate_srtp_profile(offered []srtp.Profile, supported []srtp.Profile) ?srtp.Profile {
+	for candidate in supported {
+		if candidate in offered {
+			return candidate
+		}
+	}
+	return none
+}
