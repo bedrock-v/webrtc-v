@@ -43,3 +43,8 @@ pub enum HashAlgorithmId as u8 {
 	sha384 = 5
 	sha512 = 6
 }
+
+pub enum SignatureAlgorithmId as u8 {
+	rsa   = 1
+	ecdsa = 3
+}
