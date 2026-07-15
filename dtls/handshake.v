@@ -569,3 +569,56 @@ fn marshal_certificate_request(m CertificateRequest) ![]u8 {
 	w.bytes(authorities.buf)
 	return w.buf
 }
+
+fn unmarshal_certificate_request(body []u8) !CertificateRequest {
+	mut r := codec.Reader.new(body)
+	types_length := int(r.u8('certificate types length') or { return short('CertificateRequest') })
+	types_bytes := r.bytes(types_length, 'certificate types') or {
+		return short('CertificateRequest')
+	}
+	mut certificate_types := []ClientCertificateType{cap: types_bytes.len}
+	for value in types_bytes {
+		certificate_types << unsafe { ClientCertificateType(value) }
+	}
+
+	schemes_length := int(r.u16('signature schemes length') or {
+		return short('CertificateRequest')
+	})
+	if schemes_length % 2 != 0 {
+		return HandshakeError{
+			detail: 'signature scheme list of ${schemes_length} bytes is not a whole number of schemes'
+		}
+	}
+	schemes_bytes := r.bytes(schemes_length, 'signature schemes') or {
+		return short('CertificateRequest')
+	}
+	mut signature_schemes := []SignatureScheme{cap: schemes_length / 2}
+	for i := 0; i < schemes_bytes.len; i += 2 {
+		signature_schemes << SignatureScheme{
+			hash:      unsafe { HashAlgorithmId(schemes_bytes[i]) }
+			signature: unsafe { SignatureAlgorithmId(schemes_bytes[i + 1]) }
+		}
+	}
+
+	mut certificate_authorities := [][]u8{}
+	if r.remaining() > 0 {
+		total := int(r.u16('authorities length') or { return short('CertificateRequest') })
+		mut authorities := r.sub(total, 'certificate authorities') or {
+			return short('CertificateRequest')
+		}
+		for authorities.remaining() > 0 {
+			length := int(authorities.u16('authority length') or {
+				return short('CertificateRequest')
+			})
+			certificate_authorities << authorities.bytes(length, 'authority') or {
+				return short('CertificateRequest')
+			}
+		}
+	}
+
+	return CertificateRequest{
+		certificate_types:       certificate_types
+		signature_schemes:       signature_schemes
+		certificate_authorities: certificate_authorities
+	}
+}
