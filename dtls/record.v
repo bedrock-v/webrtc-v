@@ -254,3 +254,18 @@ pub fn AntiReplay.new(window_size int) AntiReplay {
 		window_size: size
 	}
 }
+
+// check reports whether a sequence number is acceptable, without recording it.
+pub fn (w &AntiReplay) check(sequence_number u64) bool {
+	if !w.seen {
+		return true
+	}
+	if sequence_number > w.highest {
+		return true
+	}
+	diff := w.highest - sequence_number
+	if diff >= w.window_size {
+		return false
+	}
+	return w.mask & (u64(1) << diff) == 0
+}
