@@ -11,3 +11,8 @@ import webrtc.srtp
 
 // Extension type numbers from the IANA TLS ExtensionType registry.
 pub const ext_supported_groups = u16(10)
+pub const ext_ec_point_formats = u16(11)
+pub const ext_signature_algorithms = u16(13)
+pub const ext_use_srtp = u16(14)
+pub const ext_extended_master_secret = u16(23)
+pub const ext_renegotiation_info = u16(65281)
