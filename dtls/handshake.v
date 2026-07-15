@@ -689,3 +689,68 @@ pub fn unmarshal_handshake_message(typ HandshakeType, body []u8) !HandshakeMessa
 		}
 	}
 }
+
+fn unmarshal_client_hello(body []u8) !ClientHello {
+	mut r := codec.Reader.new(body)
+	raw_version := r.u16('version') or { return short('ClientHello') }
+	version := protocol_version_from_value(raw_version) or {
+		return HandshakeError{
+			detail: 'ClientHello offers version 0x${raw_version.hex()}, which is not DTLS 1.0 or 1.2'
+		}
+	}
+	random := r.bytes(random_size, 'random') or { return short('ClientHello') }
+
+	session_id_length := int(r.u8('session id length') or { return short('ClientHello') })
+	if session_id_length > 32 {
+		return HandshakeError{
+			detail: 'session id of ${session_id_length} bytes exceeds 32'
+		}
+	}
+	session_id := r.bytes(session_id_length, 'session id') or { return short('ClientHello') }
+
+	cookie_length := int(r.u8('cookie length') or { return short('ClientHello') })
+	cookie := r.bytes(cookie_length, 'cookie') or { return short('ClientHello') }
+
+	suites_length := int(r.u16('cipher suites length') or { return short('ClientHello') })
+	if suites_length % 2 != 0 {
+		return HandshakeError{
+			detail: 'cipher suite list of ${suites_length} bytes is not a whole number of suites'
+		}
+	}
+	suites_bytes := r.bytes(suites_length, 'cipher suites') or { return short('ClientHello') }
+	mut cipher_suites := []CipherSuite{}
+	for i := 0; i < suites_bytes.len; i += 2 {
+		value := (u16(suites_bytes[i]) << 8) | u16(suites_bytes[i + 1])
+		// Suites we do not implement are dropped: the only use for this list is
+		// to intersect it with ours.
+		if suite := cipher_suite_from_value(value) {
+			cipher_suites << suite
+		}
+	}
+
+	compression_length := int(r.u8('compression methods length') or { return short('ClientHello') })
+	compression_methods := r.bytes(compression_length, 'compression methods') or {
+		return short('ClientHello')
+	}
+
+	mut extensions := []Extension{}
+	if r.remaining() > 0 {
+		extensions_length := int(r.u16('extensions length') or { return short('ClientHello') })
+		extensions_bytes := r.bytes(extensions_length, 'extensions') or {
+			return short('ClientHello')
+		}
+		extensions = unmarshal_extensions(extensions_bytes)!
+	}
+
+	return ClientHello{
+		version:             version
+		random:              Random{
+			bytes: random
+		}
+		session_id:          session_id
+		cookie:              cookie
+		cipher_suites:       cipher_suites
+		compression_methods: compression_methods
+		extensions:          extensions
+	}
+}
