@@ -40,3 +40,19 @@ pub enum HandshakeType as u8 {
 	client_key_exchange  = 16
 	finished             = 20
 }
+
+pub fn (t HandshakeType) str() string {
+	return match t {
+		.hello_request { 'HelloRequest' }
+		.client_hello { 'ClientHello' }
+		.server_hello { 'ServerHello' }
+		.hello_verify_request { 'HelloVerifyRequest' }
+		.certificate { 'Certificate' }
+		.server_key_exchange { 'ServerKeyExchange' }
+		.certificate_request { 'CertificateRequest' }
+		.server_hello_done { 'ServerHelloDone' }
+		.certificate_verify { 'CertificateVerify' }
+		.client_key_exchange { 'ClientKeyExchange' }
+		.finished { 'Finished' }
+	}
+}
