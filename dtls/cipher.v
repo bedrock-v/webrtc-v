@@ -59,3 +59,36 @@ pub:
 	client RecordKeys
 	server RecordKeys
 }
+
+// expand_key_block splits the PRF output into the four values RFC 5246
+// section 6.3 defines, in the order it defines them.
+//
+// The order is client key, server key, client IV, server IV - both keys before
+// either IV. Getting it wrong yields two endpoints that finish a handshake and
+// then cannot decrypt each other, with no error that points at the cause.
+pub fn expand_key_block(block []u8) !KeySet {
+	if block.len < gcm_key_block_length {
+		return CipherError{
+			detail: 'key block is ${block.len} bytes, need ${gcm_key_block_length}'
+		}
+	}
+	mut offset := 0
+	client_key := block[offset..offset + gcm_key_length].clone()
+	offset += gcm_key_length
+	server_key := block[offset..offset + gcm_key_length].clone()
+	offset += gcm_key_length
+	client_iv := block[offset..offset + gcm_fixed_iv_length].clone()
+	offset += gcm_fixed_iv_length
+	server_iv := block[offset..offset + gcm_fixed_iv_length].clone()
+
+	return KeySet{
+		client: RecordKeys{
+			key:      client_key
+			fixed_iv: client_iv
+		}
+		server: RecordKeys{
+			key:      server_key
+			fixed_iv: server_iv
+		}
+	}
+}
