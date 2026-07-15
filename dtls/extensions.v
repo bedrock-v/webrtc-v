@@ -309,3 +309,21 @@ fn decode_extension(typ u16, body []u8) Extension {
 		data: body
 	}
 }
+
+fn decode_supported_groups(body []u8) ?SupportedGroups {
+	mut r := codec.Reader.new(body)
+	length := int(r.u16('groups length') or { return none })
+	if length % 2 != 0 || r.remaining() < length {
+		return none
+	}
+	mut curves := []NamedCurve{cap: length / 2}
+	for _ in 0 .. length / 2 {
+		value := r.u16('group') or { return none }
+		// Unknown curves are kept, so that a later comparison against what we
+		// support sees exactly what the peer offered.
+		curves << unsafe { NamedCurve(value) }
+	}
+	return SupportedGroups{
+		curves: curves
+	}
+}
