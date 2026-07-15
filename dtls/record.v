@@ -269,3 +269,23 @@ pub fn (w &AntiReplay) check(sequence_number u64) bool {
 	}
 	return w.mask & (u64(1) << diff) == 0
 }
+
+// accept records a sequence number as seen.
+pub fn (mut w AntiReplay) accept(sequence_number u64) {
+	if !w.seen {
+		w.seen = true
+		w.highest = sequence_number
+		w.mask = 1
+		return
+	}
+	if sequence_number > w.highest {
+		shift := sequence_number - w.highest
+		w.mask = if shift >= 64 { u64(1) } else { (w.mask << shift) | 1 }
+		w.highest = sequence_number
+		return
+	}
+	diff := w.highest - sequence_number
+	if diff < 64 {
+		w.mask |= u64(1) << diff
+	}
+}
