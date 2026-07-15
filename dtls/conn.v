@@ -59,3 +59,30 @@ pub fn (s State) str() string {
 // inside the smallest path MTU likely to be encountered, including an IPv6
 // tunnel, without relying on IP fragmentation, which many paths drop.
 pub const default_mtu = 1200
+
+// default_handshake_timeout bounds the whole handshake.
+pub const default_handshake_timeout = 30 * time.second
+
+// default_retransmit_interval is the initial retransmission timer, doubling on
+// each attempt as RFC 6347 section 4.2.4.1 requires.
+pub const default_retransmit_interval = 500 * time.millisecond
+
+// max_handshake_messages bounds how many messages one handshake may involve.
+// A peer that keeps sending new message sequences is either broken or trying to
+// make us allocate.
+const max_handshake_messages = 32
+
+// Transport is the datagram channel a DTLS connection runs over.
+//
+// It is an interface rather than a concrete socket so that the connection can
+// run over anything: an ICE agent, a plain UDP socket, or an in-memory pipe for
+// testing. An ice.Agent satisfies it as written, which is the intended pairing -
+// ICE finds the path, DTLS secures it.
+//
+// recv must return an error when the timeout expires rather than blocking
+// forever; the retransmission timer depends on it.
+pub interface Transport {
+mut:
+	send(data []u8) !int
+	recv(timeout time.Duration) ![]u8
+}
