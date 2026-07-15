@@ -86,3 +86,33 @@ mut:
 	send(data []u8) !int
 	recv(timeout time.Duration) ![]u8
 }
+
+// Config configures a connection.
+@[params]
+pub struct Config {
+pub:
+	role Role = .client
+	// certificate is the local identity. One is generated if none is given,
+	// but an application that has already published a fingerprint in an offer
+	// must pass the certificate that fingerprint belongs to.
+	certificate ?Certificate
+	// remote_fingerprints are the fingerprints signalled by the peer. The
+	// handshake fails unless the peer's certificate matches one of them.
+	//
+	// Leaving this empty disables the check, which removes the only thing
+	// authenticating the peer - anyone able to reach the transport could
+	// complete the handshake. It is allowed because a caller may verify the
+	// certificate itself, and refused by default because it must be a decision
+	// rather than an oversight.
+	remote_fingerprints []Fingerprint
+	// insecure_skip_fingerprint_verification must be set explicitly to accept
+	// any peer certificate.
+	insecure_skip_fingerprint_verification bool
+	// srtp_profiles are the SRTP protection profiles to negotiate, in order of
+	// preference. Empty means do not offer DTLS-SRTP at all.
+	srtp_profiles       []srtp.Profile = [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]
+	handshake_timeout   time.Duration  = default_handshake_timeout
+	retransmit_interval time.Duration  = default_retransmit_interval
+	mtu                 int            = default_mtu
+	logger              logging.Logger = logging.nop()
+}
