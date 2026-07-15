@@ -808,3 +808,31 @@ fn unmarshal_server_hello(body []u8) !ServerHello {
 		extensions:         extensions
 	}
 }
+
+fn unmarshal_hello_verify_request(body []u8) !HelloVerifyRequest {
+	mut r := codec.Reader.new(body)
+	raw_version := r.u16('version') or { return short('HelloVerifyRequest') }
+	version := protocol_version_from_value(raw_version) or { ProtocolVersion.dtls_1_0 }
+	cookie_length := int(r.u8('cookie length') or { return short('HelloVerifyRequest') })
+	cookie := r.bytes(cookie_length, 'cookie') or { return short('HelloVerifyRequest') }
+	return HelloVerifyRequest{
+		version: version
+		cookie:  cookie
+	}
+}
+
+fn unmarshal_certificate(body []u8) !CertificateMessage {
+	mut r := codec.Reader.new(body)
+	total := int(r.u24('chain length') or { return short('Certificate') })
+	mut chain := r.sub(total, 'certificate chain') or { return short('Certificate') }
+
+	mut certificates := [][]u8{}
+	for chain.remaining() > 0 {
+		length := int(chain.u24('certificate length') or { return short('Certificate') })
+		certificate := chain.bytes(length, 'certificate') or { return short('Certificate') }
+		certificates << certificate
+	}
+	return CertificateMessage{
+		certificates: certificates
+	}
+}
