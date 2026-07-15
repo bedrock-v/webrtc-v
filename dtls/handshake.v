@@ -87,3 +87,10 @@ pub fn (c CipherSuite) str() string {
 		.ecdhe_ecdsa_with_aes_128_gcm_sha256 { 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256' }
 	}
 }
+
+fn cipher_suite_from_value(v u16) ?CipherSuite {
+	return match v {
+		0xC02B { CipherSuite.ecdhe_ecdsa_with_aes_128_gcm_sha256 }
+		else { none }
+	}
+}
