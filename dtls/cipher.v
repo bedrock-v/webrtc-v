@@ -161,3 +161,21 @@ fn additional_data(epoch u16, sequence_number u64, content_type ContentType, ver
 	w.u16(u16(plaintext_length))
 	return w.buf
 }
+
+// protect encrypts a record payload, returning the fragment to put on the wire:
+// the explicit nonce, the ciphertext and the tag.
+pub fn (mut c RecordCipher) protect(epoch u16, sequence_number u64, content_type ContentType, version ProtocolVersion, plaintext []u8) ![]u8 {
+	explicit := explicit_nonce_for(epoch, sequence_number)
+	aad := additional_data(epoch, sequence_number, content_type, version, plaintext.len)
+
+	sealed := c.gcm.seal(plaintext, c.nonce(explicit), aad) or {
+		return CipherError{
+			detail: 'encrypting a record: ${err.msg()}'
+		}
+	}
+
+	mut out := []u8{cap: explicit.len + sealed.len}
+	out << explicit
+	out << sealed
+	return out
+}
