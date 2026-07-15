@@ -62,3 +62,9 @@ pub const ecdsa_sha256 = SignatureScheme{
 	hash:      .sha256
 	signature: .ecdsa
 }
+
+// Extension is one entry in a hello's extension list.
+//
+// The typed variants carry the extensions this implementation acts on; Raw
+// keeps everything else intact.
+pub type Extension = ExtendedMasterSecret
