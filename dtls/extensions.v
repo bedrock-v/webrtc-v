@@ -227,3 +227,40 @@ fn marshal_extensions(extensions []Extension) ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+// unmarshal_extensions decodes an extension list, given the bytes after the
+// two-byte list length.
+//
+// An extension whose body is malformed is kept as a RawExtension rather than
+// failing the handshake. That is deliberate: a peer sending something we cannot
+// parse in an extension we do not act on should not prevent a connection, and
+// the extensions we do act on are validated where they are used.
+fn unmarshal_extensions(data []u8) ![]Extension {
+	mut out := []Extension{}
+	mut r := codec.Reader.new(data)
+
+	for r.remaining() > 0 {
+		if out.len >= max_extensions {
+			return HandshakeError{
+				detail: 'more than ${max_extensions} extensions'
+			}
+		}
+		typ := r.u16('extension type') or {
+			return HandshakeError{
+				detail: 'truncated extension header'
+			}
+		}
+		length := int(r.u16('extension length') or {
+			return HandshakeError{
+				detail: 'truncated extension header'
+			}
+		})
+		body := r.bytes(length, 'extension body') or {
+			return HandshakeError{
+				detail: 'extension ${typ} declares ${length} bytes but only ${r.remaining()} remain'
+			}
+		}
+		out << decode_extension(typ, body)
+	}
+	return out
+}
