@@ -34,3 +34,12 @@ pub enum NamedCurve as u16 {
 pub enum EcPointFormat as u8 {
 	uncompressed = 0
 }
+
+// HashAlgorithmId and SignatureAlgorithmId are the two halves of a TLS 1.2
+// SignatureAndHashAlgorithm (RFC 5246 section 7.4.1.4.1).
+pub enum HashAlgorithmId as u8 {
+	sha1   = 2
+	sha256 = 4
+	sha384 = 5
+	sha512 = 6
+}
