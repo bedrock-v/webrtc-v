@@ -92,3 +92,36 @@ pub fn expand_key_block(block []u8) !KeySet {
 		}
 	}
 }
+
+// RecordCipher protects records in one direction.
+pub struct RecordCipher {
+mut:
+	keys RecordKeys
+	// gcm is built once per direction rather than per record. Expanding the key
+	// and the hash table costs about as much as encrypting a small record, so
+	// doing it per record roughly halved throughput.
+	gcm &aes.Gcm = unsafe { nil }
+}
+
+// RecordCipher.new returns a cipher for one direction's keys.
+pub fn RecordCipher.new(keys RecordKeys) !RecordCipher {
+	if keys.key.len != gcm_key_length {
+		return CipherError{
+			detail: 'AES-128-GCM needs a ${gcm_key_length}-byte key, got ${keys.key.len}'
+		}
+	}
+	if keys.fixed_iv.len != gcm_fixed_iv_length {
+		return CipherError{
+			detail: 'AES-128-GCM needs a ${gcm_fixed_iv_length}-byte fixed IV, got ${keys.fixed_iv.len}'
+		}
+	}
+	gcm := aes.Gcm.new(keys.key) or {
+		return CipherError{
+			detail: 'initialising AES-GCM: ${err.msg()}'
+		}
+	}
+	return RecordCipher{
+		keys: keys
+		gcm:  gcm
+	}
+}
