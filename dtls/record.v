@@ -242,3 +242,15 @@ mut:
 // default_replay_window is the number of records behind the highest accepted
 // one that are still acceptable.
 pub const default_replay_window = 64
+
+// AntiReplay.new returns a window of the given size, capped at the 64 a single
+// mask word can track.
+pub fn AntiReplay.new(window_size int) AntiReplay {
+	mut size := u64(window_size)
+	if size == 0 || size > 64 {
+		size = 64
+	}
+	return AntiReplay{
+		window_size: size
+	}
+}
