@@ -19,3 +19,9 @@ pub const handshake_header_size = 12
 // is what stops a peer from declaring a 16 MiB message and making us hold a
 // buffer for it.
 pub const max_handshake_body = 65536
+
+// random_size is the size of a hello random: four bytes of time and 28 random.
+pub const random_size = 32
+
+// max_cookie_size is the RFC 6347 limit on a HelloVerifyRequest cookie.
+pub const max_cookie_size = 255
