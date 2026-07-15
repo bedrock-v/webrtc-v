@@ -81,3 +81,9 @@ pub enum CipherSuite as u16 {
 	// we generate, and GCM authenticates and encrypts in one pass.
 	ecdhe_ecdsa_with_aes_128_gcm_sha256 = 0xC02B
 }
+
+pub fn (c CipherSuite) str() string {
+	return match c {
+		.ecdhe_ecdsa_with_aes_128_gcm_sha256 { 'TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256' }
+	}
+}
