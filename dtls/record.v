@@ -289,3 +289,9 @@ pub fn (mut w AntiReplay) accept(sequence_number u64) {
 		w.mask |= u64(1) << diff
 	}
 }
+
+// highest_sequence_number returns the largest sequence number accepted so far.
+@[inline]
+pub fn (w &AntiReplay) highest_sequence_number() u64 {
+	return w.highest
+}
