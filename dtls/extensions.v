@@ -106,3 +106,7 @@ pub:
 	// so it can be echoed.
 	mki []u8
 }
+
+// ExtendedMasterSecret is a flag: its presence asks for RFC 7627 key
+// derivation, which binds the master secret to the handshake transcript.
+pub struct ExtendedMasterSecret {}
