@@ -48,3 +48,10 @@ pub enum SignatureAlgorithmId as u8 {
 	rsa   = 1
 	ecdsa = 3
 }
+
+// SignatureScheme pairs a hash with a signature algorithm.
+pub struct SignatureScheme {
+pub:
+	hash      HashAlgorithmId
+	signature SignatureAlgorithmId
+}
