@@ -56,3 +56,20 @@ pub fn (t HandshakeType) str() string {
 		.finished { 'Finished' }
 	}
 }
+
+fn handshake_type_from_value(v u8) ?HandshakeType {
+	return match v {
+		0 { HandshakeType.hello_request }
+		1 { HandshakeType.client_hello }
+		2 { HandshakeType.server_hello }
+		3 { HandshakeType.hello_verify_request }
+		11 { HandshakeType.certificate }
+		12 { HandshakeType.server_key_exchange }
+		13 { HandshakeType.certificate_request }
+		14 { HandshakeType.server_hello_done }
+		15 { HandshakeType.certificate_verify }
+		16 { HandshakeType.client_key_exchange }
+		20 { HandshakeType.finished }
+		else { none }
+	}
+}
