@@ -543,3 +543,29 @@ pub fn server_ecdh_params(curve NamedCurve, public_key []u8) []u8 {
 	w.bytes(public_key)
 	return w.buf
 }
+
+fn marshal_certificate_request(m CertificateRequest) ![]u8 {
+	if m.certificate_types.len == 0 || m.certificate_types.len > 255 {
+		return HandshakeError{
+			detail: 'CertificateRequest names ${m.certificate_types.len} certificate types, expected 1 to 255'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u8(u8(m.certificate_types.len))
+	for typ in m.certificate_types {
+		w.u8(u8(typ))
+	}
+	w.u16(u16(m.signature_schemes.len * 2))
+	for scheme in m.signature_schemes {
+		w.u8(u8(scheme.hash))
+		w.u8(u8(scheme.signature))
+	}
+	mut authorities := codec.Writer.new()
+	for authority in m.certificate_authorities {
+		authorities.u16(u16(authority.len))
+		authorities.bytes(authority)
+	}
+	w.u16(u16(authorities.len()))
+	w.bytes(authorities.buf)
+	return w.buf
+}
