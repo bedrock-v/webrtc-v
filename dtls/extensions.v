@@ -201,3 +201,29 @@ fn (e Extension) marshal_body() ![]u8 {
 		}
 	}
 }
+
+// marshal_extensions serialises a whole extension list, including the two-byte
+// length prefix that precedes it in a hello.
+fn marshal_extensions(extensions []Extension) ![]u8 {
+	mut body := codec.Writer.new()
+	for extension in extensions {
+		payload := extension.marshal_body()!
+		if payload.len > 0xFFFF {
+			return HandshakeError{
+				detail: 'extension ${extension.extension_type()} is ${payload.len} bytes, over the 16-bit limit'
+			}
+		}
+		body.u16(extension.extension_type())
+		body.u16(u16(payload.len))
+		body.bytes(payload)
+	}
+	if body.len() > 0xFFFF {
+		return HandshakeError{
+			detail: 'extension list of ${body.len()} bytes exceeds the 16-bit length field'
+		}
+	}
+	mut w := codec.Writer.with_capacity(2 + body.len())
+	w.u16(u16(body.len()))
+	w.bytes(body.buf)
+	return w.buf
+}
