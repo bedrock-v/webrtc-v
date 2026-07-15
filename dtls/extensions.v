@@ -110,3 +110,11 @@ pub:
 // ExtendedMasterSecret is a flag: its presence asks for RFC 7627 key
 // derivation, which binds the master secret to the handshake transcript.
 pub struct ExtendedMasterSecret {}
+
+// RenegotiationInfo signals that the sender understands RFC 5746. WebRTC never
+// renegotiates, so the payload is always empty, but several stacks refuse a
+// handshake that omits the extension entirely.
+pub struct RenegotiationInfo {
+pub:
+	renegotiated_connection []u8
+}
