@@ -80,3 +80,9 @@ pub struct SupportedGroups {
 pub:
 	curves []NamedCurve
 }
+
+// SupportedEcPointFormats lists the point encodings the sender accepts.
+pub struct SupportedEcPointFormats {
+pub:
+	formats []EcPointFormat
+}
