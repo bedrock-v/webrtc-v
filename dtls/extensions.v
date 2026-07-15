@@ -68,3 +68,9 @@ pub const ecdsa_sha256 = SignatureScheme{
 // The typed variants carry the extensions this implementation acts on; Raw
 // keeps everything else intact.
 pub type Extension = ExtendedMasterSecret
+	| RawExtension
+	| RenegotiationInfo
+	| SupportedEcPointFormats
+	| SupportedGroups
+	| SupportedSignatureAlgorithms
+	| UseSrtp
