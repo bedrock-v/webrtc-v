@@ -138,3 +138,66 @@ pub fn (e Extension) extension_type() u16 {
 		RawExtension { e.typ }
 	}
 }
+
+// marshal_body serialises just the extension_data field.
+fn (e Extension) marshal_body() ![]u8 {
+	match e {
+		SupportedGroups {
+			mut w := codec.Writer.new()
+			w.u16(u16(e.curves.len * 2))
+			for curve in e.curves {
+				w.u16(u16(curve))
+			}
+			return w.buf
+		}
+		SupportedEcPointFormats {
+			mut w := codec.Writer.new()
+			w.u8(u8(e.formats.len))
+			for format in e.formats {
+				w.u8(u8(format))
+			}
+			return w.buf
+		}
+		SupportedSignatureAlgorithms {
+			mut w := codec.Writer.new()
+			w.u16(u16(e.schemes.len * 2))
+			for scheme in e.schemes {
+				w.u8(u8(scheme.hash))
+				w.u8(u8(scheme.signature))
+			}
+			return w.buf
+		}
+		UseSrtp {
+			if e.mki.len > 255 {
+				return HandshakeError{
+					detail: 'SRTP MKI of ${e.mki.len} bytes exceeds the 255-byte field'
+				}
+			}
+			mut w := codec.Writer.new()
+			w.u16(u16(e.profiles.len * 2))
+			for profile in e.profiles {
+				w.u16(u16(profile))
+			}
+			w.u8(u8(e.mki.len))
+			w.bytes(e.mki)
+			return w.buf
+		}
+		ExtendedMasterSecret {
+			return []u8{}
+		}
+		RenegotiationInfo {
+			if e.renegotiated_connection.len > 255 {
+				return HandshakeError{
+					detail: 'renegotiation info of ${e.renegotiated_connection.len} bytes exceeds the 255-byte field'
+				}
+			}
+			mut w := codec.Writer.new()
+			w.u8(u8(e.renegotiated_connection.len))
+			w.bytes(e.renegotiated_connection)
+			return w.buf
+		}
+		RawExtension {
+			return e.data.clone()
+		}
+	}
+}
