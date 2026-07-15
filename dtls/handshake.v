@@ -100,3 +100,11 @@ pub struct HandshakeError {
 pub:
 	detail string
 }
+
+pub fn (e HandshakeError) msg() string {
+	return 'dtls: handshake: ${e.detail}'
+}
+
+pub fn (e HandshakeError) code() int {
+	return 20
+}
