@@ -55,3 +55,10 @@ pub:
 	hash      HashAlgorithmId
 	signature SignatureAlgorithmId
 }
+
+// ecdsa_sha256 is the only scheme this implementation signs with. It is what a
+// P-256 certificate calls for and what every browser offers.
+pub const ecdsa_sha256 = SignatureScheme{
+	hash:      .sha256
+	signature: .ecdsa
+}
