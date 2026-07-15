@@ -28,3 +28,9 @@ pub enum NamedCurve as u16 {
 	secp521r1 = 25
 	x25519    = 29
 }
+
+// EcPointFormat is how an elliptic curve point is encoded. Only uncompressed is
+// mandatory to implement, and it is the only one anything deployed uses.
+pub enum EcPointFormat as u8 {
+	uncompressed = 0
+}
