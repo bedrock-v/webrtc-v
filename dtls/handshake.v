@@ -836,3 +836,29 @@ fn unmarshal_certificate(body []u8) !CertificateMessage {
 		certificates: certificates
 	}
 }
+
+fn unmarshal_server_key_exchange(body []u8) !ServerKeyExchange {
+	mut r := codec.Reader.new(body)
+	curve_type := r.u8('curve type') or { return short('ServerKeyExchange') }
+	if curve_type != 3 {
+		return HandshakeError{
+			detail: 'ServerKeyExchange uses curve type ${curve_type}; only named_curve is supported'
+		}
+	}
+	raw_curve := r.u16('named curve') or { return short('ServerKeyExchange') }
+	public_key_length := int(r.u8('public key length') or { return short('ServerKeyExchange') })
+	public_key := r.bytes(public_key_length, 'public key') or { return short('ServerKeyExchange') }
+
+	signature_hash := r.u8('signature hash') or { return short('ServerKeyExchange') }
+	signature_type := r.u8('signature type') or { return short('ServerKeyExchange') }
+	signature_length := int(r.u16('signature length') or { return short('ServerKeyExchange') })
+	signature := r.bytes(signature_length, 'signature') or { return short('ServerKeyExchange') }
+
+	return ServerKeyExchange{
+		curve:          unsafe { NamedCurve(raw_curve) }
+		public_key:     public_key
+		signature_hash: unsafe { HashAlgorithmId(signature_hash) }
+		signature_type: unsafe { SignatureAlgorithmId(signature_type) }
+		signature:      signature
+	}
+}
