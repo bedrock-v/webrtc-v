@@ -122,3 +122,9 @@ pub mut:
 	fragment_offset u32
 	fragment_length u32
 }
+
+// is_complete reports whether this fragment is the whole message.
+@[inline]
+pub fn (h &HandshakeHeader) is_complete() bool {
+	return h.fragment_offset == 0 && h.fragment_length == h.length
+}
