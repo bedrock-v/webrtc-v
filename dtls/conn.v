@@ -189,3 +189,33 @@ fn (mut p PendingMessage) add(offset u32, fragment []u8) bool {
 	p.merge(offset, offset + u32(fragment.len))
 	return p.is_complete()
 }
+
+fn (mut p PendingMessage) merge(start u32, end u32) {
+	if end <= start {
+		return
+	}
+	mut merged := []ByteRange{cap: p.received.len + 1}
+	mut lo := start
+	mut hi := end
+	for span in p.received {
+		// Spans that touch as well as overlap are absorbed, so two adjacent
+		// fragments collapse into one and the completeness test stays a single
+		// comparison.
+		if span.end < lo || span.start > hi {
+			merged << span
+			continue
+		}
+		if span.start < lo {
+			lo = span.start
+		}
+		if span.end > hi {
+			hi = span.end
+		}
+	}
+	merged << ByteRange{
+		start: lo
+		end:   hi
+	}
+	merged.sort(a.start < b.start)
+	p.received = merged
+}
