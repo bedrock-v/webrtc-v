@@ -16,3 +16,7 @@ pub const ext_signature_algorithms = u16(13)
 pub const ext_use_srtp = u16(14)
 pub const ext_extended_master_secret = u16(23)
 pub const ext_renegotiation_info = u16(65281)
+
+// max_extensions bounds how many extensions one hello may carry. The list comes
+// from the peer before anything is authenticated.
+const max_extensions = 32
