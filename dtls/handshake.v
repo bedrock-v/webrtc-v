@@ -73,3 +73,11 @@ fn handshake_type_from_value(v u8) ?HandshakeType {
 		else { none }
 	}
 }
+
+// CipherSuite is a TLS cipher suite identifier.
+pub enum CipherSuite as u16 {
+	// The suite browsers negotiate, and the only one this implementation
+	// offers. ECDHE gives forward secrecy, ECDSA matches the P-256 certificate
+	// we generate, and GCM authenticates and encrypts in one pass.
+	ecdhe_ecdsa_with_aes_128_gcm_sha256 = 0xC02B
+}
