@@ -387,3 +387,13 @@ fn decode_use_srtp(body []u8) ?UseSrtp {
 		mki:      mki
 	}
 }
+
+// find_extension returns the first extension of the given type.
+pub fn find_extension(extensions []Extension, typ u16) ?Extension {
+	for extension in extensions {
+		if extension.extension_type() == typ {
+			return extension
+		}
+	}
+	return none
+}
