@@ -862,3 +862,25 @@ fn unmarshal_server_key_exchange(body []u8) !ServerKeyExchange {
 		signature:      signature
 	}
 }
+
+fn unmarshal_certificate_verify(body []u8) !CertificateVerify {
+	mut r := codec.Reader.new(body)
+	signature_hash := r.u8('signature hash') or { return short('CertificateVerify') }
+	signature_type := r.u8('signature type') or { return short('CertificateVerify') }
+	signature_length := int(r.u16('signature length') or { return short('CertificateVerify') })
+	signature := r.bytes(signature_length, 'signature') or { return short('CertificateVerify') }
+	return CertificateVerify{
+		signature_hash: unsafe { HashAlgorithmId(signature_hash) }
+		signature_type: unsafe { SignatureAlgorithmId(signature_type) }
+		signature:      signature
+	}
+}
+
+fn unmarshal_client_key_exchange(body []u8) !ClientKeyExchange {
+	mut r := codec.Reader.new(body)
+	length := int(r.u8('public key length') or { return short('ClientKeyExchange') })
+	public_key := r.bytes(length, 'public key') or { return short('ClientKeyExchange') }
+	return ClientKeyExchange{
+		public_key: public_key
+	}
+}
