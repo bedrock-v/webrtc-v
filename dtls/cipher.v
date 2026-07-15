@@ -27,3 +27,35 @@ const gcm_tag_length = 16
 // gcm_key_block_length is what the PRF must produce: two keys and two fixed
 // IVs. There are no MAC keys, because the AEAD authenticates.
 const gcm_key_block_length = 2 * gcm_key_length + 2 * gcm_fixed_iv_length
+
+// CipherError is returned when a record cannot be protected or unprotected.
+pub struct CipherError {
+pub:
+	detail string
+	// authentication distinguishes a forged or corrupted record from a
+	// programming error. A caller should count the former and investigate the
+	// latter.
+	authentication bool
+}
+
+pub fn (e CipherError) msg() string {
+	return 'dtls: ${e.detail}'
+}
+
+pub fn (e CipherError) code() int {
+	return if e.authentication { 31 } else { 30 }
+}
+
+// RecordKeys is one direction's record protection state.
+pub struct RecordKeys {
+pub:
+	key      []u8
+	fixed_iv []u8
+}
+
+// KeySet is the pair of directions produced by one key block expansion.
+pub struct KeySet {
+pub:
+	client RecordKeys
+	server RecordKeys
+}
