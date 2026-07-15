@@ -327,3 +327,19 @@ fn decode_supported_groups(body []u8) ?SupportedGroups {
 		curves: curves
 	}
 }
+
+fn decode_ec_point_formats(body []u8) ?SupportedEcPointFormats {
+	mut r := codec.Reader.new(body)
+	length := int(r.u8('formats length') or { return none })
+	if r.remaining() < length {
+		return none
+	}
+	mut formats := []EcPointFormat{cap: length}
+	for _ in 0 .. length {
+		value := r.u8('format') or { return none }
+		formats << unsafe { EcPointFormat(value) }
+	}
+	return SupportedEcPointFormats{
+		formats: formats
+	}
+}
