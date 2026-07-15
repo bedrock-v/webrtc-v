@@ -125,3 +125,16 @@ pub:
 	typ  u16
 	data []u8
 }
+
+// extension_type returns the wire type number of an extension.
+pub fn (e Extension) extension_type() u16 {
+	return match e {
+		SupportedGroups { ext_supported_groups }
+		SupportedEcPointFormats { ext_ec_point_formats }
+		SupportedSignatureAlgorithms { ext_signature_algorithms }
+		UseSrtp { ext_use_srtp }
+		ExtendedMasterSecret { ext_extended_master_secret }
+		RenegotiationInfo { ext_renegotiation_info }
+		RawExtension { e.typ }
+	}
+}
