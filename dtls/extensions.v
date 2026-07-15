@@ -74,3 +74,9 @@ pub type Extension = ExtendedMasterSecret
 	| SupportedGroups
 	| SupportedSignatureAlgorithms
 	| UseSrtp
+
+// SupportedGroups lists the curves the sender will accept for key exchange.
+pub struct SupportedGroups {
+pub:
+	curves []NamedCurve
+}
