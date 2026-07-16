@@ -333,3 +333,33 @@ pub fn Conn.new(transport Transport, config Config) !&Conn {
 		replay:            AntiReplay.new(default_replay_window)
 	}
 }
+
+// state returns the connection's current state.
+@[inline]
+pub fn (c &Conn) state() State {
+	return c.state
+}
+
+// role returns which side of the handshake this connection took.
+@[inline]
+pub fn (c &Conn) role() Role {
+	return if c.is_client { Role.client } else { Role.server }
+}
+
+// local_certificate returns the certificate this end presents, whose
+// fingerprint belongs in the local SDP.
+@[inline]
+pub fn (c &Conn) local_certificate() Certificate {
+	return c.local_certificate
+}
+
+// remote_certificate returns the peer's certificate, once the handshake has
+// reached the point of receiving it.
+pub fn (c &Conn) remote_certificate() ?ParsedCertificate {
+	return c.remote_certificate
+}
+
+// selected_srtp_profile returns the negotiated SRTP protection profile.
+pub fn (c &Conn) selected_srtp_profile() ?srtp.Profile {
+	return c.negotiated_srtp_profile
+}
