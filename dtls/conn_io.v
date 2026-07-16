@@ -169,3 +169,55 @@ fn (mut c Conn) receive_records(timeout time.Duration) ![]Record {
 	}
 	return out
 }
+
+// accept_record validates and decrypts one record.
+fn (mut c Conn) accept_record(record Record) !Record {
+	if record.epoch > c.recv_epoch {
+		// A record from the next epoch, arriving before the peer's
+		// ChangeCipherSpec. It cannot be decrypted yet, and buffering it would
+		// let a peer make us hold arbitrary state, so it is dropped and left to
+		// the peer's retransmission.
+		return ConnError{
+			reason: .wrong_state
+			detail: 'record is from epoch ${record.epoch}, we are on ${c.recv_epoch}'
+		}
+	}
+	if record.epoch < c.recv_epoch {
+		return ConnError{
+			reason: .wrong_state
+			detail: 'record is from the superseded epoch ${record.epoch}'
+		}
+	}
+	if !c.replay.check(record.sequence_number) {
+		return ConnError{
+			reason: .wrong_state
+			detail: 'record ${record.sequence_number} has already been seen'
+		}
+	}
+
+	mut plaintext := record.fragment.clone()
+	if mut cipher := c.recv_cipher {
+		plaintext = cipher.unprotect(record.epoch, record.sequence_number, record.content_type,
+			record.version, record.fragment) or {
+			// The replay window is deliberately not advanced here. Doing so
+			// would let anyone who can reach the transport burn sequence
+			// numbers the real peer is about to use.
+			return ConnError{
+				reason: .alert
+				detail: err.msg()
+			}
+		}
+		c.recv_cipher = cipher
+	}
+
+	// Only an authentic record advances the window.
+	c.replay.accept(record.sequence_number)
+
+	return Record{
+		content_type:    record.content_type
+		version:         record.version
+		epoch:           record.epoch
+		sequence_number: record.sequence_number
+		fragment:        plaintext
+	}
+}
