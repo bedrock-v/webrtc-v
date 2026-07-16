@@ -412,3 +412,28 @@ pub fn (c &Conn) srtp_contexts() !(&srtp.Context, &srtp.Context) {
 	inbound := srtp.Context.from_keying_material(remote, profile)!
 	return outbound, inbound
 }
+
+// close marks the connection closed. It does not send a close_notify alert,
+// because in WebRTC the transport below is torn down at the same moment and an
+// alert would be sent into a socket that is already going away.
+pub fn (mut c Conn) close() {
+	if c.state == .closed {
+		return
+	}
+	c.state = .closed
+}
+
+// client_and_server_randoms returns the two handshake randoms in the order
+// every derivation in TLS names them, which is by role and not by which end is
+// asking.
+//
+// Getting this backwards on one side produces two peers that complete a
+// handshake and then derive different keys, with nothing to point at the cause.
+// It is computed in one place so the several derivations that need it cannot
+// disagree.
+fn (c &Conn) client_and_server_randoms() ([]u8, []u8) {
+	if c.is_client {
+		return c.local_random.bytes, c.remote_random.bytes
+	}
+	return c.remote_random.bytes, c.local_random.bytes
+}
