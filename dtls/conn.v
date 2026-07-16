@@ -363,3 +363,28 @@ pub fn (c &Conn) remote_certificate() ?ParsedCertificate {
 pub fn (c &Conn) selected_srtp_profile() ?srtp.Profile {
 	return c.negotiated_srtp_profile
 }
+
+// srtp_keying_material exports the keys for the negotiated SRTP profile
+// (RFC 5764 section 4.2).
+//
+// Split it with srtp.split_keying_material. Which half is the local one depends
+// on the DTLS role, not on the ICE role: the client's key protects what the
+// client sends.
+pub fn (c &Conn) srtp_keying_material() ![]u8 {
+	if c.state != .connected {
+		return ConnError{
+			reason: .wrong_state
+			detail: 'keying material is only available after the handshake completes'
+		}
+	}
+	profile := c.negotiated_srtp_profile or {
+		return ConnError{
+			reason: .no_srtp_profile
+			detail: 'no SRTP profile was negotiated'
+		}
+	}
+
+	client_random, server_random := c.client_and_server_randoms()
+	return srtp_keying_material(c.master_secret, client_random, server_random,
+		profile.keying_material_len())
+}
