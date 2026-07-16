@@ -475,3 +475,16 @@ fn marshal_server_hello(m ServerHello) ![]u8 {
 	w.bytes(marshal_extensions(m.extensions)!)
 	return w.buf
 }
+
+fn marshal_hello_verify_request(m HelloVerifyRequest) ![]u8 {
+	if m.cookie.len > max_cookie_size {
+		return HandshakeError{
+			detail: 'cookie of ${m.cookie.len} bytes exceeds ${max_cookie_size}'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u16(u16(m.version))
+	w.u8(u8(m.cookie.len))
+	w.bytes(m.cookie)
+	return w.buf
+}
