@@ -377,3 +377,8 @@ pub type HandshakeMessage = CertificateMessage
 	| CertificateVerify
 	| ClientHello
 	| ClientKeyExchange
+	| Finished
+	| HelloVerifyRequest
+	| ServerHello
+	| ServerHelloDone
+	| ServerKeyExchange
