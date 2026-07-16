@@ -199,3 +199,50 @@ pub fn unmarshal_handshake_fragments(data []u8) ![]HandshakeFragment {
 	}
 	return out
 }
+
+// fragment_message splits a complete handshake message into fragments that fit
+// max_fragment bytes of record payload each.
+//
+// Fragmenting at this layer rather than relying on IP fragmentation is what
+// keeps a handshake working across a path that drops fragmented datagrams,
+// which many do.
+pub fn fragment_message(typ HandshakeType, message_seq u16, body []u8, max_fragment int) ![][]u8 {
+	if body.len > max_handshake_body {
+		return HandshakeError{
+			detail: '${typ} body of ${body.len} bytes exceeds the ${max_handshake_body}-byte limit'
+		}
+	}
+	payload_limit := max_fragment - handshake_header_size
+	if payload_limit < 1 {
+		return HandshakeError{
+			detail: 'a fragment limit of ${max_fragment} bytes leaves no room for the handshake header'
+		}
+	}
+
+	mut out := [][]u8{}
+	mut offset := 0
+	for {
+		mut chunk := body.len - offset
+		if chunk > payload_limit {
+			chunk = payload_limit
+		}
+		header := HandshakeHeader{
+			typ:             typ
+			length:          u32(body.len)
+			message_seq:     message_seq
+			fragment_offset: u32(offset)
+			fragment_length: u32(chunk)
+		}
+		mut w := codec.Writer.with_capacity(handshake_header_size + chunk)
+		header.marshal_into(mut w)
+		w.bytes(body[offset..offset + chunk])
+		out << w.buf
+
+		offset += chunk
+		// A zero-length message still needs exactly one fragment.
+		if offset >= body.len {
+			break
+		}
+	}
+	return out
+}
