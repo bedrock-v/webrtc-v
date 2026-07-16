@@ -136,3 +136,10 @@ fn (h &HandshakeHeader) marshal_into(mut w codec.Writer) {
 	w.u24(h.fragment_offset)
 	w.u24(h.fragment_length)
 }
+
+// HandshakeFragment is a header plus the bytes it covers.
+pub struct HandshakeFragment {
+pub mut:
+	header HandshakeHeader
+	body   []u8
+}
