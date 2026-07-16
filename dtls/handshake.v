@@ -510,3 +510,23 @@ fn marshal_certificate(m CertificateMessage) ![]u8 {
 	w.bytes(body.buf)
 	return w.buf
 }
+
+fn marshal_server_key_exchange(m ServerKeyExchange) ![]u8 {
+	if m.public_key.len == 0 || m.public_key.len > 255 {
+		return HandshakeError{
+			detail: 'ECDH public key is ${m.public_key.len} bytes, outside the 1-255 range'
+		}
+	}
+	if m.signature.len > 0xFFFF {
+		return HandshakeError{
+			detail: 'signature of ${m.signature.len} bytes exceeds the 16-bit length field'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.bytes(server_ecdh_params(m.curve, m.public_key))
+	w.u8(u8(m.signature_hash))
+	w.u8(u8(m.signature_type))
+	w.u16(u16(m.signature.len))
+	w.bytes(m.signature)
+	return w.buf
+}
