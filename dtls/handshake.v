@@ -370,3 +370,10 @@ pub mut:
 	// no list of acceptable issuers to send.
 	certificate_authorities [][]u8
 }
+
+// HandshakeMessage is any handshake message.
+pub type HandshakeMessage = CertificateMessage
+	| CertificateRequest
+	| CertificateVerify
+	| ClientHello
+	| ClientKeyExchange
