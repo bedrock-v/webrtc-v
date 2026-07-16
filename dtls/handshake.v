@@ -488,3 +488,25 @@ fn marshal_hello_verify_request(m HelloVerifyRequest) ![]u8 {
 	w.bytes(m.cookie)
 	return w.buf
 }
+
+fn marshal_certificate(m CertificateMessage) ![]u8 {
+	mut body := codec.Writer.new()
+	for certificate in m.certificates {
+		if certificate.len > 0xFFFFFF {
+			return HandshakeError{
+				detail: 'certificate of ${certificate.len} bytes exceeds the 24-bit length field'
+			}
+		}
+		body.u24(u32(certificate.len))
+		body.bytes(certificate)
+	}
+	if body.len() > 0xFFFFFF {
+		return HandshakeError{
+			detail: 'certificate chain of ${body.len()} bytes exceeds the 24-bit length field'
+		}
+	}
+	mut w := codec.Writer.with_capacity(3 + body.len())
+	w.u24(u32(body.len()))
+	w.bytes(body.buf)
+	return w.buf
+}
