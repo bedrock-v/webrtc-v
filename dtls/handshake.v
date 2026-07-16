@@ -530,3 +530,16 @@ fn marshal_server_key_exchange(m ServerKeyExchange) ![]u8 {
 	w.bytes(m.signature)
 	return w.buf
 }
+
+// server_ecdh_params builds the ServerECDHParams structure, which is both sent
+// on the wire and covered by the signature. It is built in one place so the two
+// uses cannot drift apart.
+pub fn server_ecdh_params(curve NamedCurve, public_key []u8) []u8 {
+	mut w := codec.Writer.with_capacity(4 + public_key.len)
+	// curve_type: named_curve
+	w.u8(3)
+	w.u16(u16(curve))
+	w.u8(u8(public_key.len))
+	w.bytes(public_key)
+	return w.buf
+}
