@@ -349,3 +349,9 @@ pub mut:
 
 // ServerHelloDone marks the end of the server's first flight.
 pub struct ServerHelloDone {}
+
+// ClientCertificateType names a kind of certificate a server will accept.
+pub enum ClientCertificateType as u8 {
+	rsa_sign   = 1
+	ecdsa_sign = 64
+}
