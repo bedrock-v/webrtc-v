@@ -87,3 +87,34 @@ fn (mut c Conn) send_records(content_type ContentType, fragments [][]u8) ! {
 		}
 	}
 }
+
+// build_record wraps one payload in a record, encrypting it if the current
+// epoch is protected.
+fn (mut c Conn) build_record(content_type ContentType, payload []u8) ![]u8 {
+	sequence_number := c.send_sequence
+	c.send_sequence++
+	if c.send_sequence > 0xFFFFFFFFFFFF {
+		// The 48-bit sequence number has wrapped. Continuing would repeat a GCM
+		// nonce under the same key, which reveals the authentication key, so
+		// the connection stops instead.
+		return ConnError{
+			reason: .wrong_state
+			detail: 'the record sequence number space is exhausted; the connection must be re-keyed'
+		}
+	}
+
+	mut fragment := payload.clone()
+	if mut cipher := c.send_cipher {
+		fragment = cipher.protect(c.send_epoch, sequence_number, content_type, .dtls_1_2, payload)!
+		c.send_cipher = cipher
+	}
+
+	record := Record{
+		content_type:    content_type
+		version:         .dtls_1_2
+		epoch:           c.send_epoch
+		sequence_number: sequence_number
+		fragment:        fragment
+	}
+	return record.marshal()!
+}
