@@ -331,3 +331,12 @@ pub struct ClientKeyExchange {
 pub mut:
 	public_key []u8
 }
+
+// CertificateVerify proves the sender holds the private key for the certificate
+// it sent, by signing the handshake transcript.
+pub struct CertificateVerify {
+pub mut:
+	signature_hash HashAlgorithmId      = .sha256
+	signature_type SignatureAlgorithmId = .ecdsa
+	signature      []u8
+}
