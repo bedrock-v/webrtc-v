@@ -137,3 +137,35 @@ fn (mut c Conn) send_change_cipher_spec(cipher RecordCipher) ! {
 fn (mut c Conn) send_alert(description u8) {
 	c.send_records(.alert, [[alert_level_fatal, description]]) or {}
 }
+
+// receive_records reads one datagram and returns the records in it that are
+// usable: correctly framed, in an epoch we have keys for, not replayed, and
+// decrypted.
+fn (mut c Conn) receive_records(timeout time.Duration) ![]Record {
+	datagram := c.transport.recv(timeout) or {
+		return ConnError{
+			reason: .timed_out
+			detail: err.msg()
+		}
+	}
+	if !is_dtls(datagram) {
+		// Something else on the transport. At this layer that is noise, not an
+		// error worth failing the handshake over.
+		return []Record{}
+	}
+
+	records := unmarshal_records(datagram) or {
+		c.log.debug('discarded a malformed datagram: ${err.msg()}')
+		return []Record{}
+	}
+
+	mut out := []Record{}
+	for record in records {
+		usable := c.accept_record(record) or {
+			c.log.debug('discarded a record: ${err.msg()}')
+			continue
+		}
+		out << usable
+	}
+	return out
+}
