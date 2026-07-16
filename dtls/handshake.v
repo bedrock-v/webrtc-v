@@ -310,3 +310,18 @@ pub struct CertificateMessage {
 pub mut:
 	certificates [][]u8
 }
+
+// ServerKeyExchange carries the server's ephemeral ECDH public key and a
+// signature over it.
+//
+// The signature is what binds the ephemeral key to the certificate: without it,
+// anyone on the path could substitute their own key. It covers the two randoms
+// as well, so it cannot be replayed into a different handshake.
+pub struct ServerKeyExchange {
+pub mut:
+	curve          NamedCurve = .secp256r1
+	public_key     []u8
+	signature_hash HashAlgorithmId      = .sha256
+	signature_type SignatureAlgorithmId = .ecdsa
+	signature      []u8
+}
