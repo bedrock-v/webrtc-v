@@ -325,3 +325,9 @@ pub mut:
 	signature_type SignatureAlgorithmId = .ecdsa
 	signature      []u8
 }
+
+// ClientKeyExchange carries the client's ephemeral ECDH public key.
+pub struct ClientKeyExchange {
+pub mut:
+	public_key []u8
+}
