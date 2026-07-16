@@ -346,3 +346,6 @@ pub struct Finished {
 pub mut:
 	verify_data []u8
 }
+
+// ServerHelloDone marks the end of the server's first flight.
+pub struct ServerHelloDone {}
