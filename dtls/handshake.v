@@ -382,3 +382,19 @@ pub type HandshakeMessage = CertificateMessage
 	| ServerHello
 	| ServerHelloDone
 	| ServerKeyExchange
+
+// handshake_type returns the wire type of a message.
+pub fn (m HandshakeMessage) handshake_type() HandshakeType {
+	return match m {
+		ClientHello { HandshakeType.client_hello }
+		ServerHello { HandshakeType.server_hello }
+		HelloVerifyRequest { HandshakeType.hello_verify_request }
+		CertificateMessage { HandshakeType.certificate }
+		ServerKeyExchange { HandshakeType.server_key_exchange }
+		CertificateRequest { HandshakeType.certificate_request }
+		ServerHelloDone { HandshakeType.server_hello_done }
+		CertificateVerify { HandshakeType.certificate_verify }
+		ClientKeyExchange { HandshakeType.client_key_exchange }
+		Finished { HandshakeType.finished }
+	}
+}
