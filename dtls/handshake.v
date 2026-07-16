@@ -303,3 +303,10 @@ pub mut:
 	version ProtocolVersion = .dtls_1_0
 	cookie  []u8
 }
+
+// CertificateMessage carries the sender's certificate chain. WebRTC endpoints
+// send exactly one self-signed certificate.
+pub struct CertificateMessage {
+pub mut:
+	certificates [][]u8
+}
