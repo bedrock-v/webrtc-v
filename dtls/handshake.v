@@ -278,3 +278,14 @@ pub mut:
 	compression_methods []u8 = [u8(0)]
 	extensions          []Extension
 }
+
+// ServerHello selects the parameters for the connection.
+pub struct ServerHello {
+pub mut:
+	version            ProtocolVersion = .dtls_1_2
+	random             Random
+	session_id         []u8
+	cipher_suite       CipherSuite
+	compression_method u8
+	extensions         []Extension
+}
