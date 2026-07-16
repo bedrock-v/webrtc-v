@@ -246,3 +246,10 @@ pub fn fragment_message(typ HandshakeType, message_seq u16, body []u8, max_fragm
 	}
 	return out
 }
+
+// Random is a hello random: 32 bytes, conventionally four of timestamp and 28
+// of entropy.
+pub struct Random {
+pub:
+	bytes []u8
+}
