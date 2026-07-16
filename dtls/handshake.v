@@ -340,3 +340,9 @@ pub mut:
 	signature_type SignatureAlgorithmId = .ecdsa
 	signature      []u8
 }
+
+// Finished carries the verify data over the whole transcript.
+pub struct Finished {
+pub mut:
+	verify_data []u8
+}
