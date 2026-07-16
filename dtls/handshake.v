@@ -414,3 +414,42 @@ pub fn (m HandshakeMessage) marshal() ![]u8 {
 		Finished { return m.verify_data.clone() }
 	}
 }
+
+fn marshal_client_hello(m ClientHello) ![]u8 {
+	if m.random.bytes.len != random_size {
+		return HandshakeError{
+			detail: 'ClientHello random is ${m.random.bytes.len} bytes, expected ${random_size}'
+		}
+	}
+	if m.session_id.len > 32 {
+		return HandshakeError{
+			detail: 'session id of ${m.session_id.len} bytes exceeds 32'
+		}
+	}
+	if m.cookie.len > max_cookie_size {
+		return HandshakeError{
+			detail: 'cookie of ${m.cookie.len} bytes exceeds ${max_cookie_size}'
+		}
+	}
+	if m.cipher_suites.len == 0 {
+		return HandshakeError{
+			detail: 'ClientHello offers no cipher suites'
+		}
+	}
+
+	mut w := codec.Writer.new()
+	w.u16(u16(m.version))
+	w.bytes(m.random.bytes)
+	w.u8(u8(m.session_id.len))
+	w.bytes(m.session_id)
+	w.u8(u8(m.cookie.len))
+	w.bytes(m.cookie)
+	w.u16(u16(m.cipher_suites.len * 2))
+	for suite in m.cipher_suites {
+		w.u16(u16(suite))
+	}
+	w.u8(u8(m.compression_methods.len))
+	w.bytes(m.compression_methods)
+	w.bytes(marshal_extensions(m.extensions)!)
+	return w.buf
+}
