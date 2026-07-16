@@ -253,3 +253,14 @@ pub struct Random {
 pub:
 	bytes []u8
 }
+
+// Random.generate returns a fresh hello random.
+//
+// RFC 5246 puts a timestamp in the first four bytes. That leaks the sender's
+// clock, and TLS 1.3 removed it for that reason; since nothing verifies it,
+// this implementation fills all 32 bytes from the CSPRNG.
+pub fn Random.generate() !Random {
+	return Random{
+		bytes: randutil.bytes(random_size)!
+	}
+}
