@@ -128,3 +128,11 @@ pub mut:
 pub fn (h &HandshakeHeader) is_complete() bool {
 	return h.fragment_offset == 0 && h.fragment_length == h.length
 }
+
+fn (h &HandshakeHeader) marshal_into(mut w codec.Writer) {
+	w.u8(u8(h.typ))
+	w.u24(h.length)
+	w.u16(h.message_seq)
+	w.u24(h.fragment_offset)
+	w.u24(h.fragment_length)
+}
