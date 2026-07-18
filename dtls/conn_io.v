@@ -345,3 +345,18 @@ fn (mut c Conn) collect_handshake(record Record) ![]HandshakeMessage {
 	}
 	return out
 }
+
+// queue_handshake fragments a message, records it in the transcript and returns
+// the record payloads to send.
+fn (mut c Conn) queue_handshake(message HandshakeMessage) ![][]u8 {
+	body := message.marshal()!
+	typ := message.handshake_type()
+	message_seq := c.next_message_seq
+	c.next_message_seq++
+
+	if typ != .hello_verify_request {
+		c.append_transcript(typ, message_seq, body)
+	}
+	c.sent_message_note(typ, message_seq)
+	return fragment_message(typ, message_seq, body, c.max_record_payload())!
+}
