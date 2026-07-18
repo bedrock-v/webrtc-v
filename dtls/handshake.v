@@ -636,3 +636,15 @@ fn marshal_certificate_verify(m CertificateVerify) ![]u8 {
 	w.bytes(m.signature)
 	return w.buf
 }
+
+fn marshal_client_key_exchange(m ClientKeyExchange) ![]u8 {
+	if m.public_key.len == 0 || m.public_key.len > 255 {
+		return HandshakeError{
+			detail: 'ECDH public key is ${m.public_key.len} bytes, outside the 1-255 range'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u8(u8(m.public_key.len))
+	w.bytes(m.public_key)
+	return w.buf
+}
