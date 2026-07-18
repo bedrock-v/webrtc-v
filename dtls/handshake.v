@@ -875,3 +875,12 @@ fn unmarshal_certificate_verify(body []u8) !CertificateVerify {
 		signature:      signature
 	}
 }
+
+fn unmarshal_client_key_exchange(body []u8) !ClientKeyExchange {
+	mut r := codec.Reader.new(body)
+	length := int(r.u8('public key length') or { return short('ClientKeyExchange') })
+	public_key := r.bytes(length, 'public key') or { return short('ClientKeyExchange') }
+	return ClientKeyExchange{
+		public_key: public_key
+	}
+}
