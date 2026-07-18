@@ -235,3 +235,34 @@ fn (mut c Conn) handle_change_cipher_spec(record Record, cipher RecordCipher) ! 
 	// Sequence numbers restart in a new epoch, so the replay window must too.
 	c.replay = AntiReplay.new(default_replay_window)
 }
+
+// handle_alert turns a received alert into an error, or into nothing when it is
+// a warning we can ignore.
+fn (mut c Conn) handle_alert(record Record) ! {
+	if record.fragment.len < 2 {
+		return ConnError{
+			reason: .alert
+			detail: 'truncated alert'
+		}
+	}
+	level := record.fragment[0]
+	description := record.fragment[1]
+	name := alert_description_name(description)
+
+	if description == alert_close_notify {
+		c.state = .closed
+		return ConnError{
+			reason: .closed
+			detail: 'the peer closed the connection'
+		}
+	}
+	if level == alert_level_warning {
+		c.log.debug('peer sent a warning alert: ${name}')
+		return
+	}
+	c.state = .failed
+	return ConnError{
+		reason: .alert
+		detail: 'peer sent a fatal alert: ${name}'
+	}
+}
