@@ -820,3 +820,19 @@ fn unmarshal_hello_verify_request(body []u8) !HelloVerifyRequest {
 		cookie:  cookie
 	}
 }
+
+fn unmarshal_certificate(body []u8) !CertificateMessage {
+	mut r := codec.Reader.new(body)
+	total := int(r.u24('chain length') or { return short('Certificate') })
+	mut chain := r.sub(total, 'certificate chain') or { return short('Certificate') }
+
+	mut certificates := [][]u8{}
+	for chain.remaining() > 0 {
+		length := int(chain.u24('certificate length') or { return short('Certificate') })
+		certificate := chain.bytes(length, 'certificate') or { return short('Certificate') }
+		certificates << certificate
+	}
+	return CertificateMessage{
+		certificates: certificates
+	}
+}
