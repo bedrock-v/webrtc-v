@@ -648,3 +648,44 @@ fn marshal_client_key_exchange(m ClientKeyExchange) ![]u8 {
 	w.bytes(m.public_key)
 	return w.buf
 }
+
+// unmarshal_handshake_message decodes a reassembled message body.
+pub fn unmarshal_handshake_message(typ HandshakeType, body []u8) !HandshakeMessage {
+	match typ {
+		.client_hello {
+			return unmarshal_client_hello(body)!
+		}
+		.server_hello {
+			return unmarshal_server_hello(body)!
+		}
+		.hello_verify_request {
+			return unmarshal_hello_verify_request(body)!
+		}
+		.certificate {
+			return unmarshal_certificate(body)!
+		}
+		.server_key_exchange {
+			return unmarshal_server_key_exchange(body)!
+		}
+		.certificate_request {
+			return unmarshal_certificate_request(body)!
+		}
+		.server_hello_done {
+			return ServerHelloDone{}
+		}
+		.certificate_verify {
+			return unmarshal_certificate_verify(body)!
+		}
+		.client_key_exchange {
+			return unmarshal_client_key_exchange(body)!
+		}
+		.finished {
+			return unmarshal_finished(body)!
+		}
+		else {
+			return HandshakeError{
+				detail: '${typ} is not supported'
+			}
+		}
+	}
+}
