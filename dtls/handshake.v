@@ -808,3 +808,15 @@ fn unmarshal_server_hello(body []u8) !ServerHello {
 		extensions:         extensions
 	}
 }
+
+fn unmarshal_hello_verify_request(body []u8) !HelloVerifyRequest {
+	mut r := codec.Reader.new(body)
+	raw_version := r.u16('version') or { return short('HelloVerifyRequest') }
+	version := protocol_version_from_value(raw_version) or { ProtocolVersion.dtls_1_0 }
+	cookie_length := int(r.u8('cookie length') or { return short('HelloVerifyRequest') })
+	cookie := r.bytes(cookie_length, 'cookie') or { return short('HelloVerifyRequest') }
+	return HelloVerifyRequest{
+		version: version
+		cookie:  cookie
+	}
+}
