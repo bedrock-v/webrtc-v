@@ -754,3 +754,57 @@ fn unmarshal_client_hello(body []u8) !ClientHello {
 		extensions:          extensions
 	}
 }
+
+fn unmarshal_server_hello(body []u8) !ServerHello {
+	mut r := codec.Reader.new(body)
+	raw_version := r.u16('version') or { return short('ServerHello') }
+	version := protocol_version_from_value(raw_version) or {
+		return HandshakeError{
+			detail: 'ServerHello selects version 0x${raw_version.hex()}, which is not DTLS 1.0 or 1.2'
+		}
+	}
+	random := r.bytes(random_size, 'random') or { return short('ServerHello') }
+
+	session_id_length := int(r.u8('session id length') or { return short('ServerHello') })
+	if session_id_length > 32 {
+		return HandshakeError{
+			detail: 'session id of ${session_id_length} bytes exceeds 32'
+		}
+	}
+	session_id := r.bytes(session_id_length, 'session id') or { return short('ServerHello') }
+
+	raw_suite := r.u16('cipher suite') or { return short('ServerHello') }
+	cipher_suite := cipher_suite_from_value(raw_suite) or {
+		return HandshakeError{
+			detail: 'server selected cipher suite 0x${raw_suite.hex()}, which we did not offer'
+		}
+	}
+	compression_method := r.u8('compression method') or { return short('ServerHello') }
+	if compression_method != 0 {
+		// TLS compression is a vulnerability, not a feature; RFC 7525 forbids
+		// it and nothing should be selecting it.
+		return HandshakeError{
+			detail: 'server selected compression method ${compression_method}; only null is acceptable'
+		}
+	}
+
+	mut extensions := []Extension{}
+	if r.remaining() > 0 {
+		extensions_length := int(r.u16('extensions length') or { return short('ServerHello') })
+		extensions_bytes := r.bytes(extensions_length, 'extensions') or {
+			return short('ServerHello')
+		}
+		extensions = unmarshal_extensions(extensions_bytes)!
+	}
+
+	return ServerHello{
+		version:            version
+		random:             Random{
+			bytes: random
+		}
+		session_id:         session_id
+		cipher_suite:       cipher_suite
+		compression_method: compression_method
+		extensions:         extensions
+	}
+}
