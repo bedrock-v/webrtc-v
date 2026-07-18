@@ -622,3 +622,17 @@ fn unmarshal_certificate_request(body []u8) !CertificateRequest {
 		certificate_authorities: certificate_authorities
 	}
 }
+
+fn marshal_certificate_verify(m CertificateVerify) ![]u8 {
+	if m.signature.len > 0xFFFF {
+		return HandshakeError{
+			detail: 'signature of ${m.signature.len} bytes exceeds the 16-bit length field'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u8(u8(m.signature_hash))
+	w.u8(u8(m.signature_type))
+	w.u16(u16(m.signature.len))
+	w.bytes(m.signature)
+	return w.buf
+}
