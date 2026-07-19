@@ -14,3 +14,9 @@ import webrtc.internal.codec
 
 // gcm_key_length is the AES-128 key size.
 const gcm_key_length = 16
+
+// gcm_fixed_iv_length is the part of the nonce taken from the key block.
+const gcm_fixed_iv_length = 4
+
+// gcm_explicit_nonce_length is the part sent with each record.
+const gcm_explicit_nonce_length = 8
