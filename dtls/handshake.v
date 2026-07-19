@@ -884,3 +884,14 @@ fn unmarshal_client_key_exchange(body []u8) !ClientKeyExchange {
 		public_key: public_key
 	}
 }
+
+fn unmarshal_finished(body []u8) !Finished {
+	if body.len != verify_data_length {
+		return HandshakeError{
+			detail: 'Finished is ${body.len} bytes, expected ${verify_data_length}'
+		}
+	}
+	return Finished{
+		verify_data: body.clone()
+	}
+}
