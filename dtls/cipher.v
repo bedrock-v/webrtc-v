@@ -37,3 +37,11 @@ pub:
 	// latter.
 	authentication bool
 }
+
+pub fn (e CipherError) msg() string {
+	return 'dtls: ${e.detail}'
+}
+
+pub fn (e CipherError) code() int {
+	return if e.authentication { 31 } else { 30 }
+}
