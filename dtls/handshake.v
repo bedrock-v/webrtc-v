@@ -895,3 +895,9 @@ fn unmarshal_finished(body []u8) !Finished {
 		verify_data: body.clone()
 	}
 }
+
+fn short(name string) HandshakeError {
+	return HandshakeError{
+		detail: '${name} is shorter than its fields require'
+	}
+}
