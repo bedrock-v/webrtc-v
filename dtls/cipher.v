@@ -27,3 +27,13 @@ const gcm_tag_length = 16
 // gcm_key_block_length is what the PRF must produce: two keys and two fixed
 // IVs. There are no MAC keys, because the AEAD authenticates.
 const gcm_key_block_length = 2 * gcm_key_length + 2 * gcm_fixed_iv_length
+
+// CipherError is returned when a record cannot be protected or unprotected.
+pub struct CipherError {
+pub:
+	detail string
+	// authentication distinguishes a forged or corrupted record from a
+	// programming error. A caller should count the former and investigate the
+	// latter.
+	authentication bool
+}
