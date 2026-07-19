@@ -45,3 +45,10 @@ pub fn (e CipherError) msg() string {
 pub fn (e CipherError) code() int {
 	return if e.authentication { 31 } else { 30 }
 }
+
+// RecordKeys is one direction's record protection state.
+pub struct RecordKeys {
+pub:
+	key      []u8
+	fixed_iv []u8
+}
