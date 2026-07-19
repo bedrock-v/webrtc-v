@@ -20,3 +20,10 @@ const gcm_fixed_iv_length = 4
 
 // gcm_explicit_nonce_length is the part sent with each record.
 const gcm_explicit_nonce_length = 8
+
+// gcm_tag_length is the authentication tag size.
+const gcm_tag_length = 16
+
+// gcm_key_block_length is what the PRF must produce: two keys and two fixed
+// IVs. There are no MAC keys, because the AEAD authenticates.
+const gcm_key_block_length = 2 * gcm_key_length + 2 * gcm_fixed_iv_length
