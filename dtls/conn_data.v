@@ -95,3 +95,10 @@ pub fn (mut c Conn) read(timeout time.Duration) ![]u8 {
 		detail: 'no application data'
 	}
 }
+
+// max_write is the largest message write will accept at the configured MTU.
+// SCTP above this layer needs it to size its own fragments.
+@[inline]
+pub fn (c &Conn) max_write() int {
+	return c.max_record_payload()
+}
