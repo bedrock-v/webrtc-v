@@ -52,3 +52,10 @@ pub:
 	key      []u8
 	fixed_iv []u8
 }
+
+// KeySet is the pair of directions produced by one key block expansion.
+pub struct KeySet {
+pub:
+	client RecordKeys
+	server RecordKeys
+}
