@@ -141,3 +141,32 @@ fn (mut c Conn) build_server_key_exchange() !ServerKeyExchange {
 		signature:  signature
 	}
 }
+
+// key_exchange_signature_input builds the bytes a ServerKeyExchange signature
+// covers: client random, server random, then the ECDH parameters.
+//
+// The client and server randoms go in the order RFC 4492 section 5.4 gives, not
+// in local-then-remote order, so it is built from the connection's role rather
+// than from whichever side is calling.
+fn (c &Conn) key_exchange_signature_input(point []u8) []u8 {
+	client_random, server_random := c.client_and_server_randoms()
+	mut out := []u8{cap: 2 * random_size + 4 + point.len}
+	out << client_random
+	out << server_random
+	out << server_ecdh_params(.secp256r1, point)
+	return out
+}
+
+// build_certificate_verify proves we hold the key for the certificate we sent,
+// by signing everything exchanged so far.
+fn (mut c Conn) build_certificate_verify() !CertificateVerify {
+	signature := c.local_certificate.private_key.sign(c.transcript) or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'signing the handshake transcript: ${err.msg()}'
+		}
+	}
+	return CertificateVerify{
+		signature: signature
+	}
+}
