@@ -119,3 +119,25 @@ fn (mut c Conn) build_server_hello() !ServerHello {
 		extensions:   extensions
 	}
 }
+
+// build_server_key_exchange signs our ephemeral public key.
+//
+// The signature covers both randoms as well as the key. Without the randoms it
+// could be lifted from one handshake into another; without the signature,
+// anyone on the path could substitute their own key and read everything.
+fn (mut c Conn) build_server_key_exchange() !ServerKeyExchange {
+	point := c.local_ecdh_point()!
+	signed := c.key_exchange_signature_input(point)
+
+	signature := c.local_certificate.private_key.sign(signed) or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'signing the key exchange: ${err.msg()}'
+		}
+	}
+	return ServerKeyExchange{
+		curve:      .secp256r1
+		public_key: point
+		signature:  signature
+	}
+}
