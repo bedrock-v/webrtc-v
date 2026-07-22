@@ -66,3 +66,8 @@ pub const default_handshake_timeout = 30 * time.second
 // default_retransmit_interval is the initial retransmission timer, doubling on
 // each attempt as RFC 6347 section 4.2.4.1 requires.
 pub const default_retransmit_interval = 500 * time.millisecond
+
+// max_handshake_messages bounds how many messages one handshake may involve.
+// A peer that keeps sending new message sequences is either broken or trying to
+// make us allocate.
+const max_handshake_messages = 32
