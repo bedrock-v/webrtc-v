@@ -412,3 +412,22 @@ fn (mut c Conn) derive_secrets() ! {
 		master_secret(pre_master_secret, client_random, server_random)
 	}
 }
+
+// record_keys expands the master secret into the record protection keys.
+fn (c &Conn) record_keys() !KeySet {
+	if c.master_secret.len == 0 {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'record keys were requested before the master secret was derived'
+		}
+	}
+	client_random, server_random := c.client_and_server_randoms()
+	block := key_block(c.master_secret, client_random, server_random, gcm_key_block_length)
+	return expand_key_block(block)!
+}
+
+// srtp_profiles_offered reports what this connection would negotiate, which an
+// application needs when writing the SDP before the handshake runs.
+pub fn (c &Conn) srtp_profiles_offered() []srtp.Profile {
+	return c.config.srtp_profiles.clone()
+}
