@@ -71,3 +71,18 @@ pub const default_retransmit_interval = 500 * time.millisecond
 // A peer that keeps sending new message sequences is either broken or trying to
 // make us allocate.
 const max_handshake_messages = 32
+
+// Transport is the datagram channel a DTLS connection runs over.
+//
+// It is an interface rather than a concrete socket so that the connection can
+// run over anything: an ICE agent, a plain UDP socket, or an in-memory pipe for
+// testing. An ice.Agent satisfies it as written, which is the intended pairing -
+// ICE finds the path, DTLS secures it.
+//
+// recv must return an error when the timeout expires rather than blocking
+// forever; the retransmission timer depends on it.
+pub interface Transport {
+mut:
+	send(data []u8) !int
+	recv(timeout time.Duration) ![]u8
+}
