@@ -171,3 +171,9 @@ mut:
 	// allocate proportionally to the declared length, which the peer chooses.
 	received []ByteRange
 }
+
+// ByteRange is a half-open span of a message body.
+struct ByteRange {
+	start u32
+	end   u32
+}
