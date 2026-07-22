@@ -159,3 +159,15 @@ pub fn (e ConnError) msg() string {
 pub fn (e ConnError) code() int {
 	return int(e.reason) + 40
 }
+
+// pendingMessage reassembles a fragmented handshake message.
+struct PendingMessage {
+mut:
+	typ    HandshakeType
+	length u32
+	body   []u8
+	// received tracks which byte ranges have arrived, as sorted,
+	// non-overlapping half-open spans. A bitmap would be simpler but would
+	// allocate proportionally to the declared length, which the peer chooses.
+	received []ByteRange
+}
