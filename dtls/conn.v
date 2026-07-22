@@ -151,3 +151,11 @@ pub enum ConnErrorReason {
 	// alert: the peer sent a fatal alert.
 	alert
 }
+
+pub fn (e ConnError) msg() string {
+	return 'dtls: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e ConnError) code() int {
+	return int(e.reason) + 40
+}
