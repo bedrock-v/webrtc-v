@@ -179,3 +179,31 @@ pub fn (mut c RecordCipher) protect(epoch u16, sequence_number u64, content_type
 	out << sealed
 	return out
 }
+
+// unprotect verifies and decrypts a record fragment.
+//
+// The explicit nonce carried in the record is used rather than the header's
+// epoch and sequence number, even though a conforming sender makes them equal.
+// A peer is entitled to choose its explicit nonce freely, and the header is
+// authenticated separately through the associated data, so trusting the record
+// here costs nothing and interoperates with senders that do something else.
+pub fn (mut c RecordCipher) unprotect(epoch u16, sequence_number u64, content_type ContentType, version ProtocolVersion, fragment []u8) ![]u8 {
+	minimum := gcm_explicit_nonce_length + gcm_tag_length
+	if fragment.len < minimum {
+		return CipherError{
+			detail: 'record fragment of ${fragment.len} bytes is smaller than the ${minimum}-byte minimum'
+		}
+	}
+	explicit := fragment[..gcm_explicit_nonce_length]
+	sealed := fragment[gcm_explicit_nonce_length..]
+	plaintext_length := sealed.len - gcm_tag_length
+	aad := additional_data(epoch, sequence_number, content_type, version, plaintext_length)
+
+	plaintext := c.gcm.open(sealed, c.nonce(explicit), aad) or {
+		return CipherError{
+			detail:         'record did not authenticate'
+			authentication: true
+		}
+	}
+	return plaintext
+}
