@@ -26,3 +26,10 @@ pub enum Role {
 	// server waits for one. In SDP terms this is a=setup:passive.
 	server
 }
+
+pub fn (r Role) str() string {
+	return match r {
+		.client { 'client' }
+		.server { 'server' }
+	}
+}
