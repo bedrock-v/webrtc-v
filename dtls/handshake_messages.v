@@ -225,3 +225,36 @@ fn (mut c Conn) apply_server_message(message HandshakeMessage) !bool {
 	}
 	return false
 }
+
+// apply_client_message folds one message of the client's flight into our state.
+fn (mut c Conn) apply_client_message(message HandshakeMessage) ! {
+	match message {
+		CertificateMessage {
+			c.accept_peer_certificate(message)!
+		}
+		ClientKeyExchange {
+			c.peer_ecdh = parse_peer_point(message.public_key) or {
+				c.send_alert(alert_illegal_parameter)
+				return ConnError{
+					reason: .handshake_failure
+					detail: 'the client key share is not a valid P-256 point'
+				}
+			}
+			// Derive here, not later: RFC 7627's session hash covers the
+			// handshake up to and including this message, and collect_handshake
+			// has just appended it. Waiting until the ChangeCipherSpec would
+			// hash the CertificateVerify in as well, and the client would have
+			// computed something different.
+			c.derive_secrets()!
+		}
+		CertificateVerify {
+			c.verify_certificate_verify(message)!
+		}
+		else {
+			return ConnError{
+				reason: .handshake_failure
+				detail: 'unexpected ${message.handshake_type()} from the client'
+			}
+		}
+	}
+}
