@@ -116,3 +116,10 @@ pub:
 	mtu                 int            = default_mtu
 	logger              logging.Logger = logging.nop()
 }
+
+// ConnError is returned when a connection cannot be established or used.
+pub struct ConnError {
+pub:
+	reason ConnErrorReason
+	detail string
+}
