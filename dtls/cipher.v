@@ -143,3 +143,21 @@ fn explicit_nonce_for(epoch u16, sequence_number u64) []u8 {
 	w.u48(sequence_number)
 	return w.buf
 }
+
+// additional_data builds the AEAD associated data (RFC 5246 section 6.2.3.3,
+// with the DTLS substitution from RFC 6347 section 4.1.2.1).
+//
+// It is the record header with the epoch and sequence number standing in for
+// TLS's implicit sequence number, and with the length being that of the
+// plaintext rather than of the record. Because the header is authenticated but
+// not encrypted, an attacker who rewrites the epoch, the sequence number or the
+// content type makes the tag fail.
+fn additional_data(epoch u16, sequence_number u64, content_type ContentType, version ProtocolVersion, plaintext_length int) []u8 {
+	mut w := codec.Writer.with_capacity(13)
+	w.u16(epoch)
+	w.u48(sequence_number)
+	w.u8(u8(content_type))
+	w.u16(u16(version))
+	w.u16(u16(plaintext_length))
+	return w.buf
+}
