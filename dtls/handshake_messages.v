@@ -170,3 +170,58 @@ fn (mut c Conn) build_certificate_verify() !CertificateVerify {
 		signature: signature
 	}
 }
+
+// apply_server_message folds one message of the server's flight into our state,
+// returning true when the flight is complete.
+fn (mut c Conn) apply_server_message(message HandshakeMessage) !bool {
+	match message {
+		ServerHello {
+			c.remote_random = message.random
+			c.use_extended_master = find_extension(message.extensions, ext_extended_master_secret) != none
+			if extension := find_extension(message.extensions, ext_use_srtp) {
+				if extension is UseSrtp {
+					if extension.profiles.len != 1 {
+						return ConnError{
+							reason: .no_srtp_profile
+							detail: 'the server selected ${extension.profiles.len} SRTP profiles, expected exactly 1'
+						}
+					}
+					chosen := extension.profiles[0]
+					// A server may only select from what we offered. Accepting
+					// anything else would let it choose a profile we rejected.
+					if chosen !in c.config.srtp_profiles {
+						c.send_alert(alert_illegal_parameter)
+						return ConnError{
+							reason: .no_srtp_profile
+							detail: 'the server selected ${chosen}, which we did not offer'
+						}
+					}
+					c.negotiated_srtp_profile = chosen
+				}
+			} else if c.config.srtp_profiles.len > 0 {
+				c.log.warn('the server did not select an SRTP profile; media cannot be keyed')
+			}
+		}
+		CertificateMessage {
+			c.accept_peer_certificate(message)!
+		}
+		ServerKeyExchange {
+			c.accept_server_key_exchange(message)!
+		}
+		CertificateRequest {
+			// Mutual authentication is what WebRTC always does, and this
+			// implementation always sends its certificate, so there is nothing
+			// to record.
+		}
+		ServerHelloDone {
+			return true
+		}
+		else {
+			return ConnError{
+				reason: .handshake_failure
+				detail: 'unexpected ${message.handshake_type()} from the server'
+			}
+		}
+	}
+	return false
+}
