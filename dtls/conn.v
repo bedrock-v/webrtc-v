@@ -52,3 +52,10 @@ pub fn (s State) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// default_mtu is the record size the handshake fragments to.
+//
+// 1200 bytes is the conservative figure WebRTC implementations use: it fits
+// inside the smallest path MTU likely to be encountered, including an IPv6
+// tunnel, without relying on IP fragmentation, which many paths drop.
+pub const default_mtu = 1200
