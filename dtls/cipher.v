@@ -134,3 +134,12 @@ fn (c &RecordCipher) nonce(explicit []u8) []u8 {
 	out << explicit
 	return out
 }
+
+// explicit_nonce_for returns the eight bytes sent with a record: the epoch and
+// sequence number, which are unique per record by construction.
+fn explicit_nonce_for(epoch u16, sequence_number u64) []u8 {
+	mut w := codec.Writer.with_capacity(gcm_explicit_nonce_length)
+	w.u16(epoch)
+	w.u48(sequence_number)
+	return w.buf
+}
