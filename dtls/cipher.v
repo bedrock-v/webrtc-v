@@ -125,3 +125,12 @@ pub fn RecordCipher.new(keys RecordKeys) !RecordCipher {
 		gcm:  gcm
 	}
 }
+
+// nonce builds the 12-byte GCM nonce for a record: the fixed IV followed by the
+// explicit part.
+fn (c &RecordCipher) nonce(explicit []u8) []u8 {
+	mut out := []u8{cap: gcm_fixed_iv_length + gcm_explicit_nonce_length}
+	out << c.keys.fixed_iv
+	out << explicit
+	return out
+}
