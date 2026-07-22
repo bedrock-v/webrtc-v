@@ -33,3 +33,12 @@ pub fn (r Role) str() string {
 		.server { 'server' }
 	}
 }
+
+// State is the connection's progress.
+pub enum State {
+	new
+	handshaking
+	connected
+	failed
+	closed
+}
