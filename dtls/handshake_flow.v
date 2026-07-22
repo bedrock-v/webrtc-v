@@ -61,3 +61,23 @@ mut:
 	send_change_cipher_spec bool
 	finished_records        [][]u8
 }
+
+// transmit sends a flight.
+fn (mut c Conn) transmit(flight Flight, cipher ?RecordCipher) ! {
+	if flight.handshake_records.len > 0 {
+		c.send_records(.handshake, flight.handshake_records)!
+	}
+	if flight.send_change_cipher_spec {
+		installed := cipher or {
+			return ConnError{
+				reason: .handshake_failure
+				detail: 'a ChangeCipherSpec was queued with no cipher to install'
+			}
+		}
+
+		c.send_change_cipher_spec(installed)!
+	}
+	if flight.finished_records.len > 0 {
+		c.send_records(.handshake, flight.finished_records)!
+	}
+}
