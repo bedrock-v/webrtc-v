@@ -42,3 +42,13 @@ pub enum State {
 	failed
 	closed
 }
+
+pub fn (s State) str() string {
+	return match s {
+		.new { 'new' }
+		.handshaking { 'handshaking' }
+		.connected { 'connected' }
+		.failed { 'failed' }
+		.closed { 'closed' }
+	}
+}
