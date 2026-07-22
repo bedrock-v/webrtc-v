@@ -303,3 +303,45 @@ fn (mut c Conn) accept_peer_certificate(message CertificateMessage) ! {
 		detail: 'the peer certificate matches none of the ${c.config.remote_fingerprints.len} signalled fingerprints'
 	}
 }
+
+// accept_server_key_exchange checks the signature over the server's key share
+// and records the share.
+fn (mut c Conn) accept_server_key_exchange(message ServerKeyExchange) ! {
+	if message.curve != .secp256r1 {
+		c.send_alert(alert_illegal_parameter)
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'the server chose curve ${message.curve}; only secp256r1 is supported'
+		}
+	}
+	certificate := c.remote_certificate or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'a ServerKeyExchange arrived before the certificate that would verify it'
+		}
+	}
+
+	signed := c.key_exchange_signature_input(message.public_key)
+	ok := certificate.public_key.verify(signed, message.signature) or {
+		c.send_alert(alert_decrypt_error)
+		return ConnError{
+			reason: .bad_signature
+			detail: 'verifying the key exchange signature: ${err.msg()}'
+		}
+	}
+	if !ok {
+		c.send_alert(alert_decrypt_error)
+		return ConnError{
+			reason: .bad_signature
+			detail: 'the key exchange signature did not verify'
+		}
+	}
+
+	c.peer_ecdh = parse_peer_point(message.public_key) or {
+		c.send_alert(alert_illegal_parameter)
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'the server key share is not a valid P-256 point'
+		}
+	}
+}
