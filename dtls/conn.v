@@ -177,3 +177,15 @@ struct ByteRange {
 	start u32
 	end   u32
 }
+
+// add records a fragment and reports whether the message is now complete.
+fn (mut p PendingMessage) add(offset u32, fragment []u8) bool {
+	if u64(offset) + u64(fragment.len) > u64(p.length) {
+		return p.is_complete()
+	}
+	for i, b in fragment {
+		p.body[int(offset) + i] = b
+	}
+	p.merge(offset, offset + u32(fragment.len))
+	return p.is_complete()
+}
