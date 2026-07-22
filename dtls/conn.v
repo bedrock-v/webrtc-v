@@ -59,3 +59,10 @@ pub fn (s State) str() string {
 // inside the smallest path MTU likely to be encountered, including an IPv6
 // tunnel, without relying on IP fragmentation, which many paths drop.
 pub const default_mtu = 1200
+
+// default_handshake_timeout bounds the whole handshake.
+pub const default_handshake_timeout = 30 * time.second
+
+// default_retransmit_interval is the initial retransmission timer, doubling on
+// each attempt as RFC 6347 section 4.2.4.1 requires.
+pub const default_retransmit_interval = 500 * time.millisecond
