@@ -207,3 +207,10 @@ pub fn (mut c RecordCipher) unprotect(epoch u16, sequence_number u64, content_ty
 	}
 	return plaintext
 }
+
+// overhead is how many bytes protection adds to a payload, which a caller needs
+// in order to fragment a handshake message to fit the path MTU.
+@[inline]
+pub fn (c &RecordCipher) overhead() int {
+	return gcm_explicit_nonce_length + gcm_tag_length
+}
