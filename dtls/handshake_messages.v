@@ -345,3 +345,38 @@ fn (mut c Conn) accept_server_key_exchange(message ServerKeyExchange) ! {
 		}
 	}
 }
+
+// verify_certificate_verify checks that the peer signed the transcript with the
+// key belonging to the certificate it sent.
+fn (mut c Conn) verify_certificate_verify(message CertificateVerify) ! {
+	certificate := c.remote_certificate or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'a CertificateVerify arrived before the certificate that would verify it'
+		}
+	}
+
+	ok := certificate.public_key.verify(c.transcript_at_certificate_verify, message.signature) or {
+		c.send_alert(alert_decrypt_error)
+		return ConnError{
+			reason: .bad_signature
+			detail: 'verifying the CertificateVerify: ${err.msg()}'
+		}
+	}
+	if !ok {
+		c.send_alert(alert_decrypt_error)
+		return ConnError{
+			reason: .bad_signature
+			detail: 'the CertificateVerify did not verify; the peer does not hold the key for its certificate'
+		}
+	}
+}
+
+// parse_peer_point decodes an uncompressed P-256 point.
+//
+// OpenSSL validates that the point is on the curve, which is what stops an
+// invalid-curve attack: a point on a different, weaker curve would let the peer
+// recover our private key from a handful of handshakes.
+fn parse_peer_point(point []u8) ?ecdsa.PublicKey {
+	return ecdsa.PublicKey.from_uncompressed_bytes(point, nid: .prime256v1) or { none }
+}
