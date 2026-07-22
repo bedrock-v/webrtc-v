@@ -41,3 +41,23 @@ pub fn (mut c Conn) handshake() ! {
 	c.state = .connected
 	c.log.info('handshake complete as ${c.role()}${c.srtp_note()}')
 }
+
+fn (c &Conn) srtp_note() string {
+	profile := c.negotiated_srtp_profile or { return '' }
+	return ', SRTP profile ${profile}'
+}
+
+// flight holds the records of one flight, so it can be retransmitted verbatim.
+//
+// Retransmitting the same records rather than rebuilding them matters: a
+// rebuilt flight would consume new record sequence numbers, and a peer that
+// received the original would see two different records claiming to be the same
+// handshake message.
+struct Flight {
+mut:
+	handshake_records [][]u8
+	// trailing carries the ChangeCipherSpec and Finished, which are sent after
+	// the handshake records and under a different epoch.
+	send_change_cipher_spec bool
+	finished_records        [][]u8
+}
