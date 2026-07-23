@@ -339,3 +339,9 @@ pub fn Conn.new(transport Transport, config Config) !&Conn {
 pub fn (c &Conn) state() State {
 	return c.state
 }
+
+// role returns which side of the handshake this connection took.
+@[inline]
+pub fn (c &Conn) role() Role {
+	return if c.is_client { Role.client } else { Role.server }
+}
