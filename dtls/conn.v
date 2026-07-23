@@ -333,3 +333,9 @@ pub fn Conn.new(transport Transport, config Config) !&Conn {
 		replay:            AntiReplay.new(default_replay_window)
 	}
 }
+
+// state returns the connection's current state.
+@[inline]
+pub fn (c &Conn) state() State {
+	return c.state
+}
