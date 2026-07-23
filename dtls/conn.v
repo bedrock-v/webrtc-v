@@ -358,3 +358,8 @@ pub fn (c &Conn) local_certificate() Certificate {
 pub fn (c &Conn) remote_certificate() ?ParsedCertificate {
 	return c.remote_certificate
 }
+
+// selected_srtp_profile returns the negotiated SRTP protection profile.
+pub fn (c &Conn) selected_srtp_profile() ?srtp.Profile {
+	return c.negotiated_srtp_profile
+}
