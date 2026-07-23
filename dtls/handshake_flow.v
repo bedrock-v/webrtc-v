@@ -209,3 +209,138 @@ fn (mut c Conn) run_client(deadline time.Time) ! {
 
 	c.await_peer_finished(flight, recv_cipher, expected_peer_verify, deadline)!
 }
+
+// run_server drives flights 2, 4 and 6.
+fn (mut c Conn) run_server(deadline time.Time) ! {
+	// Flight 1: wait for a ClientHello.
+	mut client_hello := c.await_client_hello(deadline, Flight{})!
+
+	// Flight 2: answer an uncookied hello with a HelloVerifyRequest.
+	//
+	// This is what keeps a spoofed ClientHello from making us allocate state and
+	// send a much larger flight to a forged address. ICE has already proven the
+	// peer can receive at its address, so the protection is partly redundant
+	// here, but a browser expects it and it costs one small datagram.
+	if client_hello.cookie.len == 0 {
+		c.cookie = randutil.bytes(20)!
+		verify := HelloVerifyRequest{
+			cookie: c.cookie
+		}
+		records := c.queue_handshake(verify)!
+		// Neither the first ClientHello nor the HelloVerifyRequest is part of
+		// the hash.
+		c.transcript = []u8{}
+		verify_flight := Flight{
+			handshake_records: records
+		}
+		c.transmit(verify_flight, none)!
+
+		client_hello = c.await_client_hello(deadline, verify_flight)!
+		if client_hello.cookie != c.cookie {
+			c.send_alert(alert_illegal_parameter)
+			return ConnError{
+				reason: .handshake_failure
+				detail: 'the second ClientHello carried the wrong cookie'
+			}
+		}
+	}
+
+	c.remote_random = client_hello.random
+	c.select_parameters(client_hello)!
+
+	// Flight 4: our parameters, certificate, key share and a request for theirs.
+	mut records := [][]u8{}
+	records << c.queue_handshake(c.build_server_hello()!)!
+	records << c.queue_handshake(CertificateMessage{
+		certificates: [c.local_certificate.der]
+	})!
+	records << c.queue_handshake(c.build_server_key_exchange()!)!
+	records << c.queue_handshake(CertificateRequest{})!
+	records << c.queue_handshake(ServerHelloDone{})!
+
+	mut flight := Flight{
+		handshake_records: records
+	}
+	c.transmit(flight, none)!
+
+	// Flight 5: the client's certificate, key share, proof and Finished.
+	mut peer_finished := ?Finished(none)
+	mut interval := c.config.retransmit_interval
+	for {
+		if time.now() >= deadline {
+			return ConnError{
+				reason: .timed_out
+				detail: 'the client did not complete its flight'
+			}
+		}
+		c.saw_retransmission = false
+		records_in := c.receive_records(interval) or {
+			c.log.debug('retransmitting the server flight')
+			c.retransmit_flight(flight)!
+			interval = double_capped(interval)
+			continue
+		}
+		mut done := false
+		for record in records_in {
+			match record.content_type {
+				.alert {
+					c.handle_alert(record)!
+				}
+				.change_cipher_spec {
+					// The master secret was derived when the ClientKeyExchange
+					// arrived, at the transcript point RFC 7627 requires.
+					keys := c.record_keys()!
+					c.handle_change_cipher_spec(record, RecordCipher.new(keys.client)!)!
+				}
+				.handshake {
+					for message in c.collect_handshake(record)! {
+						if message is Finished {
+							peer_finished = message
+							done = true
+							continue
+						}
+						c.apply_client_message(message)!
+					}
+				}
+				else {
+					c.log.debug('ignoring a ${record.content_type} record during the handshake')
+				}
+			}
+		}
+		if done {
+			break
+		}
+		if c.saw_retransmission {
+			c.log.debug('the client repeated its flight; resending ours')
+			c.retransmit_flight(flight)!
+		}
+	}
+
+	received := peer_finished or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'the client flight ended without a Finished'
+		}
+	}
+
+	expected :=
+		verify_data(c.master_secret, transcript_hash_of(c.transcript_at_peer_finished), true)
+	if !constant_time_equal(received.verify_data, expected) {
+		c.send_alert(alert_decrypt_error)
+		return ConnError{
+			reason: .bad_signature
+			detail: 'the client Finished did not verify'
+		}
+	}
+
+	// Flight 6: our own ChangeCipherSpec and Finished.
+	keys := c.record_keys()!
+	finished := Finished{
+		verify_data: verify_data(c.master_secret, c.transcript_hash(), false)
+	}
+	finished_records := c.queue_handshake(finished)!
+	c.transmit(Flight{
+		send_change_cipher_spec: true
+		finished_records:        finished_records
+	}, RecordCipher.new(keys.server)!)!
+}
