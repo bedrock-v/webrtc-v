@@ -230,3 +230,68 @@ fn (p &PendingMessage) is_complete() bool {
 	}
 	return p.received.len == 1 && p.received[0].start == 0 && p.received[0].end == p.length
 }
+
+// Conn is a DTLS connection.
+//
+// It is not safe for concurrent use by several threads. One connection belongs
+// to one transport, and the record layer's sequence numbering assumes a single
+// writer.
+pub struct Conn {
+mut:
+	transport Transport
+	config    Config
+	log       logging.Logger
+
+	is_client bool
+	state     State
+
+	local_certificate  Certificate
+	remote_certificate ?ParsedCertificate
+
+	local_random  Random
+	remote_random Random
+	cookie        []u8
+
+	ecdh_private ecdsa.PrivateKey
+	ecdh_public  ecdsa.PublicKey
+	peer_ecdh    ?ecdsa.PublicKey
+
+	master_secret []u8
+	// transcript is every handshake message exchanged, in order, in the
+	// unfragmented form. The Finished messages and the CertificateVerify are
+	// computed over its hash, which is what makes the earlier flights
+	// tamper-evident.
+	transcript []u8
+
+	send_epoch    u16
+	send_sequence u64
+	send_cipher   ?RecordCipher
+
+	recv_epoch  u16
+	recv_cipher ?RecordCipher
+	replay      AntiReplay
+
+	next_message_seq     u16
+	expected_message_seq u16
+	pending              map[u16]PendingMessage
+	// saw_retransmission is set when a fragment arrives for a message sequence
+	// already processed. RFC 6347 section 4.2.4 says that means the peer did
+	// not get our last flight, so it should be sent again immediately rather
+	// than waited out on the timer.
+	saw_retransmission bool
+
+	negotiated_srtp_profile ?srtp.Profile
+	use_extended_master     bool
+
+	// A CertificateVerify signs the transcript that precedes it, and a Finished
+	// verifies over the transcript that precedes it. Since collect_handshake
+	// appends a message as soon as it is complete, the state before each has to
+	// be captured at that moment; recomputing it afterwards is not possible.
+	transcript_at_certificate_verify []u8
+	transcript_at_peer_finished      []u8
+
+	// buffered holds application data that arrived before the caller asked for
+	// it, which happens when the peer's Finished and its first data share a
+	// datagram.
+	buffered [][]u8
+}
