@@ -295,3 +295,41 @@ mut:
 	// datagram.
 	buffered [][]u8
 }
+
+// Conn.new creates a connection over the given transport. No packet is sent
+// until handshake is called.
+pub fn Conn.new(transport Transport, config Config) !&Conn {
+	if config.mtu < record_header_size + handshake_header_size + 64 {
+		return ConnError{
+			reason: .wrong_state
+			detail: 'an MTU of ${config.mtu} bytes is too small to carry a handshake fragment'
+		}
+	}
+	if config.remote_fingerprints.len == 0 && !config.insecure_skip_fingerprint_verification {
+		return ConnError{
+			reason: .wrong_state
+			detail: 'no remote fingerprints were given; set insecure_skip_fingerprint_verification to accept any peer certificate'
+		}
+	}
+
+	certificate := config.certificate or { Certificate.generate()! }
+	public_key, private_key := ecdsa.generate_key(nid: .prime256v1) or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'generating an ephemeral key: ${err.msg()}'
+		}
+	}
+
+	return &Conn{
+		transport:         transport
+		config:            config
+		log:               config.logger.with_scope('dtls')
+		is_client:         config.role == .client
+		state:             .new
+		local_certificate: certificate
+		local_random:      Random.generate()!
+		ecdh_private:      private_key
+		ecdh_public:       public_key
+		replay:            AntiReplay.new(default_replay_window)
+	}
+}
