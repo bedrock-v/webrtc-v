@@ -219,3 +219,14 @@ fn (mut p PendingMessage) merge(start u32, end u32) {
 	merged.sort(a.start < b.start)
 	p.received = merged
 }
+
+fn (p &PendingMessage) is_complete() bool {
+	// A zero-length message has no bytes to record, so the span list stays
+	// empty and the range test below would never be satisfied. ServerHelloDone
+	// is exactly this shape and is mandatory, so getting it wrong stops every
+	// handshake at the server's first flight.
+	if p.length == 0 {
+		return true
+	}
+	return p.received.len == 1 && p.received[0].start == 0 && p.received[0].end == p.length
+}
