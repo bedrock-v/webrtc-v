@@ -397,3 +397,58 @@ fn (mut c Conn) await_client_hello(deadline time.Time, flight Flight) !ClientHel
 		detail: 'no ClientHello arrived'
 	}
 }
+
+// await_peer_finished waits for the peer's ChangeCipherSpec and Finished.
+fn (mut c Conn) await_peer_finished(flight Flight, recv_cipher RecordCipher, expected []u8, deadline time.Time) ! {
+	mut interval := c.config.retransmit_interval
+	for {
+		if time.now() >= deadline {
+			return ConnError{
+				reason: .timed_out
+				detail: 'the peer did not send a Finished'
+			}
+		}
+		c.saw_retransmission = false
+		records := c.receive_records(interval) or {
+			c.log.debug('retransmitting the final flight')
+			c.retransmit_flight(flight)!
+			interval = double_capped(interval)
+			continue
+		}
+		for record in records {
+			match record.content_type {
+				.alert {
+					c.handle_alert(record)!
+				}
+				.change_cipher_spec {
+					c.handle_change_cipher_spec(record, recv_cipher)!
+				}
+				.handshake {
+					for message in c.collect_handshake(record)! {
+						if message is Finished {
+							if !constant_time_equal(message.verify_data, expected) {
+								c.send_alert(alert_decrypt_error)
+								return ConnError{
+									reason: .bad_signature
+									detail: 'the peer Finished did not verify'
+								}
+							}
+							return
+						}
+						c.log.debug('ignoring a ${message.handshake_type()} while waiting for Finished')
+					}
+				}
+				.application_data {
+					// The peer's first data can share a datagram with its
+					// Finished. Hold it rather than dropping it; the caller
+					// will ask for it in a moment.
+					c.buffered << record.fragment
+				}
+			}
+		}
+		if c.saw_retransmission {
+			c.log.debug('the peer repeated its flight; resending ours')
+			c.retransmit_flight(flight)!
+		}
+	}
+}
