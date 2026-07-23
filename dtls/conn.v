@@ -412,3 +412,13 @@ pub fn (c &Conn) srtp_contexts() !(&srtp.Context, &srtp.Context) {
 	inbound := srtp.Context.from_keying_material(remote, profile)!
 	return outbound, inbound
 }
+
+// close marks the connection closed. It does not send a close_notify alert,
+// because in WebRTC the transport below is torn down at the same moment and an
+// alert would be sent into a socket that is already going away.
+pub fn (mut c Conn) close() {
+	if c.state == .closed {
+		return
+	}
+	c.state = .closed
+}
