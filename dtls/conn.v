@@ -345,3 +345,10 @@ pub fn (c &Conn) state() State {
 pub fn (c &Conn) role() Role {
 	return if c.is_client { Role.client } else { Role.server }
 }
+
+// local_certificate returns the certificate this end presents, whose
+// fingerprint belongs in the local SDP.
+@[inline]
+pub fn (c &Conn) local_certificate() Certificate {
+	return c.local_certificate
+}
