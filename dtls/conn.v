@@ -388,3 +388,27 @@ pub fn (c &Conn) srtp_keying_material() ![]u8 {
 	return srtp_keying_material(c.master_secret, client_random, server_random,
 		profile.keying_material_len())
 }
+
+// srtp_contexts builds the two SRTP contexts for this connection, keyed and
+// pointed in the right directions.
+pub fn (c &Conn) srtp_contexts() !(&srtp.Context, &srtp.Context) {
+	profile := c.negotiated_srtp_profile or {
+		return ConnError{
+			reason: .no_srtp_profile
+			detail: 'no SRTP profile was negotiated'
+		}
+	}
+
+	material := c.srtp_keying_material()!
+	client_keys, server_keys := srtp.split_keying_material(material, profile)!
+
+	// The client half protects what the DTLS client sends.
+	local, remote := if c.is_client {
+		client_keys, server_keys
+	} else {
+		server_keys, client_keys
+	}
+	outbound := srtp.Context.from_keying_material(local, profile)!
+	inbound := srtp.Context.from_keying_material(remote, profile)!
+	return outbound, inbound
+}
