@@ -452,3 +452,28 @@ fn (mut c Conn) await_peer_finished(flight Flight, recv_cipher RecordCipher, exp
 		}
 	}
 }
+
+fn double_capped(interval time.Duration) time.Duration {
+	doubled := interval * 2
+	// RFC 6347 section 4.2.4.1 caps the retransmission timer at 60 seconds.
+	if doubled > 60 * time.second {
+		return 60 * time.second
+	}
+	return doubled
+}
+
+// constant_time_equal compares two byte strings without an early exit.
+//
+// Verify data is a secret in the sense that matters here: a comparison that
+// stops at the first differing byte would tell an attacker how much of a
+// guessed value was right.
+fn constant_time_equal(a []u8, b []u8) bool {
+	if a.len != b.len {
+		return false
+	}
+	mut difference := u8(0)
+	for i in 0 .. a.len {
+		difference |= a[i] ^ b[i]
+	}
+	return difference == 0
+}
