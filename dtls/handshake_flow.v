@@ -344,3 +344,56 @@ fn (mut c Conn) run_server(deadline time.Time) ! {
 		finished_records:        finished_records
 	}, RecordCipher.new(keys.server)!)!
 }
+
+// await_client_hello waits for a ClientHello.
+//
+// The flight argument is what to resend if the client repeats itself, which
+// means our answer to its previous hello was lost. On the very first call there
+// is nothing to resend and the flight is empty.
+fn (mut c Conn) await_client_hello(deadline time.Time, flight Flight) !ClientHello {
+	mut interval := c.config.retransmit_interval
+	for {
+		if time.now() >= deadline {
+			return ConnError{
+				reason: .timed_out
+				detail: 'no ClientHello arrived'
+			}
+		}
+		c.saw_retransmission = false
+		records := c.receive_records(interval) or {
+			if flight.handshake_records.len > 0 {
+				c.log.debug('retransmitting the HelloVerifyRequest')
+				c.retransmit_flight(flight)!
+				interval = double_capped(interval)
+			}
+			continue
+		}
+		for record in records {
+			match record.content_type {
+				.alert {
+					c.handle_alert(record)!
+				}
+				.handshake {
+					for message in c.collect_handshake(record)! {
+						if message is ClientHello {
+							return message
+						}
+						return ConnError{
+							reason: .handshake_failure
+							detail: 'expected a ClientHello, got a ${message.handshake_type()}'
+						}
+					}
+				}
+				else {}
+			}
+		}
+		if c.saw_retransmission && flight.handshake_records.len > 0 {
+			c.log.debug('client repeated its hello; resending the HelloVerifyRequest')
+			c.retransmit_flight(flight)!
+		}
+	}
+	return ConnError{
+		reason: .timed_out
+		detail: 'no ClientHello arrived'
+	}
+}
