@@ -352,3 +352,9 @@ pub fn (c &Conn) role() Role {
 pub fn (c &Conn) local_certificate() Certificate {
 	return c.local_certificate
 }
+
+// remote_certificate returns the peer's certificate, once the handshake has
+// reached the point of receiving it.
+pub fn (c &Conn) remote_certificate() ?ParsedCertificate {
+	return c.remote_certificate
+}
