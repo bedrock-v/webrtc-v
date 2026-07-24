@@ -370,3 +370,27 @@ fn test_anti_replay_window() {
 	assert !window.check(100)
 	assert window.highest_sequence_number() == 1000
 }
+
+// -- Handshake encoding ----------------------------------------------------
+
+fn test_handshake_fragmentation_and_reassembly() {
+	body := []u8{len: 1000, init: u8(index)}
+	fragments := fragment_message(.certificate, 7, body, 200)!
+	assert fragments.len > 1
+
+	mut pending := PendingMessage{
+		typ:    .certificate
+		length: u32(body.len)
+		body:   []u8{len: body.len}
+	}
+	// Deliver the fragments in reverse, which is what a reordering path does.
+	for i := fragments.len - 1; i >= 0; i-- {
+		parsed := unmarshal_handshake_fragments(fragments[i])!
+		assert parsed.len == 1
+		assert parsed[0].header.message_seq == 7
+		assert parsed[0].header.length == u32(body.len)
+		pending.add(parsed[0].header.fragment_offset, parsed[0].body)
+	}
+	assert pending.is_complete()
+	assert pending.body == body
+}
