@@ -52,3 +52,38 @@ fn (c &Conn) max_record_payload() int {
 	}
 	return budget
 }
+
+// send_records packs fragments into records and sends them, coalescing as many
+// as fit one datagram.
+//
+// Coalescing matters for the handshake: a server's flight is four messages, and
+// sending them in one datagram rather than four means one round of loss costs
+// one retransmission instead of four.
+fn (mut c Conn) send_records(content_type ContentType, fragments [][]u8) ! {
+	mut datagram := []u8{}
+
+	for fragment in fragments {
+		record := c.build_record(content_type, fragment)!
+		// Flush before exceeding the MTU, but never split a record: a record is
+		// the unit the peer's parser works in.
+		if datagram.len > 0 && datagram.len + record.len > c.config.mtu {
+			c.transport.send(datagram) or {
+				return ConnError{
+					reason: .transport
+					detail: 'sending a datagram: ${err.msg()}'
+				}
+			}
+			datagram = []u8{}
+		}
+		datagram << record
+	}
+
+	if datagram.len > 0 {
+		c.transport.send(datagram) or {
+			return ConnError{
+				reason: .transport
+				detail: 'sending a datagram: ${err.msg()}'
+			}
+		}
+	}
+}
