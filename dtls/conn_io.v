@@ -221,3 +221,17 @@ fn (mut c Conn) accept_record(record Record) !Record {
 		fragment:        plaintext
 	}
 }
+
+// handle_change_cipher_spec installs the receiving keys for the next epoch.
+fn (mut c Conn) handle_change_cipher_spec(record Record, cipher RecordCipher) ! {
+	if record.fragment.len != 1 || record.fragment[0] != 1 {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'malformed ChangeCipherSpec'
+		}
+	}
+	c.recv_epoch++
+	c.recv_cipher = cipher
+	// Sequence numbers restart in a new epoch, so the replay window must too.
+	c.replay = AntiReplay.new(default_replay_window)
+}
