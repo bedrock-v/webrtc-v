@@ -28,3 +28,36 @@ fn new_pipe_pair() (&PipeTransport, &PipeTransport) {
 	b.peer = a
 	return a, b
 }
+
+fn (mut p PipeTransport) send(data []u8) !int {
+	p.mu.lock()
+	if p.closed {
+		p.mu.unlock()
+		return error('pipe closed')
+	}
+	p.sent++
+	drop := p.drop_next > 0
+	if drop {
+		p.drop_next--
+	}
+	p.mu.unlock()
+
+	if drop {
+		// Report success: a dropped datagram is indistinguishable from a
+		// delivered one to the sender, which is the whole reason DTLS needs a
+		// retransmission timer.
+		return data.len
+	}
+	mut peer := p.peer
+	// The payload is copied into a variable first. V 0.5.2 sends a zero value
+	// when the expression in a select-send is a call, so `peer.inbound <-
+	// data.clone()` would silently deliver an empty datagram.
+	copy := data.clone()
+	select {
+		peer.inbound <- copy {}
+		else {
+			return error('peer queue full')
+		}
+	}
+	return data.len
+}
