@@ -452,3 +452,22 @@ fn (c &Conn) transcript_hash() []u8 {
 fn transcript_hash_of(transcript []u8) []u8 {
 	return sha256.sum(transcript)
 }
+
+// append_transcript adds a message in its unfragmented form.
+//
+// The hash is defined over the messages as the handshake protocol presents
+// them, not as the record layer happened to fragment them, so the header is
+// rebuilt with a zero offset and the full length.
+fn (mut c Conn) append_transcript(typ HandshakeType, message_seq u16, body []u8) {
+	header := HandshakeHeader{
+		typ:             typ
+		length:          u32(body.len)
+		message_seq:     message_seq
+		fragment_offset: 0
+		fragment_length: u32(body.len)
+	}
+	mut w := codec.Writer.with_capacity(handshake_header_size + body.len)
+	header.marshal_into(mut w)
+	w.bytes(body)
+	c.transcript << w.buf
+}
