@@ -24,3 +24,18 @@ const alert_certificate_unknown = u8(46)
 const alert_illegal_parameter = u8(47)
 const alert_decrypt_error = u8(51)
 const alert_internal_error = u8(80)
+
+fn alert_description_name(code u8) string {
+	return match code {
+		alert_close_notify { 'close_notify' }
+		alert_unexpected_message { 'unexpected_message' }
+		alert_bad_record_mac { 'bad_record_mac' }
+		alert_handshake_failure { 'handshake_failure' }
+		alert_bad_certificate { 'bad_certificate' }
+		alert_certificate_unknown { 'certificate_unknown' }
+		alert_illegal_parameter { 'illegal_parameter' }
+		alert_decrypt_error { 'decrypt_error' }
+		alert_internal_error { 'internal_error' }
+		else { 'alert ${code}' }
+	}
+}
