@@ -266,3 +266,82 @@ fn (mut c Conn) handle_alert(record Record) ! {
 		detail: 'peer sent a fatal alert: ${name}'
 	}
 }
+
+// collect_handshake reassembles handshake fragments from a record and returns
+// any messages that became complete, in message-sequence order.
+//
+// Out-of-order and duplicate fragments are both expected on a datagram
+// transport: a retransmitted flight arrives alongside the original, and a
+// message we have already processed must be ignored rather than reprocessed.
+fn (mut c Conn) collect_handshake(record Record) ![]HandshakeMessage {
+	fragments := unmarshal_handshake_fragments(record.fragment) or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: err.msg()
+		}
+	}
+
+	for fragment in fragments {
+		if fragment.header.message_seq < c.expected_message_seq {
+			// Already processed. The peer repeating it means our answer did not
+			// arrive, so the caller should send it again.
+			c.saw_retransmission = true
+			continue
+		}
+		if fragment.header.message_seq >= c.expected_message_seq + max_handshake_messages {
+			return ConnError{
+				reason: .handshake_failure
+				detail: 'message sequence ${fragment.header.message_seq} is too far ahead of ${c.expected_message_seq}'
+			}
+		}
+
+		mut pending := c.pending[fragment.header.message_seq] or {
+			PendingMessage{
+				typ:    fragment.header.typ
+				length: fragment.header.length
+				body:   []u8{len: int(fragment.header.length)}
+			}
+		}
+		if pending.typ != fragment.header.typ || pending.length != fragment.header.length {
+			return ConnError{
+				reason: .handshake_failure
+				detail: 'fragments of message ${fragment.header.message_seq} disagree about its type or length'
+			}
+		}
+		pending.add(fragment.header.fragment_offset, fragment.body)
+		c.pending[fragment.header.message_seq] = pending
+	}
+
+	// Deliver in order. A message that arrived early waits until its
+	// predecessors have, because the transcript hash depends on the order.
+	mut out := []HandshakeMessage{}
+	for {
+		pending := c.pending[c.expected_message_seq] or { break }
+		if !pending.is_complete() {
+			break
+		}
+		message := unmarshal_handshake_message(pending.typ, pending.body) or {
+			return ConnError{
+				reason: .handshake_failure
+				detail: err.msg()
+			}
+		}
+		// Snapshot the transcript before appending, for the two messages whose
+		// contents are computed over everything that precedes them.
+		match pending.typ {
+			.certificate_verify { c.transcript_at_certificate_verify = c.transcript.clone() }
+			.finished { c.transcript_at_peer_finished = c.transcript.clone() }
+			else {}
+		}
+		// HelloVerifyRequest is excluded from the transcript by RFC 6347
+		// section 4.2.1, along with the ClientHello that provoked it.
+		if pending.typ != .hello_verify_request {
+			c.append_transcript(pending.typ, c.expected_message_seq, pending.body)
+		}
+		c.log.trace('received ${pending.typ} (seq ${c.expected_message_seq}, ${pending.length} bytes)')
+		out << message
+		c.pending.delete(c.expected_message_seq)
+		c.expected_message_seq++
+	}
+	return out
+}
