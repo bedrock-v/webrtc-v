@@ -255,3 +255,32 @@ fn test_certificate_round_trips_through_the_parser() {
 	signature := certificate.private_key.sign(message)!
 	assert parsed.public_key.verify(message, signature)!
 }
+
+fn test_certificate_parser_rejects_malformed_input() {
+	certificate := Certificate.generate()!
+	parse_certificate([]u8{}) or {
+		parse_certificate(certificate.der[..20]) or {
+			mut trailing := certificate.der.clone()
+			trailing << 0x00
+			parse_certificate(trailing) or { return }
+			assert false, 'trailing bytes must be rejected'
+		}
+		assert false, 'a truncated certificate must be rejected'
+	}
+	assert false, 'empty input must be rejected'
+}
+
+fn test_fingerprint_parsing() {
+	parsed := Fingerprint.parse('sha-256 AB:CD:EF:01')!
+	assert parsed.algorithm == .sha256
+	// Case is normalised, so a fingerprint from an SDP written in either case
+	// compares equal to one we computed.
+	assert parsed.value == 'ab:cd:ef:01'
+	assert parsed.matches(Fingerprint.parse('SHA-256 ab:cd:ef:01')!)
+	assert !parsed.matches(Fingerprint.parse('sha-1 ab:cd:ef:01')!)
+
+	for bad in ['', 'sha-256', 'md5 aa:bb', 'sha-256 zz:xx', 'sha-256 aa bb'] {
+		Fingerprint.parse(bad) or { continue }
+		assert false, 'expected "${bad}" to be rejected'
+	}
+}
