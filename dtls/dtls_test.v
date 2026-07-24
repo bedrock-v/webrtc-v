@@ -340,3 +340,33 @@ fn test_record_sequence_number_is_48_bits() {
 	record.marshal() or { return }
 	assert false, 'a sequence number over 48 bits must be rejected'
 }
+
+fn test_is_dtls_demultiplexing() {
+	record := Record{
+		content_type: .handshake
+		fragment:     []u8{len: 4}
+	}
+	assert is_dtls(record.marshal()!)
+
+	// RFC 7983 gives DTLS the first-byte range 20 to 63.
+	assert !is_dtls([]u8{len: 20, init: 0x00}) // STUN
+	assert !is_dtls([]u8{len: 20, init: 0x80}) // RTP
+	assert !is_dtls([]u8{len: 20, init: 0x40}) // TURN channel
+	assert !is_dtls([]u8{len: 4, init: 0x16}) // too short
+}
+
+fn test_anti_replay_window() {
+	mut window := AntiReplay.new(64)
+	assert window.check(100)
+	window.accept(100)
+	assert !window.check(100)
+	assert window.check(101)
+	assert window.check(99)
+	window.accept(99)
+	assert !window.check(99)
+	// Older than the window cannot be judged, so it is refused.
+	assert !window.check(36)
+	window.accept(1000)
+	assert !window.check(100)
+	assert window.highest_sequence_number() == 1000
+}
