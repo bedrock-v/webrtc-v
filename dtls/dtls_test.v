@@ -61,3 +61,27 @@ fn (mut p PipeTransport) send(data []u8) !int {
 	}
 	return data.len
 }
+
+fn (mut p PipeTransport) recv(timeout time.Duration) ![]u8 {
+	select {
+		data := <-p.inbound {
+			return data
+		}
+		timeout {
+			return error('timeout')
+		}
+	}
+	return error('closed')
+}
+
+fn (mut p PipeTransport) close() {
+	p.mu.lock()
+	p.closed = true
+	p.mu.unlock()
+}
+
+fn (mut p PipeTransport) drop(n int) {
+	p.mu.lock()
+	p.drop_next = n
+	p.mu.unlock()
+}
