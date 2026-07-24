@@ -130,3 +130,10 @@ fn (mut c Conn) send_change_cipher_spec(cipher RecordCipher) ! {
 	c.send_sequence = 0
 	c.send_cipher = cipher
 }
+
+// send_alert sends a fatal alert. Failures are ignored: the connection is
+// already being torn down, and there is nothing useful to do if the notice
+// cannot be delivered.
+fn (mut c Conn) send_alert(description u8) {
+	c.send_records(.alert, [[alert_level_fatal, description]]) or {}
+}
