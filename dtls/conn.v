@@ -442,3 +442,13 @@ fn (c &Conn) client_and_server_randoms() ([]u8, []u8) {
 fn (c &Conn) transcript_hash() []u8 {
 	return transcript_hash_of(c.transcript)
 }
+
+// transcript_hash_of hashes a captured transcript.
+//
+// Finished data is a PRF over the *hash* of the transcript, not over the
+// transcript itself. The snapshots taken in collect_handshake are raw bytes, so
+// they have to come through here before being compared - passing the raw bytes
+// produces a value that is stable, self-consistent, and wrong.
+fn transcript_hash_of(transcript []u8) []u8 {
+	return sha256.sum(transcript)
+}
