@@ -437,3 +437,8 @@ fn (c &Conn) client_and_server_randoms() ([]u8, []u8) {
 	}
 	return c.remote_random.bytes, c.local_random.bytes
 }
+
+// transcript_hash is the SHA-256 of every handshake message so far.
+fn (c &Conn) transcript_hash() []u8 {
+	return transcript_hash_of(c.transcript)
+}
