@@ -471,3 +471,8 @@ fn (mut c Conn) append_transcript(typ HandshakeType, message_seq u16, body []u8)
 	w.bytes(body)
 	c.transcript << w.buf
 }
+
+// sent_message_note is used by the flight builders for trace logging.
+fn (c &Conn) sent_message_note(typ HandshakeType, seq u16) {
+	c.log.trace('sending ${typ} (seq ${seq})')
+}
