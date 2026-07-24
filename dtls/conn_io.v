@@ -13,3 +13,10 @@ import time
 // alert_level_fatal and the alert descriptions this implementation sends or
 // recognises (RFC 5246 section 7.2).
 const alert_level_warning = u8(1)
+const alert_level_fatal = u8(2)
+
+const alert_close_notify = u8(0)
+const alert_unexpected_message = u8(10)
+const alert_bad_record_mac = u8(20)
+const alert_handshake_failure = u8(40)
+const alert_bad_certificate = u8(42)
