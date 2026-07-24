@@ -190,3 +190,33 @@ fn test_der_integer_is_minimal_and_signed() {
 	assert der_integer_from_bytes([u8(0x7f)]) == [u8(2), 1, 0x7f]
 	assert der_integer_from_bytes([]u8{}) == [u8(2), 1, 0]
 }
+
+fn test_der_oid_encoding() {
+	// The first two arcs pack into one byte, and later arcs are base-128.
+	assert der_oid('1.2.840.10045.2.1')!.hex() == '06072a8648ce3d0201'
+	assert der_oid('2.5.4.3')!.hex() == '0603550403'
+	der_oid('1') or { return }
+}
+
+fn test_der_oid_rejects_malformed() {
+	for bad in ['', '1', '3.1.1', '1.40', 'a.b', '1.2.x'] {
+		der_oid(bad) or { continue }
+		assert false, 'expected "${bad}" to be rejected'
+	}
+}
+
+fn test_der_parser_rejects_non_canonical_input() {
+	cases := {
+		'indefinite length':           '3080'
+		'non-minimal long form':       '30810101'
+		'long form for a short value': '30810f'
+		'high tag number':             '1f0100'
+		'truncated value':             '3005aabb'
+		'leading zero length':         '308200ff'
+	}
+	for name, encoded in cases {
+		raw := hex.decode(encoded)!
+		der_parse(raw, 0) or { continue }
+		assert false, 'expected ${name} to be rejected'
+	}
+}
