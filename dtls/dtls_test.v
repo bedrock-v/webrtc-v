@@ -138,3 +138,34 @@ fn test_key_block_reverses_the_random_order() {
 	assert block != prf(master, 'key expansion', concat(client, server), 40)
 	assert block == prf(master, 'key expansion', concat(server, client), 40)
 }
+
+fn concat(a []u8, b []u8) []u8 {
+	mut out := []u8{cap: a.len + b.len}
+	out << a
+	out << b
+	return out
+}
+
+fn test_verify_data_distinguishes_the_two_sides() {
+	master := []u8{len: 48, init: 7}
+	hash := []u8{len: 32, init: 3}
+
+	client_side := verify_data(master, hash, true)
+	server_side := verify_data(master, hash, false)
+	assert client_side.len == verify_data_length
+	// Different labels: a client must not be able to replay the server's
+	// Finished back at it.
+	assert client_side != server_side
+}
+
+fn test_srtp_keying_material_uses_the_exporter_label() {
+	master := []u8{len: 48, init: 5}
+	client := []u8{len: 32, init: 1}
+	server := []u8{len: 32, init: 2}
+
+	material := srtp_keying_material(master, client, server, 60)
+	assert material.len == 60
+	assert material == prf(master, 'EXTRACTOR-dtls_srtp', concat(client, server), 60)
+	// It must be independent of the record keys derived from the same secret.
+	assert material[..40] != key_block(master, client, server, 40)
+}
