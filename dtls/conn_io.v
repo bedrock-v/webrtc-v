@@ -39,3 +39,16 @@ fn alert_description_name(code u8) string {
 		else { 'alert ${code}' }
 	}
 }
+
+// max_record_payload_for returns how many plaintext bytes fit one record at the
+// configured MTU, after the record header and any AEAD overhead.
+fn (c &Conn) max_record_payload() int {
+	mut budget := c.config.mtu - record_header_size
+	if cipher := c.send_cipher {
+		budget -= cipher.overhead()
+	}
+	if budget < 1 {
+		return 1
+	}
+	return budget
+}
