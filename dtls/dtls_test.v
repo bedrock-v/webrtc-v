@@ -394,3 +394,38 @@ fn test_handshake_fragmentation_and_reassembly() {
 	assert pending.is_complete()
 	assert pending.body == body
 }
+
+fn test_duplicate_fragments_are_idempotent() {
+	body := []u8{len: 300, init: u8(index)}
+	fragments := fragment_message(.certificate, 1, body, 150)!
+
+	mut pending := PendingMessage{
+		typ:    .certificate
+		length: u32(body.len)
+		body:   []u8{len: body.len}
+	}
+	// A retransmitted flight delivers every fragment twice.
+	for _ in 0 .. 2 {
+		for fragment in fragments {
+			parsed := unmarshal_handshake_fragments(fragment)!
+			pending.add(parsed[0].header.fragment_offset, parsed[0].body)
+		}
+	}
+	assert pending.is_complete()
+	assert pending.body == body
+}
+
+fn test_zero_length_message_produces_one_fragment() {
+	fragments := fragment_message(.server_hello_done, 5, []u8{}, 1200)!
+	assert fragments.len == 1
+	parsed := unmarshal_handshake_fragments(fragments[0])!
+	assert parsed[0].header.length == 0
+	assert parsed[0].header.is_complete()
+}
+
+fn test_handshake_fragment_rejects_overrun() {
+	// A fragment claiming to extend past the message it belongs to.
+	raw := hex.decode('0b000010000000000004000020')!
+	unmarshal_handshake_fragments(raw) or { return }
+	assert false, 'a fragment running past the message must be rejected'
+}
