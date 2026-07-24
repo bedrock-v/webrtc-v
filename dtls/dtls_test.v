@@ -103,3 +103,38 @@ fn test_prf_is_deterministic_and_label_separated() {
 	assert prf('other'.bytes(), 'label', seed, 48) != first
 	assert prf(secret, 'label', 'other'.bytes(), 48) != first
 }
+
+fn test_prf_output_is_a_prefix_at_every_length() {
+	// P_hash is an expanding chain, so a shorter request must be a prefix of a
+	// longer one. If it is not, the block boundary handling is wrong.
+	long := prf('k'.bytes(), 'l', 's'.bytes(), 100)
+	for n in [1, 16, 31, 32, 33, 64, 99] {
+		assert prf('k'.bytes(), 'l', 's'.bytes(), n) == long[..n]
+	}
+}
+
+fn test_master_secret_length_and_ordering() {
+	pre := []u8{len: 32, init: u8(index)}
+	client := []u8{len: 32, init: 1}
+	server := []u8{len: 32, init: 2}
+
+	master := master_secret(pre, client, server)
+	assert master.len == master_secret_length
+	// The two randoms are not interchangeable; swapping them must change the
+	// result, or two peers computing it in different orders would still agree
+	// and the bug would hide until interop testing.
+	assert master_secret(pre, server, client) != master
+}
+
+fn test_key_block_reverses_the_random_order() {
+	master := []u8{len: 48, init: u8(index)}
+	client := []u8{len: 32, init: 1}
+	server := []u8{len: 32, init: 2}
+
+	// RFC 5246 section 6.3 seeds the key expansion with server random first,
+	// the opposite of the master secret derivation.
+	block := key_block(master, client, server, 40)
+	assert block.len == 40
+	assert block != prf(master, 'key expansion', concat(client, server), 40)
+	assert block == prf(master, 'key expansion', concat(server, client), 40)
+}
