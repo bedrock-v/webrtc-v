@@ -169,3 +169,24 @@ fn test_srtp_keying_material_uses_the_exporter_label() {
 	// It must be independent of the record keys derived from the same secret.
 	assert material[..40] != key_block(master, client, server, 40)
 }
+
+// -- DER and certificates --------------------------------------------------
+
+fn test_der_length_encoding() {
+	assert der_length(0) == [u8(0)]
+	assert der_length(127) == [u8(127)]
+	assert der_length(128) == [u8(0x81), 128]
+	assert der_length(255) == [u8(0x81), 255]
+	assert der_length(256) == [u8(0x82), 1, 0]
+	assert der_length(65535) == [u8(0x82), 0xff, 0xff]
+}
+
+fn test_der_integer_is_minimal_and_signed() {
+	// Leading zeros are stripped, because DER requires the minimal encoding.
+	assert der_integer_from_bytes([u8(0), 0, 1]) == [u8(2), 1, 1]
+	// A value whose top bit is set needs a leading zero, or it would decode as
+	// negative.
+	assert der_integer_from_bytes([u8(0x80)]) == [u8(2), 2, 0, 0x80]
+	assert der_integer_from_bytes([u8(0x7f)]) == [u8(2), 1, 0x7f]
+	assert der_integer_from_bytes([]u8{}) == [u8(2), 1, 0]
+}
