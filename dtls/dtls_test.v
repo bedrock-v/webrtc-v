@@ -220,3 +220,38 @@ fn test_der_parser_rejects_non_canonical_input() {
 		assert false, 'expected ${name} to be rejected'
 	}
 }
+
+fn test_certificate_generation_and_fingerprint() {
+	certificate := Certificate.generate(common_name: 'test-cert')!
+	assert certificate.der.len > 100
+
+	// The fingerprint is over the DER, so it must be stable across calls and
+	// differ between hashes.
+	sha256_print := certificate.fingerprint(.sha256)
+	assert sha256_print.algorithm == .sha256
+	assert sha256_print.value.split(':').len == 32
+	assert certificate.fingerprint(.sha256).matches(sha256_print)
+	assert !certificate.fingerprint(.sha1).matches(sha256_print)
+	assert certificate.fingerprint(.sha1).value.split(':').len == 20
+
+	assert fingerprint_of(certificate.der, .sha256).matches(sha256_print)
+}
+
+fn test_certificates_are_distinct() {
+	first := Certificate.generate()!
+	second := Certificate.generate()!
+	assert !first.fingerprint(.sha256).matches(second.fingerprint(.sha256))
+}
+
+fn test_certificate_round_trips_through_the_parser() {
+	certificate := Certificate.generate(common_name: 'round-trip')!
+	parsed := parse_certificate(certificate.der)!
+
+	assert parsed.der == certificate.der
+	assert parsed.not_before < parsed.not_after
+	// The parsed public key must be the one that signed, which is checkable by
+	// verifying something with it.
+	message := 'proof of possession'.bytes()
+	signature := certificate.private_key.sign(message)!
+	assert parsed.public_key.verify(message, signature)!
+}
