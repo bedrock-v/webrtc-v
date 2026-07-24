@@ -118,3 +118,15 @@ fn (mut c Conn) build_record(content_type ContentType, payload []u8) ![]u8 {
 	}
 	return record.marshal()!
 }
+
+// send_change_cipher_spec sends the one-byte message that switches the sending
+// epoch, then installs the new keys.
+//
+// The order matters: the message itself must go out under the old epoch, and
+// everything after it under the new one.
+fn (mut c Conn) send_change_cipher_spec(cipher RecordCipher) ! {
+	c.send_records(.change_cipher_spec, [[u8(1)]])!
+	c.send_epoch++
+	c.send_sequence = 0
+	c.send_cipher = cipher
+}
