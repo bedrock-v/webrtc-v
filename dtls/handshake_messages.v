@@ -95,3 +95,27 @@ fn (mut c Conn) select_parameters(hello ClientHello) ! {
 		}
 	}
 }
+
+// build_server_hello assembles our answer.
+fn (mut c Conn) build_server_hello() !ServerHello {
+	mut extensions := [
+		Extension(SupportedEcPointFormats{
+			formats: [EcPointFormat.uncompressed]
+		}),
+		Extension(RenegotiationInfo{}),
+	]
+	if c.use_extended_master {
+		extensions << ExtendedMasterSecret{}
+	}
+	if profile := c.negotiated_srtp_profile {
+		extensions << UseSrtp{
+			profiles: [profile]
+		}
+	}
+	return ServerHello{
+		version:      .dtls_1_2
+		random:       c.local_random
+		cipher_suite: .ecdhe_ecdsa_with_aes_128_gcm_sha256
+		extensions:   extensions
+	}
+}
