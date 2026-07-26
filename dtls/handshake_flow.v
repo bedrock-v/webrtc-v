@@ -41,3 +41,8 @@ pub fn (mut c Conn) handshake() ! {
 	c.state = .connected
 	c.log.info('handshake complete as ${c.role()}${c.srtp_note()}')
 }
+
+fn (c &Conn) srtp_note() string {
+	profile := c.negotiated_srtp_profile or { return '' }
+	return ', SRTP profile ${profile}'
+}
