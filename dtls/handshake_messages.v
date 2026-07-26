@@ -156,3 +156,17 @@ fn (c &Conn) key_exchange_signature_input(point []u8) []u8 {
 	out << server_ecdh_params(.secp256r1, point)
 	return out
 }
+
+// build_certificate_verify proves we hold the key for the certificate we sent,
+// by signing everything exchanged so far.
+fn (mut c Conn) build_certificate_verify() !CertificateVerify {
+	signature := c.local_certificate.private_key.sign(c.transcript) or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'signing the handshake transcript: ${err.msg()}'
+		}
+	}
+	return CertificateVerify{
+		signature: signature
+	}
+}
