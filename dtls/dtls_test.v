@@ -731,3 +731,39 @@ fn test_message_boundaries_are_preserved() {
 		assert received.all(it == u8(i))
 	}
 }
+
+fn test_handshake_survives_packet_loss() {
+	// Every flight is sent at least twice before anything gets through, which
+	// is what the retransmission timer exists for.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+
+	client_certificate := Certificate.generate()!
+	server_certificate := Certificate.generate()!
+
+	mut client := Conn.new(client_pipe,
+		role:                .client
+		certificate:         client_certificate
+		remote_fingerprints: [server_certificate.fingerprint(.sha256)]
+		retransmit_interval: 50 * time.millisecond
+	)!
+	mut server := Conn.new(server_pipe,
+		role:                .server
+		certificate:         server_certificate
+		remote_fingerprints: [client_certificate.fingerprint(.sha256)]
+		retransmit_interval: 50 * time.millisecond
+	)!
+
+	// Drop the first datagram each side sends.
+	client_pipe.drop(1)
+	server_pipe.drop(1)
+
+	server_thread := spawn fn (mut c Conn) ! {
+		c.handshake()!
+	}(mut server)
+	client.handshake()!
+	server_thread.wait()!
+
+	assert client.state() == .connected
+	assert server.state() == .connected
+	assert client.srtp_keying_material()! == server.srtp_keying_material()!
+}
