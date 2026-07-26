@@ -380,3 +380,35 @@ fn (mut c Conn) verify_certificate_verify(message CertificateVerify) ! {
 fn parse_peer_point(point []u8) ?ecdsa.PublicKey {
 	return ecdsa.PublicKey.from_uncompressed_bytes(point, nid: .prime256v1) or { none }
 }
+
+// derive_secrets computes the master secret from the two key shares.
+fn (mut c Conn) derive_secrets() ! {
+	if c.master_secret.len > 0 {
+		return
+	}
+	peer := c.peer_ecdh or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'no peer key share; the key exchange did not complete'
+		}
+	}
+
+	// The pre-master secret is the X coordinate of the shared point, per
+	// RFC 4492 section 5.10 - not the full point.
+	pre_master_secret := c.ecdh_private.derive_shared_secret(peer) or {
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'ECDH agreement failed: ${err.msg()}'
+		}
+	}
+
+	client_random, server_random := c.client_and_server_randoms()
+
+	c.master_secret = if c.use_extended_master {
+		// RFC 7627: derive from the transcript rather than the randoms, which
+		// stops two connections being made to share a master secret.
+		extended_master_secret(pre_master_secret, c.transcript_hash())
+	} else {
+		master_secret(pre_master_secret, client_random, server_random)
+	}
+}
