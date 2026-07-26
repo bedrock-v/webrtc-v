@@ -600,3 +600,48 @@ mut:
 	client &Conn
 	server &Conn
 }
+
+fn run_handshake(client_config Config, server_config Config) !HandshakePair {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+
+	client_certificate := client_config.certificate or { Certificate.generate()! }
+	server_certificate := server_config.certificate or { Certificate.generate()! }
+
+	// Short timers so a broken handshake fails the test quickly instead of
+	// sitting on the thirty-second default.
+	mut client := Conn.new(client_pipe, Config{
+		...client_config
+		role:                .client
+		certificate:         client_certificate
+		handshake_timeout:   5 * time.second
+		retransmit_interval: 50 * time.millisecond
+		remote_fingerprints: if client_config.insecure_skip_fingerprint_verification {
+			[]Fingerprint{}
+		} else {
+			[server_certificate.fingerprint(.sha256)]
+		}
+	})!
+	mut server := Conn.new(server_pipe, Config{
+		...server_config
+		role:                .server
+		certificate:         server_certificate
+		handshake_timeout:   5 * time.second
+		retransmit_interval: 50 * time.millisecond
+		remote_fingerprints: if server_config.insecure_skip_fingerprint_verification {
+			[]Fingerprint{}
+		} else {
+			[client_certificate.fingerprint(.sha256)]
+		}
+	})!
+
+	server_thread := spawn fn (mut c Conn) ! {
+		c.handshake()!
+	}(mut server)
+	client.handshake()!
+	server_thread.wait()!
+
+	return HandshakePair{
+		client: client
+		server: server
+	}
+}
