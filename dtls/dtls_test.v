@@ -645,3 +645,34 @@ fn run_handshake(client_config Config, server_config Config) !HandshakePair {
 		server: server
 	}
 }
+
+fn test_full_handshake_over_a_pipe() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	assert pair.client.state() == .connected
+	assert pair.server.state() == .connected
+	assert pair.client.role() == .client
+	assert pair.server.role() == .server
+
+	// Each side learned the other's certificate.
+	assert pair.client.remote_certificate() != none
+	assert pair.server.remote_certificate() != none
+}
+
+fn test_handshake_negotiates_an_srtp_profile() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	client_profile := pair.client.selected_srtp_profile()?
+	server_profile := pair.server.selected_srtp_profile()?
+	assert client_profile == server_profile
+	// Both sides list AES-GCM first, so that is what should win.
+	assert client_profile == .aead_aes_128_gcm
+}
+
+fn test_srtp_keying_material_matches_on_both_sides() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	// The exporter output must be identical, or the two endpoints would key
+	// SRTP differently and every packet would fail authentication.
+	assert pair.client.srtp_keying_material()! == pair.server.srtp_keying_material()!
+}
