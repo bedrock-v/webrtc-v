@@ -676,3 +676,21 @@ fn test_srtp_keying_material_matches_on_both_sides() {
 	// SRTP differently and every packet would fail authentication.
 	assert pair.client.srtp_keying_material()! == pair.server.srtp_keying_material()!
 }
+
+fn test_srtp_contexts_interoperate() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	mut client_out, mut client_in := pair.client.srtp_contexts()!
+	mut server_out, mut server_in := pair.server.srtp_contexts()!
+
+	// A packet the client protects must be the one the server can unprotect,
+	// which is what checks that the client and server halves of the keying
+	// material were assigned to the right directions.
+	packet := [u8(0x80), 0x60, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0xCA, 0xFE, 0xBA, 0xBE, 1, 2,
+		3, 4]
+	protected := client_out.protect_rtp(packet)!
+	assert server_in.unprotect_rtp(protected)! == packet
+
+	reply := server_out.protect_rtp(packet)!
+	assert client_in.unprotect_rtp(reply)! == packet
+}
