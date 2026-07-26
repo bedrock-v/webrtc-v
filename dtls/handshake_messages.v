@@ -371,3 +371,12 @@ fn (mut c Conn) verify_certificate_verify(message CertificateVerify) ! {
 		}
 	}
 }
+
+// parse_peer_point decodes an uncompressed P-256 point.
+//
+// OpenSSL validates that the point is on the curve, which is what stops an
+// invalid-curve attack: a point on a different, weaker curve would let the peer
+// recover our private key from a handful of handshakes.
+fn parse_peer_point(point []u8) ?ecdsa.PublicKey {
+	return ecdsa.PublicKey.from_uncompressed_bytes(point, nid: .prime256v1) or { none }
+}
