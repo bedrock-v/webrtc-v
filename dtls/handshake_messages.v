@@ -258,3 +258,48 @@ fn (mut c Conn) apply_client_message(message HandshakeMessage) ! {
 		}
 	}
 }
+
+// accept_peer_certificate parses the peer's certificate and checks it against
+// the fingerprints the signalling channel carried.
+//
+// This is the whole of peer authentication in WebRTC. There is no CA and no
+// name to check; the certificate is trusted precisely because its fingerprint
+// matches one that arrived over a channel the application already trusts. If
+// this check does not happen, nothing authenticates the peer at all.
+fn (mut c Conn) accept_peer_certificate(message CertificateMessage) ! {
+	if message.certificates.len == 0 {
+		c.send_alert(alert_bad_certificate)
+		return ConnError{
+			reason: .bad_certificate
+			detail: 'the peer sent an empty certificate chain'
+		}
+	}
+	// The end-entity certificate is first. Any others would be issuers, which
+	// are meaningless without a CA.
+	parsed := parse_certificate(message.certificates[0]) or {
+		c.send_alert(alert_bad_certificate)
+		return ConnError{
+			reason: .bad_certificate
+			detail: 'the peer certificate did not parse: ${err.msg()}'
+		}
+	}
+	c.remote_certificate = parsed
+
+	if c.config.insecure_skip_fingerprint_verification {
+		c.log.warn('accepting the peer certificate without checking its fingerprint')
+		return
+	}
+
+	for expected in c.config.remote_fingerprints {
+		if fingerprint_of(parsed.der, expected.algorithm).matches(expected) {
+			c.log.debug('peer certificate matches the signalled ${expected.algorithm} fingerprint')
+			return
+		}
+	}
+
+	c.send_alert(alert_certificate_unknown)
+	return ConnError{
+		reason: .fingerprint_mismatch
+		detail: 'the peer certificate matches none of the ${c.config.remote_fingerprints.len} signalled fingerprints'
+	}
+}
