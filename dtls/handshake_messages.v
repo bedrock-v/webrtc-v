@@ -425,3 +425,9 @@ fn (c &Conn) record_keys() !KeySet {
 	block := key_block(c.master_secret, client_random, server_random, gcm_key_block_length)
 	return expand_key_block(block)!
 }
+
+// srtp_profiles_offered reports what this connection would negotiate, which an
+// application needs when writing the SDP before the handshake runs.
+pub fn (c &Conn) srtp_profiles_offered() []srtp.Profile {
+	return c.config.srtp_profiles.clone()
+}
