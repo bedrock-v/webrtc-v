@@ -50,3 +50,48 @@ fn (mut c Conn) build_client_hello(cookie []u8) !ClientHello {
 		extensions:    extensions
 	}
 }
+
+// select_parameters is the server's half of the negotiation: it checks the
+// client offered something we can use and records what was chosen.
+fn (mut c Conn) select_parameters(hello ClientHello) ! {
+	if CipherSuite.ecdhe_ecdsa_with_aes_128_gcm_sha256 !in hello.cipher_suites {
+		c.send_alert(alert_handshake_failure)
+		return ConnError{
+			reason: .handshake_failure
+			detail: 'the client offered no cipher suite we implement'
+		}
+	}
+	if extension := find_extension(hello.extensions, ext_supported_groups) {
+		if extension is SupportedGroups {
+			if NamedCurve.secp256r1 !in extension.curves {
+				c.send_alert(alert_handshake_failure)
+				return ConnError{
+					reason: .handshake_failure
+					detail: 'the client does not support secp256r1'
+				}
+			}
+		}
+	}
+
+	// Extended master secret is used only when both sides ask for it.
+	c.use_extended_master = find_extension(hello.extensions, ext_extended_master_secret) != none
+
+	if c.config.srtp_profiles.len > 0 {
+		if extension := find_extension(hello.extensions, ext_use_srtp) {
+			if extension is UseSrtp {
+				// The choice is made from our preference order, not theirs: a
+				// peer listing a weaker profile first must not be able to talk
+				// us into it.
+				c.negotiated_srtp_profile = negotiate_srtp_profile(extension.profiles,
+					c.config.srtp_profiles)
+				if c.negotiated_srtp_profile == none {
+					c.send_alert(alert_handshake_failure)
+					return ConnError{
+						reason: .no_srtp_profile
+						detail: 'no SRTP protection profile in common'
+					}
+				}
+			}
+		}
+	}
+}
