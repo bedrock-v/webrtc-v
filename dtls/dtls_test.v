@@ -498,3 +498,41 @@ fn test_certificate_message_round_trip() {
 	assert decoded.certificates[0] == first
 	assert decoded.certificates[1] == second
 }
+
+fn test_server_key_exchange_round_trip() {
+	message := ServerKeyExchange{
+		public_key: []u8{len: 65, init: u8(index)}
+		signature:  []u8{len: 70, init: 9}
+	}
+	body := HandshakeMessage(message).marshal()!
+	decoded := unmarshal_handshake_message(.server_key_exchange, body)! as ServerKeyExchange
+	assert decoded.curve == .secp256r1
+	assert decoded.public_key.len == 65
+	assert decoded.signature.len == 70
+	assert decoded.signature_hash == .sha256
+}
+
+fn test_finished_length_is_enforced() {
+	unmarshal_handshake_message(.finished, []u8{len: 11}) or {
+		unmarshal_handshake_message(.finished, []u8{len: 12})!
+		return
+	}
+	assert false, 'a Finished of the wrong length must be rejected'
+}
+
+// -- Record protection -----------------------------------------------------
+
+fn test_record_cipher_round_trip() {
+	block := []u8{len: gcm_key_block_length, init: u8(index * 3 + 1)}
+	keys := expand_key_block(block)!
+
+	mut sender := RecordCipher.new(keys.client)!
+	mut receiver := RecordCipher.new(keys.client)!
+
+	plaintext := 'application data'.bytes()
+	protected := sender.protect(1, 5, .application_data, .dtls_1_2, plaintext)!
+	assert protected.len == plaintext.len + sender.overhead()
+
+	recovered := receiver.unprotect(1, 5, .application_data, .dtls_1_2, protected)!
+	assert recovered == plaintext
+}
