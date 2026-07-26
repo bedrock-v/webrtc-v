@@ -457,3 +457,19 @@ fn test_client_hello_round_trip() {
 	assert srtp_extension.profiles == [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]
 	assert find_extension(decoded.extensions, ext_extended_master_secret) != none
 }
+
+fn test_server_hello_round_trip() {
+	hello := ServerHello{
+		random:       Random.generate()!
+		cipher_suite: .ecdhe_ecdsa_with_aes_128_gcm_sha256
+		extensions:   [
+			Extension(UseSrtp{
+				profiles: [srtp.Profile.aead_aes_128_gcm]
+			}),
+		]
+	}
+	body := HandshakeMessage(hello).marshal()!
+	decoded := unmarshal_handshake_message(.server_hello, body)! as ServerHello
+	assert decoded.cipher_suite == .ecdhe_ecdsa_with_aes_128_gcm_sha256
+	assert decoded.random.bytes == hello.random.bytes
+}
