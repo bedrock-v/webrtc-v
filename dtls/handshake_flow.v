@@ -100,3 +100,112 @@ fn (mut c Conn) retransmit_flight(flight Flight) ! {
 		c.send_records(.handshake, flight.finished_records)!
 	}
 }
+
+// run_client drives flights 1, 3 and 5.
+fn (mut c Conn) run_client(deadline time.Time) ! {
+	// Flight 1: ClientHello with no cookie.
+	mut hello := c.build_client_hello([]u8{})!
+	mut flight := Flight{
+		handshake_records: c.queue_handshake(hello)!
+	}
+	c.transmit(flight, none)!
+
+	// Flights 2 and 4: the server answers with either a HelloVerifyRequest, in
+	// which case the hello is repeated with the cookie, or with its own flight.
+	mut server_hello_done := false
+	mut interval := c.config.retransmit_interval
+	for !server_hello_done {
+		if time.now() >= deadline {
+			return ConnError{
+				reason: .timed_out
+				detail: 'the server did not complete its flight'
+			}
+		}
+		c.saw_retransmission = false
+		records := c.receive_records(interval) or {
+			c.log.debug('retransmitting the client flight')
+			c.retransmit_flight(flight)!
+			interval = double_capped(interval)
+			continue
+		}
+		for record in records {
+			match record.content_type {
+				.alert {
+					c.handle_alert(record)!
+				}
+				.handshake {
+					for message in c.collect_handshake(record)! {
+						if message is HelloVerifyRequest {
+							// Start the transcript again: RFC 6347 section
+							// 4.2.1 excludes both the first ClientHello and the
+							// HelloVerifyRequest from the hash.
+							c.transcript = []u8{}
+							c.cookie = message.cookie.clone()
+							hello = c.build_client_hello(c.cookie)!
+							flight = Flight{
+								handshake_records: c.queue_handshake(hello)!
+							}
+							c.transmit(flight, none)!
+							interval = c.config.retransmit_interval
+							continue
+						}
+						if c.apply_server_message(message)! {
+							server_hello_done = true
+						}
+					}
+				}
+				else {
+					c.log.debug('ignoring a ${record.content_type} record during the handshake')
+				}
+			}
+		}
+		if c.saw_retransmission && !server_hello_done {
+			// RFC 6347 section 4.2.4: the peer repeating a flight means ours did
+			// not arrive, so it goes out again now rather than on the next timer
+			// expiry.
+			c.log.debug('the server repeated its flight; resending ours')
+			c.retransmit_flight(flight)!
+		}
+	}
+
+	// Flight 5: our certificate, key share, proof of possession and Finished.
+	mut records := [][]u8{}
+	records << c.queue_handshake(CertificateMessage{
+		certificates: [c.local_certificate.der]
+	})!
+	records << c.queue_handshake(ClientKeyExchange{
+		public_key: c.local_ecdh_point()!
+	})!
+
+	// RFC 7627 defines the session hash as covering the handshake up to and
+	// including the ClientKeyExchange, so the master secret is derived exactly
+	// here - after the key share is in the transcript and before the
+	// CertificateVerify is. Deriving it anywhere else gives a hash the peer
+	// will not reproduce.
+	c.derive_secrets()!
+	keys := c.record_keys()!
+
+	records << c.queue_handshake(c.build_certificate_verify()!)!
+
+	// The Finished is computed over everything above, so it is built after the
+	// rest have been added to the transcript.
+	finished := Finished{
+		verify_data: verify_data(c.master_secret, c.transcript_hash(), true)
+	}
+	send_cipher := RecordCipher.new(keys.client)!
+	recv_cipher := RecordCipher.new(keys.server)!
+
+	finished_records := c.queue_handshake(finished)!
+	// The server's Finished is computed over the transcript including ours,
+	// which queue_handshake has just appended.
+	expected_peer_verify := verify_data(c.master_secret, c.transcript_hash(), false)
+
+	flight = Flight{
+		handshake_records:       records
+		send_change_cipher_spec: true
+		finished_records:        finished_records
+	}
+	c.transmit(flight, send_cipher)!
+
+	c.await_peer_finished(flight, recv_cipher, expected_peer_verify, deadline)!
+}
