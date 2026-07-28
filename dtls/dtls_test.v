@@ -138,3 +138,10 @@ fn test_key_block_reverses_the_random_order() {
 	assert block != prf(master, 'key expansion', concat(client, server), 40)
 	assert block == prf(master, 'key expansion', concat(server, client), 40)
 }
+
+fn concat(a []u8, b []u8) []u8 {
+	mut out := []u8{cap: a.len + b.len}
+	out << a
+	out << b
+	return out
+}
