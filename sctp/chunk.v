@@ -186,3 +186,19 @@ fn padded_size(n int) int {
 	}
 	return n + (4 - rem)
 }
+
+// marshal_chunk writes one chunk, including its padding.
+fn marshal_chunk(mut w codec.Writer, typ u8, flags u8, value []u8) ! {
+	total := chunk_header_size + value.len
+	if total > 0xFFFF {
+		return EncodeError{
+			detail: 'chunk of ${total} bytes exceeds the 16-bit length field'
+		}
+	}
+	w.u8(typ)
+	w.u8(flags)
+	// The length counts the header and the value, but never the padding.
+	w.u16(u16(total))
+	w.bytes(value)
+	w.pad(4)
+}
