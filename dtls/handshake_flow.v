@@ -81,3 +81,22 @@ fn (mut c Conn) transmit(flight Flight, cipher ?RecordCipher) ! {
 		c.send_records(.handshake, flight.finished_records)!
 	}
 }
+
+// retransmit_flight resends the records of a flight without advancing any
+// handshake state.
+fn (mut c Conn) retransmit_flight(flight Flight) ! {
+	if flight.handshake_records.len > 0 {
+		c.send_records(.handshake, flight.handshake_records)!
+	}
+	if flight.send_change_cipher_spec {
+		// The ChangeCipherSpec belongs to the previous epoch, which we have
+		// already left. Resending it is not possible without rewinding the
+		// epoch, so the Finished alone is retransmitted; a peer that missed the
+		// ChangeCipherSpec will retransmit its own flight and we will answer
+		// again.
+		c.log.debug('retransmitting the Finished without the ChangeCipherSpec')
+	}
+	if flight.finished_records.len > 0 {
+		c.send_records(.handshake, flight.finished_records)!
+	}
+}
