@@ -304,3 +304,17 @@ fn test_record_round_trip() {
 	assert decoded[0].sequence_number == 0x0000AABBCCDD
 	assert decoded[0].fragment == [u8(1), 2, 3, 4]
 }
+
+fn test_several_records_in_one_datagram() {
+	mut datagram := []u8{}
+	for i in 0 .. 3 {
+		datagram << Record{
+			content_type:    .handshake
+			sequence_number: u64(i)
+			fragment:        [u8(i)]
+		}.marshal()!
+	}
+	decoded := unmarshal_records(datagram)!
+	assert decoded.len == 3
+	assert decoded[2].fragment == [u8(2)]
+}
