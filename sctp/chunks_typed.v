@@ -34,3 +34,40 @@ pub const data_flag_end = u8(0x01)
 pub const data_flag_beginning = u8(0x02)
 pub const data_flag_unordered = u8(0x04)
 pub const data_flag_immediate_sack = u8(0x08)
+
+// Payload protocol identifiers for data channels (RFC 8831 section 8).
+//
+// SCTP itself does not care what these mean; they are what tells a receiver
+// whether a message is a string or binary, and whether it is a data channel
+// control message rather than user data.
+pub const ppid_dcep = u32(50)
+pub const ppid_string = u32(51)
+pub const ppid_binary_partial = u32(52)
+pub const ppid_binary = u32(53)
+pub const ppid_string_partial = u32(54)
+pub const ppid_string_empty = u32(56)
+pub const ppid_binary_empty = u32(57)
+
+// Parameter is a type-length-value inside a chunk.
+pub struct Parameter {
+pub:
+	typ   u16
+	value []u8
+}
+
+fn marshal_parameters(parameters []Parameter) ![]u8 {
+	mut w := codec.Writer.new()
+	for parameter in parameters {
+		total := 4 + parameter.value.len
+		if total > 0xFFFF {
+			return EncodeError{
+				detail: 'parameter of ${total} bytes exceeds the 16-bit length field'
+			}
+		}
+		w.u16(parameter.typ)
+		w.u16(u16(total))
+		w.bytes(parameter.value)
+		w.pad(4)
+	}
+	return w.buf
+}
