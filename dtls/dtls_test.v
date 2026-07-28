@@ -236,3 +236,9 @@ fn test_certificate_generation_and_fingerprint() {
 
 	assert fingerprint_of(certificate.der, .sha256).matches(sha256_print)
 }
+
+fn test_certificates_are_distinct() {
+	first := Certificate.generate()!
+	second := Certificate.generate()!
+	assert !first.fingerprint(.sha256).matches(second.fingerprint(.sha256))
+}
