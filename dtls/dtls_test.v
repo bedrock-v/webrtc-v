@@ -806,3 +806,29 @@ fn test_handshake_fails_on_fingerprint_mismatch() {
 	server_thread.wait()
 	assert false, 'a certificate that does not match the signalled fingerprint must be refused'
 }
+
+fn test_conn_requires_a_fingerprint_or_an_explicit_opt_out() {
+	mut pipe, mut unused_peer := new_pipe_pair()
+	// Leaving out the fingerprints without saying so removes the only peer
+	// authentication there is, so it must be refused rather than silently
+	// insecure.
+	Conn.new(pipe, role: .client) or {
+		assert err is ConnError
+		mut other, mut other_peer := new_pipe_pair()
+		Conn.new(other, role: .client, insecure_skip_fingerprint_verification: true)!
+		return
+	}
+	assert false, 'a connection with no fingerprints and no opt-out must be refused'
+}
+
+fn test_handshake_cannot_be_run_twice() {
+	mut pair := run_handshake(Config{}, Config{})!
+	pair.client.handshake() or {
+		assert err is ConnError
+		if err is ConnError {
+			assert err.reason == .wrong_state
+		}
+		return
+	}
+	assert false, 'a second handshake on the same connection must be refused'
+}
