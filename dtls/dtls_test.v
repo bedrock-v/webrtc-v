@@ -145,3 +145,15 @@ fn concat(a []u8, b []u8) []u8 {
 	out << b
 	return out
 }
+
+fn test_verify_data_distinguishes_the_two_sides() {
+	master := []u8{len: 48, init: 7}
+	hash := []u8{len: 32, init: 3}
+
+	client_side := verify_data(master, hash, true)
+	server_side := verify_data(master, hash, false)
+	assert client_side.len == verify_data_length
+	// Different labels: a client must not be able to replay the server's
+	// Finished back at it.
+	assert client_side != server_side
+}
