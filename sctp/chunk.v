@@ -140,3 +140,20 @@ pub struct EncodeError {
 pub:
 	detail string
 }
+
+pub fn (e EncodeError) msg() string {
+	return 'sctp: ${e.detail}'
+}
+
+pub fn (e EncodeError) code() int {
+	return 20
+}
+
+// RawChunk is a chunk as it appears on the wire: a type, flags, and the value
+// bytes with the padding already stripped.
+pub struct RawChunk {
+pub:
+	typ   u8
+	flags u8
+	value []u8
+}
