@@ -61,3 +61,15 @@ fn (mut p PipeTransport) send(data []u8) !int {
 	}
 	return data.len
 }
+
+fn (mut p PipeTransport) recv(timeout time.Duration) ![]u8 {
+	select {
+		data := <-p.inbound {
+			return data
+		}
+		timeout {
+			return error('timeout')
+		}
+	}
+	return error('closed')
+}
