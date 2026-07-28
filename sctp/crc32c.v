@@ -22,3 +22,28 @@ const crc32c_polynomial = u32(0x82F63B78)
 
 // crc32c_table is the byte-at-a-time lookup table, built once at startup.
 const crc32c_table = build_crc32c_table()
+
+fn build_crc32c_table() []u32 {
+	mut table := []u32{len: 256}
+	for i in 0 .. 256 {
+		mut value := u32(i)
+		for _ in 0 .. 8 {
+			if value & 1 != 0 {
+				value = (value >> 1) ^ crc32c_polynomial
+			} else {
+				value >>= 1
+			}
+		}
+		table[i] = value
+	}
+	return table
+}
+
+// crc32c computes the CRC-32c of a byte string.
+pub fn crc32c(data []u8) u32 {
+	mut crc := u32(0xFFFFFFFF)
+	for b in data {
+		crc = (crc >> 8) ^ crc32c_table[(crc ^ u32(b)) & 0xFF]
+	}
+	return crc ^ 0xFFFFFFFF
+}
