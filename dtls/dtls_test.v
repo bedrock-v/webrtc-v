@@ -112,3 +112,16 @@ fn test_prf_output_is_a_prefix_at_every_length() {
 		assert prf('k'.bytes(), 'l', 's'.bytes(), n) == long[..n]
 	}
 }
+
+fn test_master_secret_length_and_ordering() {
+	pre := []u8{len: 32, init: u8(index)}
+	client := []u8{len: 32, init: 1}
+	server := []u8{len: 32, init: 2}
+
+	master := master_secret(pre, client, server)
+	assert master.len == master_secret_length
+	// The two randoms are not interchangeable; swapping them must change the
+	// result, or two peers computing it in different orders would still agree
+	// and the bug would hide until interop testing.
+	assert master_secret(pre, server, client) != master
+}
