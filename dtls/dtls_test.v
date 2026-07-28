@@ -242,3 +242,16 @@ fn test_certificates_are_distinct() {
 	second := Certificate.generate()!
 	assert !first.fingerprint(.sha256).matches(second.fingerprint(.sha256))
 }
+
+fn test_certificate_round_trips_through_the_parser() {
+	certificate := Certificate.generate(common_name: 'round-trip')!
+	parsed := parse_certificate(certificate.der)!
+
+	assert parsed.der == certificate.der
+	assert parsed.not_before < parsed.not_after
+	// The parsed public key must be the one that signed, which is checkable by
+	// verifying something with it.
+	message := 'proof of possession'.bytes()
+	signature := certificate.private_key.sign(message)!
+	assert parsed.public_key.verify(message, signature)!
+}
