@@ -452,3 +452,12 @@ fn (mut c Conn) await_peer_finished(flight Flight, recv_cipher RecordCipher, exp
 		}
 	}
 }
+
+fn double_capped(interval time.Duration) time.Duration {
+	doubled := interval * 2
+	// RFC 6347 section 4.2.4.1 caps the retransmission timer at 60 seconds.
+	if doubled > 60 * time.second {
+		return 60 * time.second
+	}
+	return doubled
+}
