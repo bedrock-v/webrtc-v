@@ -197,3 +197,10 @@ fn test_der_oid_encoding() {
 	assert der_oid('2.5.4.3')!.hex() == '0603550403'
 	der_oid('1') or { return }
 }
+
+fn test_der_oid_rejects_malformed() {
+	for bad in ['', '1', '3.1.1', '1.40', 'a.b', '1.2.x'] {
+		der_oid(bad) or { continue }
+		assert false, 'expected "${bad}" to be rejected'
+	}
+}
