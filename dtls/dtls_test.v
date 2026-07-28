@@ -284,3 +284,23 @@ fn test_fingerprint_parsing() {
 		assert false, 'expected "${bad}" to be rejected'
 	}
 }
+
+// -- Records ---------------------------------------------------------------
+
+fn test_record_round_trip() {
+	record := Record{
+		content_type:    .handshake
+		epoch:           3
+		sequence_number: 0x0000AABBCCDD
+		fragment:        [u8(1), 2, 3, 4]
+	}
+	raw := record.marshal()!
+	assert raw.len == record_header_size + 4
+
+	decoded := unmarshal_records(raw)!
+	assert decoded.len == 1
+	assert decoded[0].content_type == .handshake
+	assert decoded[0].epoch == 3
+	assert decoded[0].sequence_number == 0x0000AABBCCDD
+	assert decoded[0].fragment == [u8(1), 2, 3, 4]
+}
