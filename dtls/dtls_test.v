@@ -190,3 +190,10 @@ fn test_der_integer_is_minimal_and_signed() {
 	assert der_integer_from_bytes([u8(0x7f)]) == [u8(2), 1, 0x7f]
 	assert der_integer_from_bytes([]u8{}) == [u8(2), 1, 0]
 }
+
+fn test_der_oid_encoding() {
+	// The first two arcs pack into one byte, and later arcs are base-128.
+	assert der_oid('1.2.840.10045.2.1')!.hex() == '06072a8648ce3d0201'
+	assert der_oid('2.5.4.3')!.hex() == '0603550403'
+	der_oid('1') or { return }
+}
