@@ -125,3 +125,16 @@ fn test_master_secret_length_and_ordering() {
 	// and the bug would hide until interop testing.
 	assert master_secret(pre, server, client) != master
 }
+
+fn test_key_block_reverses_the_random_order() {
+	master := []u8{len: 48, init: u8(index)}
+	client := []u8{len: 32, init: 1}
+	server := []u8{len: 32, init: 2}
+
+	// RFC 5246 section 6.3 seeds the key expansion with server random first,
+	// the opposite of the master secret derivation.
+	block := key_block(master, client, server, 40)
+	assert block.len == 40
+	assert block != prf(master, 'key expansion', concat(client, server), 40)
+	assert block == prf(master, 'key expansion', concat(server, client), 40)
+}
