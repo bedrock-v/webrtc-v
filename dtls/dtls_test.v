@@ -394,3 +394,23 @@ fn test_handshake_fragmentation_and_reassembly() {
 	assert pending.is_complete()
 	assert pending.body == body
 }
+
+fn test_duplicate_fragments_are_idempotent() {
+	body := []u8{len: 300, init: u8(index)}
+	fragments := fragment_message(.certificate, 1, body, 150)!
+
+	mut pending := PendingMessage{
+		typ:    .certificate
+		length: u32(body.len)
+		body:   []u8{len: body.len}
+	}
+	// A retransmitted flight delivers every fragment twice.
+	for _ in 0 .. 2 {
+		for fragment in fragments {
+			parsed := unmarshal_handshake_fragments(fragment)!
+			pending.add(parsed[0].header.fragment_offset, parsed[0].body)
+		}
+	}
+	assert pending.is_complete()
+	assert pending.body == body
+}
