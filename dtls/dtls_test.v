@@ -103,3 +103,12 @@ fn test_prf_is_deterministic_and_label_separated() {
 	assert prf('other'.bytes(), 'label', seed, 48) != first
 	assert prf(secret, 'label', 'other'.bytes(), 48) != first
 }
+
+fn test_prf_output_is_a_prefix_at_every_length() {
+	// P_hash is an expanding chain, so a shorter request must be a prefix of a
+	// longer one. If it is not, the block boundary handling is wrong.
+	long := prf('k'.bytes(), 'l', 's'.bytes(), 100)
+	for n in [1, 16, 31, 32, 33, 64, 99] {
+		assert prf('k'.bytes(), 'l', 's'.bytes(), n) == long[..n]
+	}
+}
