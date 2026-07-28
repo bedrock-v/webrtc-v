@@ -73,3 +73,9 @@ fn (mut p PipeTransport) recv(timeout time.Duration) ![]u8 {
 	}
 	return error('closed')
 }
+
+fn (mut p PipeTransport) close() {
+	p.mu.lock()
+	p.closed = true
+	p.mu.unlock()
+}
