@@ -101,3 +101,32 @@ fn unmarshal_parameters(body []u8) ![]Parameter {
 	}
 	return out
 }
+
+// find_parameter returns the first parameter of the given type.
+pub fn find_parameter(parameters []Parameter, typ u16) ?Parameter {
+	for parameter in parameters {
+		if parameter.typ == typ {
+			return parameter
+		}
+	}
+	return none
+}
+
+// Init is the body of an INIT or INIT_ACK chunk (RFC 4960 sections 3.3.2 and
+// 3.3.3). The two have identical layouts and differ only in which parameters
+// they carry.
+pub struct Init {
+pub mut:
+	// initiate_tag is the verification tag the peer must put in every packet it
+	// sends us. It is random and must never be zero: zero is reserved for the
+	// packets that set up or tear down an association.
+	initiate_tag u32
+	// advertised_receiver_window is how many bytes we are willing to buffer.
+	// It is SCTP's flow control, and it is what makes back pressure reach the
+	// sending application instead of being absorbed by an unbounded queue.
+	advertised_receiver_window u32
+	outbound_streams           u16
+	inbound_streams            u16
+	initial_tsn                u32
+	parameters                 []Parameter
+}
