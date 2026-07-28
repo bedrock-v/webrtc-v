@@ -354,3 +354,19 @@ fn test_is_dtls_demultiplexing() {
 	assert !is_dtls([]u8{len: 20, init: 0x40}) // TURN channel
 	assert !is_dtls([]u8{len: 4, init: 0x16}) // too short
 }
+
+fn test_anti_replay_window() {
+	mut window := AntiReplay.new(64)
+	assert window.check(100)
+	window.accept(100)
+	assert !window.check(100)
+	assert window.check(101)
+	assert window.check(99)
+	window.accept(99)
+	assert !window.check(99)
+	// Older than the window cannot be judged, so it is refused.
+	assert !window.check(36)
+	window.accept(1000)
+	assert !window.check(100)
+	assert window.highest_sequence_number() == 1000
+}
