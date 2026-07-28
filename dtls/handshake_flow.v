@@ -461,3 +461,19 @@ fn double_capped(interval time.Duration) time.Duration {
 	}
 	return doubled
 }
+
+// constant_time_equal compares two byte strings without an early exit.
+//
+// Verify data is a secret in the sense that matters here: a comparison that
+// stops at the first differing byte would tell an attacker how much of a
+// guessed value was right.
+fn constant_time_equal(a []u8, b []u8) bool {
+	if a.len != b.len {
+		return false
+	}
+	mut difference := u8(0)
+	for i in 0 .. a.len {
+		difference |= a[i] ^ b[i]
+	}
+	return difference == 0
+}
