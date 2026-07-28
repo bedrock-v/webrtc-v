@@ -38,3 +38,25 @@ pub enum ChunkType as u8 {
 	// stall the stream forever.
 	forward_tsn = 192
 }
+
+pub fn (t ChunkType) str() string {
+	return match t {
+		.data { 'DATA' }
+		.init { 'INIT' }
+		.init_ack { 'INIT_ACK' }
+		.sack { 'SACK' }
+		.heartbeat { 'HEARTBEAT' }
+		.heartbeat_ack { 'HEARTBEAT_ACK' }
+		.abort { 'ABORT' }
+		.shutdown { 'SHUTDOWN' }
+		.shutdown_ack { 'SHUTDOWN_ACK' }
+		.error { 'ERROR' }
+		.cookie_echo { 'COOKIE_ECHO' }
+		.cookie_ack { 'COOKIE_ACK' }
+		.ecne { 'ECNE' }
+		.cwr { 'CWR' }
+		.shutdown_complete { 'SHUTDOWN_COMPLETE' }
+		.reconfig { 'RECONFIG' }
+		.forward_tsn { 'FORWARD_TSN' }
+	}
+}
