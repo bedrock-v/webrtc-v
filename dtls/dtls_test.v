@@ -871,3 +871,21 @@ fn test_local_certificate_is_reported_for_signalling() {
 	// The fingerprint an application must publish in its SDP.
 	assert conn.local_certificate().fingerprint(.sha256).matches(certificate.fingerprint(.sha256))
 }
+
+fn test_zero_length_message_reassembles() {
+	// ServerHelloDone carries no body. A reassembler that tracks received byte
+	// ranges records nothing for it, so it has to be recognised as complete on
+	// its own terms - otherwise the server's first flight never finishes and no
+	// handshake can complete.
+	fragments := fragment_message(.server_hello_done, 5, []u8{}, 1200)!
+	parsed := unmarshal_handshake_fragments(fragments[0])!
+
+	mut pending := PendingMessage{
+		typ:    .server_hello_done
+		length: 0
+		body:   []u8{}
+	}
+	assert pending.add(parsed[0].header.fragment_offset, parsed[0].body)
+	assert pending.is_complete()
+	assert pending.body.len == 0
+}
