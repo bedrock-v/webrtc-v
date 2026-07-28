@@ -318,3 +318,17 @@ fn test_several_records_in_one_datagram() {
 	assert decoded.len == 3
 	assert decoded[2].fragment == [u8(2)]
 }
+
+fn test_record_rejects_malformed_input() {
+	cases := {
+		'truncated header':     '16fefd0000'
+		'unknown content type': '05fefd000000000000000000000000'
+		'unknown version':      '16030300000000000000000000'
+		'length past end':      '16fefd000000000000000000ff00'
+	}
+	for name, encoded in cases {
+		raw := hex.decode(encoded)!
+		unmarshal_records(raw) or { continue }
+		assert false, 'expected ${name} to be rejected'
+	}
+}
