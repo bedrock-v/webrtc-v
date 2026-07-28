@@ -85,3 +85,21 @@ fn (mut p PipeTransport) drop(n int) {
 	p.drop_next = n
 	p.mu.unlock()
 }
+
+// -- PRF -------------------------------------------------------------------
+
+fn test_prf_is_deterministic_and_label_separated() {
+	secret := 'secret'.bytes()
+	seed := 'seed'.bytes()
+
+	first := prf(secret, 'label', seed, 48)
+	assert first.len == 48
+	assert prf(secret, 'label', seed, 48) == first
+
+	// A different label must give unrelated output; that separation is what
+	// keeps the record keys, the Finished data and the SRTP material from being
+	// derivable from each other.
+	assert prf(secret, 'other', seed, 48) != first
+	assert prf('other'.bytes(), 'label', seed, 48) != first
+	assert prf(secret, 'label', 'other'.bytes(), 48) != first
+}
