@@ -79,3 +79,9 @@ fn (mut p PipeTransport) close() {
 	p.closed = true
 	p.mu.unlock()
 }
+
+fn (mut p PipeTransport) drop(n int) {
+	p.mu.lock()
+	p.drop_next = n
+	p.mu.unlock()
+}
