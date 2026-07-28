@@ -340,3 +340,17 @@ fn test_record_sequence_number_is_48_bits() {
 	record.marshal() or { return }
 	assert false, 'a sequence number over 48 bits must be rejected'
 }
+
+fn test_is_dtls_demultiplexing() {
+	record := Record{
+		content_type: .handshake
+		fragment:     []u8{len: 4}
+	}
+	assert is_dtls(record.marshal()!)
+
+	// RFC 7983 gives DTLS the first-byte range 20 to 63.
+	assert !is_dtls([]u8{len: 20, init: 0x00}) // STUN
+	assert !is_dtls([]u8{len: 20, init: 0x80}) // RTP
+	assert !is_dtls([]u8{len: 20, init: 0x40}) // TURN channel
+	assert !is_dtls([]u8{len: 4, init: 0x16}) // too short
+}
