@@ -71,3 +71,33 @@ fn marshal_parameters(parameters []Parameter) ![]u8 {
 	}
 	return w.buf
 }
+
+fn unmarshal_parameters(body []u8) ![]Parameter {
+	mut out := []Parameter{}
+	mut r := codec.Reader.new(body)
+	for r.remaining() >= 4 {
+		typ := r.u16('parameter type')!
+		length := int(r.u16('parameter length')!)
+		if length < 4 {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'parameter declares a length of ${length}, below its 4-byte header'
+			}
+		}
+		value := r.bytes(length - 4, 'parameter value') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'parameter declares ${length - 4} value bytes but only ${r.remaining()} remain'
+			}
+		}
+		pad := padded_size(length) - length
+		if pad > 0 && r.remaining() >= pad {
+			r.skip(pad, 'parameter padding')!
+		}
+		out << Parameter{
+			typ:   typ
+			value: value
+		}
+	}
+	return out
+}
