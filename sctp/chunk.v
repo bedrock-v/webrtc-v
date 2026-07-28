@@ -117,3 +117,26 @@ pub:
 	reason DecodeReason
 	detail string
 }
+
+pub enum DecodeReason {
+	too_short
+	bad_checksum
+	bad_length
+	bad_value
+	unknown_chunk
+	too_many_chunks
+}
+
+pub fn (e DecodeError) msg() string {
+	return 'sctp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 1
+}
+
+// EncodeError is returned when a chunk cannot be represented on the wire.
+pub struct EncodeError {
+pub:
+	detail string
+}
