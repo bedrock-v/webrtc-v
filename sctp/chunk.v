@@ -157,3 +157,32 @@ pub:
 	flags u8
 	value []u8
 }
+
+// chunk_type returns the decoded type, or none for one this implementation does
+// not know.
+pub fn (c RawChunk) chunk_type() ?ChunkType {
+	return chunk_type_from_value(c.typ)
+}
+
+// name returns a readable name for diagnostics.
+pub fn (c RawChunk) name() string {
+	if typ := c.chunk_type() {
+		return typ.str()
+	}
+	return 'chunk ${c.typ}'
+}
+
+// padded_len is the number of bytes the chunk occupies on the wire.
+@[inline]
+pub fn (c RawChunk) padded_len() int {
+	return padded_size(chunk_header_size + c.value.len)
+}
+
+@[inline]
+fn padded_size(n int) int {
+	rem := n % 4
+	if rem == 0 {
+		return n
+	}
+	return n + (4 - rem)
+}
