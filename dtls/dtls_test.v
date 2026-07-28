@@ -204,3 +204,19 @@ fn test_der_oid_rejects_malformed() {
 		assert false, 'expected "${bad}" to be rejected'
 	}
 }
+
+fn test_der_parser_rejects_non_canonical_input() {
+	cases := {
+		'indefinite length':           '3080'
+		'non-minimal long form':       '30810101'
+		'long form for a short value': '30810f'
+		'high tag number':             '1f0100'
+		'truncated value':             '3005aabb'
+		'leading zero length':         '308200ff'
+	}
+	for name, encoded in cases {
+		raw := hex.decode(encoded)!
+		der_parse(raw, 0) or { continue }
+		assert false, 'expected ${name} to be rejected'
+	}
+}
