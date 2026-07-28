@@ -332,3 +332,11 @@ fn test_record_rejects_malformed_input() {
 		assert false, 'expected ${name} to be rejected'
 	}
 }
+
+fn test_record_sequence_number_is_48_bits() {
+	record := Record{
+		sequence_number: 0x1000000000000
+	}
+	record.marshal() or { return }
+	assert false, 'a sequence number over 48 bits must be rejected'
+}
