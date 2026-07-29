@@ -846,3 +846,16 @@ fn test_read_and_write_before_the_handshake_are_refused() {
 	}
 	assert false, 'writing before the handshake must be refused'
 }
+
+fn test_write_refuses_oversized_messages() {
+	mut pair := run_handshake(Config{}, Config{})!
+	limit := pair.client.max_write()
+	assert limit > 1000
+
+	pair.client.write([]u8{len: limit})!
+	pair.client.write([]u8{len: limit + 1}) or {
+		assert err is ConnError
+		return
+	}
+	assert false, 'a message larger than one record must be refused rather than split'
+}
