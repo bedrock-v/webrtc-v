@@ -536,3 +536,26 @@ fn test_record_cipher_round_trip() {
 	recovered := receiver.unprotect(1, 5, .application_data, .dtls_1_2, protected)!
 	assert recovered == plaintext
 }
+
+fn test_record_cipher_authenticates_the_header() {
+	block := []u8{len: gcm_key_block_length, init: 7}
+	keys := expand_key_block(block)!
+	mut sender := RecordCipher.new(keys.server)!
+	mut receiver := RecordCipher.new(keys.server)!
+
+	protected := sender.protect(1, 5, .application_data, .dtls_1_2, 'x'.bytes())!
+
+	// The header is associated data, so rewriting any of it must fail the tag.
+	receiver.unprotect(2, 5, .application_data, .dtls_1_2, protected) or {
+		receiver.unprotect(1, 6, .application_data, .dtls_1_2, protected) or {
+			receiver.unprotect(1, 5, .handshake, .dtls_1_2, protected) or {
+				// The untampered record still verifies.
+				assert receiver.unprotect(1, 5, .application_data, .dtls_1_2, protected)! == 'x'.bytes()
+				return
+			}
+			assert false, 'a rewritten content type must be detected'
+		}
+		assert false, 'a rewritten sequence number must be detected'
+	}
+	assert false, 'a rewritten epoch must be detected'
+}
