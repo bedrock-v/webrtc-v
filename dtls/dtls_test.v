@@ -414,3 +414,11 @@ fn test_duplicate_fragments_are_idempotent() {
 	assert pending.is_complete()
 	assert pending.body == body
 }
+
+fn test_zero_length_message_produces_one_fragment() {
+	fragments := fragment_message(.server_hello_done, 5, []u8{}, 1200)!
+	assert fragments.len == 1
+	parsed := unmarshal_handshake_fragments(fragments[0])!
+	assert parsed[0].header.length == 0
+	assert parsed[0].header.is_complete()
+}
