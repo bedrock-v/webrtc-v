@@ -422,3 +422,10 @@ fn test_zero_length_message_produces_one_fragment() {
 	assert parsed[0].header.length == 0
 	assert parsed[0].header.is_complete()
 }
+
+fn test_handshake_fragment_rejects_overrun() {
+	// A fragment claiming to extend past the message it belongs to.
+	raw := hex.decode('0b000010000000000004000020')!
+	unmarshal_handshake_fragments(raw) or { return }
+	assert false, 'a fragment running past the message must be rejected'
+}
