@@ -645,3 +645,16 @@ fn run_handshake(client_config Config, server_config Config) !HandshakePair {
 		server: server
 	}
 }
+
+fn test_full_handshake_over_a_pipe() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	assert pair.client.state() == .connected
+	assert pair.server.state() == .connected
+	assert pair.client.role() == .client
+	assert pair.server.role() == .server
+
+	// Each side learned the other's certificate.
+	assert pair.client.remote_certificate() != none
+	assert pair.server.remote_certificate() != none
+}
