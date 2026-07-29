@@ -559,3 +559,18 @@ fn test_record_cipher_authenticates_the_header() {
 	}
 	assert false, 'a rewritten epoch must be detected'
 }
+
+fn test_record_cipher_detects_tampering() {
+	block := []u8{len: gcm_key_block_length, init: 3}
+	keys := expand_key_block(block)!
+	mut sender := RecordCipher.new(keys.client)!
+
+	protected := sender.protect(1, 1, .application_data, .dtls_1_2, 'hello world'.bytes())!
+	for i in 0 .. protected.len {
+		mut tampered := protected.clone()
+		tampered[i] ^= 0x01
+		mut receiver := RecordCipher.new(keys.client)!
+		receiver.unprotect(1, 1, .application_data, .dtls_1_2, tampered) or { continue }
+		assert false, 'flipping byte ${i} was not detected'
+	}
+}
