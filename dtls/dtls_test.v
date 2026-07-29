@@ -658,3 +658,13 @@ fn test_full_handshake_over_a_pipe() {
 	assert pair.client.remote_certificate() != none
 	assert pair.server.remote_certificate() != none
 }
+
+fn test_handshake_negotiates_an_srtp_profile() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	client_profile := pair.client.selected_srtp_profile()?
+	server_profile := pair.server.selected_srtp_profile()?
+	assert client_profile == server_profile
+	// Both sides list AES-GCM first, so that is what should win.
+	assert client_profile == .aead_aes_128_gcm
+}
