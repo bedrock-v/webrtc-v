@@ -706,3 +706,15 @@ fn test_srtp_profile_negotiation_picks_the_common_one() {
 	assert pair.client.selected_srtp_profile()? == .aes128_cm_hmac_sha1_80
 	assert pair.server.selected_srtp_profile()? == .aes128_cm_hmac_sha1_80
 }
+
+fn test_application_data_flows_both_ways() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	message := 'hello over DTLS'.bytes()
+	pair.client.write(message)!
+	assert pair.server.read(5 * time.second)! == message
+
+	reply := 'and back again'.bytes()
+	pair.server.write(reply)!
+	assert pair.client.read(5 * time.second)! == reply
+}
