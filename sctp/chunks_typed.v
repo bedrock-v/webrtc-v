@@ -464,3 +464,22 @@ fn marshal_error_causes(causes []ErrorCause) ![]u8 {
 	}
 	return marshal_parameters(parameters)!
 }
+
+fn unmarshal_error_causes(value []u8) ![]ErrorCause {
+	parameters := unmarshal_parameters(value)!
+	mut out := []ErrorCause{cap: parameters.len}
+	for parameter in parameters {
+		out << ErrorCause{
+			code:  parameter.typ
+			value: parameter.value
+		}
+	}
+	return out
+}
+
+fn short(name string) DecodeError {
+	return DecodeError{
+		reason: .too_short
+		detail: '${name} is shorter than its fixed fields require'
+	}
+}
