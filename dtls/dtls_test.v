@@ -668,3 +668,11 @@ fn test_handshake_negotiates_an_srtp_profile() {
 	// Both sides list AES-GCM first, so that is what should win.
 	assert client_profile == .aead_aes_128_gcm
 }
+
+fn test_srtp_keying_material_matches_on_both_sides() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	// The exporter output must be identical, or the two endpoints would key
+	// SRTP differently and every packet would fail authentication.
+	assert pair.client.srtp_keying_material()! == pair.server.srtp_keying_material()!
+}
