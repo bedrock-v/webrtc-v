@@ -281,3 +281,23 @@ fn unmarshal_data(flags u8, value []u8) !Data {
 		immediate_sack:              flags & data_flag_immediate_sack != 0
 	}
 }
+
+// GapAckBlock names a run of received TSNs above the cumulative acknowledgement,
+// as an offset from it.
+pub struct GapAckBlock {
+pub:
+	start u16
+	end   u16
+}
+
+// Sack acknowledges data (RFC 4960 section 3.3.4).
+pub struct Sack {
+pub mut:
+	// cumulative_tsn_ack is the highest TSN below which everything has arrived.
+	cumulative_tsn_ack u32
+	// advertised_receiver_window is how much room is left in the receive
+	// buffer. A sender that ignores it will overrun the receiver.
+	advertised_receiver_window u32
+	gap_ack_blocks             []GapAckBlock
+	duplicate_tsns             []u32
+}
