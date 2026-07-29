@@ -394,3 +394,21 @@ fn (f ForwardTsn) marshal() ![]u8 {
 	}
 	return w.buf
 }
+
+fn unmarshal_forward_tsn(value []u8) !ForwardTsn {
+	mut r := codec.Reader.new(value)
+	new_cumulative := r.u32('new cumulative TSN') or { return short('FORWARD_TSN') }
+	mut streams := []ForwardTsnStream{}
+	for r.remaining() >= 4 {
+		identifier := r.u16('stream identifier')!
+		sequence := r.u16('stream sequence')!
+		streams << ForwardTsnStream{
+			identifier:      identifier
+			sequence_number: sequence
+		}
+	}
+	return ForwardTsn{
+		new_cumulative_tsn: new_cumulative
+		streams:            streams
+	}
+}
