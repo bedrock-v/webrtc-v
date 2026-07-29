@@ -498,3 +498,16 @@ fn test_certificate_message_round_trip() {
 	assert decoded.certificates[0] == first
 	assert decoded.certificates[1] == second
 }
+
+fn test_server_key_exchange_round_trip() {
+	message := ServerKeyExchange{
+		public_key: []u8{len: 65, init: u8(index)}
+		signature:  []u8{len: 70, init: 9}
+	}
+	body := HandshakeMessage(message).marshal()!
+	decoded := unmarshal_handshake_message(.server_key_exchange, body)! as ServerKeyExchange
+	assert decoded.curve == .secp256r1
+	assert decoded.public_key.len == 65
+	assert decoded.signature.len == 70
+	assert decoded.signature_hash == .sha256
+}
