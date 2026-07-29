@@ -19,3 +19,6 @@ module sctp
 // crc32c_polynomial is the Castagnoli polynomial in its reversed form, which is
 // what a table-driven implementation that shifts right needs.
 const crc32c_polynomial = u32(0x82F63B78)
+
+// crc32c_table is the byte-at-a-time lookup table, built once at startup.
+const crc32c_table = build_crc32c_table()
