@@ -117,3 +117,12 @@ pub:
 	reason DecodeReason
 	detail string
 }
+
+pub enum DecodeReason {
+	too_short
+	bad_checksum
+	bad_length
+	bad_value
+	unknown_chunk
+	too_many_chunks
+}
