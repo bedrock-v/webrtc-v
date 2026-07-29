@@ -220,3 +220,37 @@ pub mut:
 	// latency for a small message at the cost of an extra packet.
 	immediate_sack bool
 }
+
+fn (d Data) flags() u8 {
+	mut flags := u8(0)
+	if d.end {
+		flags |= data_flag_end
+	}
+	if d.beginning {
+		flags |= data_flag_beginning
+	}
+	if d.unordered {
+		flags |= data_flag_unordered
+	}
+	if d.immediate_sack {
+		flags |= data_flag_immediate_sack
+	}
+	return flags
+}
+
+fn (d Data) marshal() ![]u8 {
+	if d.user_data.len == 0 {
+		// RFC 4960 section 3.3.1 forbids an empty DATA chunk; a peer that
+		// receives one must abort the association.
+		return EncodeError{
+			detail: 'a DATA chunk must carry at least one byte'
+		}
+	}
+	mut w := codec.Writer.with_capacity(12 + d.user_data.len)
+	w.u32(d.tsn)
+	w.u16(d.stream_identifier)
+	w.u16(d.stream_sequence_number)
+	w.u32(d.payload_protocol_identifier)
+	w.bytes(d.user_data)
+	return w.buf
+}
