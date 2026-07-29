@@ -151,3 +151,34 @@ fn (i Init) marshal() ![]u8 {
 	w.bytes(marshal_parameters(i.parameters)!)
 	return w.buf
 }
+
+fn unmarshal_init(value []u8) !Init {
+	mut r := codec.Reader.new(value)
+	initiate_tag := r.u32('initiate tag') or { return short('INIT') }
+	advertised := r.u32('a_rwnd') or { return short('INIT') }
+	outbound := r.u16('outbound streams') or { return short('INIT') }
+	inbound := r.u16('inbound streams') or { return short('INIT') }
+	initial_tsn := r.u32('initial TSN') or { return short('INIT') }
+
+	if initiate_tag == 0 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'the peer sent a zero initiate tag'
+		}
+	}
+	if outbound == 0 || inbound == 0 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'the peer offered zero streams'
+		}
+	}
+
+	return Init{
+		initiate_tag:               initiate_tag
+		advertised_receiver_window: advertised
+		outbound_streams:           outbound
+		inbound_streams:            inbound
+		initial_tsn:                initial_tsn
+		parameters:                 unmarshal_parameters(r.rest_view())!
+	}
+}
