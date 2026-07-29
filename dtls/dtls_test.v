@@ -473,3 +473,15 @@ fn test_server_hello_round_trip() {
 	assert decoded.cipher_suite == .ecdhe_ecdsa_with_aes_128_gcm_sha256
 	assert decoded.random.bytes == hello.random.bytes
 }
+
+fn test_server_hello_rejects_compression() {
+	// TLS compression is a vulnerability, not a feature.
+	hello := ServerHello{
+		random:             Random.generate()!
+		cipher_suite:       .ecdhe_ecdsa_with_aes_128_gcm_sha256
+		compression_method: 1
+	}
+	body := HandshakeMessage(hello).marshal()!
+	unmarshal_handshake_message(.server_hello, body) or { return }
+	assert false, 'a non-null compression method must be rejected'
+}
