@@ -139,3 +139,21 @@ fn (mut s InboundStream) accept(data Data, max_message_size int) ![]Message {
 	}
 	return s.deliver_ordered(data.stream_sequence_number, message)
 }
+
+// deliver_ordered releases a message and any successors that were waiting.
+fn (mut s InboundStream) deliver_ordered(sequence u16, message Message) []Message {
+	if sequence != s.next_sequence {
+		// Out of order. Hold it; it will be released when the gap fills.
+		s.ready[sequence] = message
+		return []Message{}
+	}
+	mut out := [message]
+	s.next_sequence++
+	for {
+		waiting := s.ready[s.next_sequence] or { break }
+		out << waiting
+		s.ready.delete(s.next_sequence)
+		s.next_sequence++
+	}
+	return out
+}
