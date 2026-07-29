@@ -574,3 +574,21 @@ fn test_record_cipher_detects_tampering() {
 		assert false, 'flipping byte ${i} was not detected'
 	}
 }
+
+fn test_key_block_split_order() {
+	// Both keys precede both IVs (RFC 5246 section 6.3).
+	mut block := []u8{}
+	block << []u8{len: 16, init: 0x11}
+	block << []u8{len: 16, init: 0x22}
+	block << []u8{len: 4, init: 0x33}
+	block << []u8{len: 4, init: 0x44}
+
+	keys := expand_key_block(block)!
+	assert keys.client.key.all(it == 0x11)
+	assert keys.server.key.all(it == 0x22)
+	assert keys.client.fixed_iv.all(it == 0x33)
+	assert keys.server.fixed_iv.all(it == 0x44)
+
+	expand_key_block(block[..10]) or { return }
+	assert false, 'a short key block must be rejected'
+}
