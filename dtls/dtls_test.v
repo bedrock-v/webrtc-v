@@ -519,3 +519,20 @@ fn test_finished_length_is_enforced() {
 	}
 	assert false, 'a Finished of the wrong length must be rejected'
 }
+
+// -- Record protection -----------------------------------------------------
+
+fn test_record_cipher_round_trip() {
+	block := []u8{len: gcm_key_block_length, init: u8(index * 3 + 1)}
+	keys := expand_key_block(block)!
+
+	mut sender := RecordCipher.new(keys.client)!
+	mut receiver := RecordCipher.new(keys.client)!
+
+	plaintext := 'application data'.bytes()
+	protected := sender.protect(1, 5, .application_data, .dtls_1_2, plaintext)!
+	assert protected.len == plaintext.len + sender.overhead()
+
+	recovered := receiver.unprotect(1, 5, .application_data, .dtls_1_2, protected)!
+	assert recovered == plaintext
+}
