@@ -18,3 +18,29 @@ pub:
 	data                        []u8
 	unordered                   bool
 }
+
+// max_message_size bounds one reassembled message. The peer chooses how many
+// fragments to send, so without a ceiling it could make us buffer without
+// limit. RFC 8831 puts the WebRTC default at 64 KiB and browsers negotiate
+// 256 KiB.
+pub const default_max_message_size = 262144
+
+// max_reassembly_fragments bounds how many fragments one message may take.
+const max_reassembly_fragments = 4096
+
+// InboundStream reassembles and orders the messages arriving on one stream.
+struct InboundStream {
+mut:
+	identifier u16
+	// next_sequence is the stream sequence number expected next for ordered
+	// delivery. Anything above it waits.
+	next_sequence u16
+	// partial holds the fragments of messages not yet complete, keyed by
+	// stream sequence number. Unordered fragments are keyed the same way,
+	// because RFC 4960 still numbers them for reassembly even though their
+	// delivery is not ordered.
+	partial map[u16]PartialMessage
+	// ready holds complete ordered messages that arrived early and are waiting
+	// for their predecessors.
+	ready map[u16]Message
+}
