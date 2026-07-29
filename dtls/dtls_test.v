@@ -859,3 +859,15 @@ fn test_write_refuses_oversized_messages() {
 	}
 	assert false, 'a message larger than one record must be refused rather than split'
 }
+
+fn test_local_certificate_is_reported_for_signalling() {
+	certificate := Certificate.generate()!
+	mut pipe, mut unused_peer := new_pipe_pair()
+	mut conn := Conn.new(pipe,
+		role:                                   .client
+		certificate:                            certificate
+		insecure_skip_fingerprint_verification: true
+	)!
+	// The fingerprint an application must publish in its SDP.
+	assert conn.local_certificate().fingerprint(.sha256).matches(certificate.fingerprint(.sha256))
+}
