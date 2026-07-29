@@ -694,3 +694,15 @@ fn test_srtp_contexts_interoperate() {
 	reply := server_out.protect_rtp(packet)!
 	assert client_in.unprotect_rtp(reply)! == packet
 }
+
+fn test_srtp_profile_negotiation_picks_the_common_one() {
+	// The client prefers AES-GCM; the server only speaks the counter-mode
+	// profile, so that is what must be chosen.
+	mut pair := run_handshake(Config{
+		srtp_profiles: [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]
+	}, Config{
+		srtp_profiles: [srtp.Profile.aes128_cm_hmac_sha1_80]
+	})!
+	assert pair.client.selected_srtp_profile()? == .aes128_cm_hmac_sha1_80
+	assert pair.server.selected_srtp_profile()? == .aes128_cm_hmac_sha1_80
+}
