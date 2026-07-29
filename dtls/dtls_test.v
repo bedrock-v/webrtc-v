@@ -832,3 +832,17 @@ fn test_handshake_cannot_be_run_twice() {
 	}
 	assert false, 'a second handshake on the same connection must be refused'
 }
+
+fn test_read_and_write_before_the_handshake_are_refused() {
+	mut pipe, mut unused_peer := new_pipe_pair()
+	mut conn := Conn.new(pipe, role: .client, insecure_skip_fingerprint_verification: true)!
+
+	conn.write('x'.bytes()) or {
+		conn.read(10 * time.millisecond) or {
+			assert err is ConnError
+			return
+		}
+		assert false, 'reading before the handshake must be refused'
+	}
+	assert false, 'writing before the handshake must be refused'
+}
