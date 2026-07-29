@@ -592,3 +592,11 @@ fn test_key_block_split_order() {
 	expand_key_block(block[..10]) or { return }
 	assert false, 'a short key block must be rejected'
 }
+
+// -- Full handshake --------------------------------------------------------
+
+struct HandshakePair {
+mut:
+	client &Conn
+	server &Conn
+}
