@@ -32,3 +32,28 @@ pub mut:
 	verification_tag u32
 	chunks           []RawChunk
 }
+
+// marshal serialises a packet and computes its checksum.
+pub fn (p &Packet) marshal() ![]u8 {
+	mut w := codec.Writer.with_capacity(packet_header_size + 128)
+	w.u16(p.source_port)
+	w.u16(p.destination_port)
+	w.u32(p.verification_tag)
+	// The checksum is computed over the finished packet with this field zero,
+	// so it is written as zero now and patched below.
+	w.u32(0)
+
+	for chunk in p.chunks {
+		marshal_chunk(mut w, chunk.typ, chunk.flags, chunk.value)!
+	}
+
+	mut raw := w.take()
+	checksum := crc32c(raw)
+	// RFC 3309: the checksum goes into the field in little-endian order, unlike
+	// every other field in the header.
+	raw[checksum_offset] = u8(checksum)
+	raw[checksum_offset + 1] = u8(checksum >> 8)
+	raw[checksum_offset + 2] = u8(checksum >> 16)
+	raw[checksum_offset + 3] = u8(checksum >> 24)
+	return raw
+}
