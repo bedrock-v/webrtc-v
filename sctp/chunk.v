@@ -60,3 +60,26 @@ pub fn (t ChunkType) str() string {
 		.forward_tsn { 'FORWARD_TSN' }
 	}
 }
+
+fn chunk_type_from_value(v u8) ?ChunkType {
+	return match v {
+		0 { ChunkType.data }
+		1 { ChunkType.init }
+		2 { ChunkType.init_ack }
+		3 { ChunkType.sack }
+		4 { ChunkType.heartbeat }
+		5 { ChunkType.heartbeat_ack }
+		6 { ChunkType.abort }
+		7 { ChunkType.shutdown }
+		8 { ChunkType.shutdown_ack }
+		9 { ChunkType.error }
+		10 { ChunkType.cookie_echo }
+		11 { ChunkType.cookie_ack }
+		12 { ChunkType.ecne }
+		13 { ChunkType.cwr }
+		14 { ChunkType.shutdown_complete }
+		130 { ChunkType.reconfig }
+		192 { ChunkType.forward_tsn }
+		else { none }
+	}
+}
