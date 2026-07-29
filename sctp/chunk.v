@@ -110,3 +110,10 @@ pub fn unrecognised_chunk_action(typ u8) UnrecognisedAction {
 		else { UnrecognisedAction.skip_and_report }
 	}
 }
+
+// DecodeError describes why a byte string is not a valid SCTP packet or chunk.
+pub struct DecodeError {
+pub:
+	reason DecodeReason
+	detail string
+}
