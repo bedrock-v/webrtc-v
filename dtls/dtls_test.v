@@ -429,3 +429,31 @@ fn test_handshake_fragment_rejects_overrun() {
 	unmarshal_handshake_fragments(raw) or { return }
 	assert false, 'a fragment running past the message must be rejected'
 }
+
+fn test_client_hello_round_trip() {
+	hello := ClientHello{
+		random:        Random.generate()!
+		cookie:        [u8(1), 2, 3]
+		cipher_suites: [CipherSuite.ecdhe_ecdsa_with_aes_128_gcm_sha256]
+		extensions:    [
+			Extension(SupportedGroups{
+				curves: [NamedCurve.secp256r1]
+			}),
+			Extension(UseSrtp{
+				profiles: [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]
+			}),
+			Extension(ExtendedMasterSecret{}),
+		]
+	}
+	body := HandshakeMessage(hello).marshal()!
+	decoded := unmarshal_handshake_message(.client_hello, body)! as ClientHello
+
+	assert decoded.random.bytes == hello.random.bytes
+	assert decoded.cookie == [u8(1), 2, 3]
+	assert decoded.cipher_suites == hello.cipher_suites
+	assert decoded.extensions.len == 3
+
+	srtp_extension := find_extension(decoded.extensions, ext_use_srtp)? as UseSrtp
+	assert srtp_extension.profiles == [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]
+	assert find_extension(decoded.extensions, ext_extended_master_secret) != none
+}
