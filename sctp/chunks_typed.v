@@ -412,3 +412,25 @@ fn unmarshal_forward_tsn(value []u8) !ForwardTsn {
 		streams:            streams
 	}
 }
+
+// ErrorCause is one entry in an ERROR or ABORT chunk.
+pub struct ErrorCause {
+pub:
+	code  u16
+	value []u8
+}
+
+// Error cause codes from RFC 4960 section 3.3.10.
+pub const cause_invalid_stream_identifier = u16(1)
+pub const cause_missing_mandatory_parameter = u16(2)
+pub const cause_stale_cookie = u16(3)
+pub const cause_out_of_resource = u16(4)
+pub const cause_unresolvable_address = u16(5)
+pub const cause_unrecognized_chunk_type = u16(6)
+pub const cause_invalid_mandatory_parameter = u16(7)
+pub const cause_unrecognized_parameters = u16(8)
+pub const cause_no_user_data = u16(9)
+pub const cause_cookie_received_while_shutting_down = u16(10)
+pub const cause_restart_with_new_addresses = u16(11)
+pub const cause_user_initiated_abort = u16(12)
+pub const cause_protocol_violation = u16(13)
