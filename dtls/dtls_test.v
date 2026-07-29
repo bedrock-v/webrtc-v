@@ -511,3 +511,11 @@ fn test_server_key_exchange_round_trip() {
 	assert decoded.signature.len == 70
 	assert decoded.signature_hash == .sha256
 }
+
+fn test_finished_length_is_enforced() {
+	unmarshal_handshake_message(.finished, []u8{len: 11}) or {
+		unmarshal_handshake_message(.finished, []u8{len: 12})!
+		return
+	}
+	assert false, 'a Finished of the wrong length must be rejected'
+}
