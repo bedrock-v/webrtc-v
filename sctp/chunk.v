@@ -83,3 +83,21 @@ fn chunk_type_from_value(v u8) ?ChunkType {
 		else { none }
 	}
 }
+
+// unrecognised_chunk_action says what a receiver must do with a chunk type it
+// does not know, which the top two bits of the type encode
+// (RFC 4960 section 3.2).
+//
+// Getting this right is what lets the protocol be extended: an endpoint that
+// meets a chunk from a newer specification either skips it or aborts, and the
+// sender can tell which by choosing the type number.
+pub enum UnrecognisedAction {
+	// stop_processing: discard the packet and stop.
+	stop_processing
+	// stop_and_report: discard, stop, and report the unrecognised type.
+	stop_and_report
+	// skip: ignore this chunk and carry on with the rest of the packet.
+	skip
+	// skip_and_report: ignore it, carry on, and report it.
+	skip_and_report
+}
