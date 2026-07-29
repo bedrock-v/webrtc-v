@@ -101,3 +101,12 @@ pub enum UnrecognisedAction {
 	// skip_and_report: ignore it, carry on, and report it.
 	skip_and_report
 }
+
+pub fn unrecognised_chunk_action(typ u8) UnrecognisedAction {
+	return match typ >> 6 {
+		0 { UnrecognisedAction.stop_processing }
+		1 { UnrecognisedAction.stop_and_report }
+		2 { UnrecognisedAction.skip }
+		else { UnrecognisedAction.skip_and_report }
+	}
+}
