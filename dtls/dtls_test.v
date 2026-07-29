@@ -767,3 +767,42 @@ fn test_handshake_survives_packet_loss() {
 	assert server.state() == .connected
 	assert client.srtp_keying_material()! == server.srtp_keying_material()!
 }
+
+fn test_handshake_fails_on_fingerprint_mismatch() {
+	// The fingerprint is the only thing authenticating the peer. A certificate
+	// that does not match what signalling said must be refused.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+
+	server_certificate := Certificate.generate()!
+	impostor := Certificate.generate()!
+
+	mut client := Conn.new(client_pipe,
+		role:                .client
+		remote_fingerprints: [impostor.fingerprint(.sha256)]
+		handshake_timeout:   3 * time.second
+		retransmit_interval: 50 * time.millisecond
+	)!
+	mut server := Conn.new(server_pipe,
+		role:                                   .server
+		certificate:                            server_certificate
+		insecure_skip_fingerprint_verification: true
+		handshake_timeout:                      3 * time.second
+		retransmit_interval:                    50 * time.millisecond
+	)!
+
+	server_thread := spawn fn (mut c Conn) {
+		c.handshake() or {}
+	}(mut server)
+
+	client.handshake() or {
+		server_thread.wait()
+		assert err is ConnError
+		if err is ConnError {
+			assert err.reason == .fingerprint_mismatch, 'got ${err.reason}'
+		}
+		assert client.state() == .failed
+		return
+	}
+	server_thread.wait()
+	assert false, 'a certificate that does not match the signalled fingerprint must be refused'
+}
