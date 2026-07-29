@@ -182,3 +182,41 @@ fn unmarshal_init(value []u8) !Init {
 		parameters:                 unmarshal_parameters(r.rest_view())!
 	}
 }
+
+// supports_forward_tsn reports whether the peer advertised partial reliability.
+//
+// Without it, a message abandoned by `maxRetransmits` would leave a permanent
+// hole in the stream and the receiver would wait for it forever.
+pub fn (i &Init) supports_forward_tsn() bool {
+	return find_parameter(i.parameters, param_forward_tsn_supported) != none
+}
+
+// state_cookie returns the opaque cookie from an INIT_ACK.
+pub fn (i &Init) state_cookie() ?[]u8 {
+	parameter := find_parameter(i.parameters, param_state_cookie)?
+	return parameter.value
+}
+
+// Data is the body of a DATA chunk (RFC 4960 section 3.3.1).
+pub struct Data {
+pub mut:
+	// tsn is the transmission sequence number, which orders and acknowledges
+	// data across the whole association.
+	tsn u32
+	// stream_identifier selects the stream; a data channel is one stream pair.
+	stream_identifier u16
+	// stream_sequence_number orders messages within an ordered stream. It is
+	// meaningless when unordered is set.
+	stream_sequence_number u16
+	// payload_protocol_identifier tells the receiver what the bytes are.
+	payload_protocol_identifier u32
+	user_data                   []u8
+	// A message larger than one packet is split, with beginning set on the
+	// first fragment and end on the last.
+	beginning bool
+	end       bool
+	unordered bool
+	// immediate_sack asks the receiver to acknowledge without delay, which cuts
+	// latency for a small message at the cost of an extra packet.
+	immediate_sack bool
+}
