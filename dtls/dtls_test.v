@@ -718,3 +718,16 @@ fn test_application_data_flows_both_ways() {
 	pair.server.write(reply)!
 	assert pair.client.read(5 * time.second)! == reply
 }
+
+fn test_message_boundaries_are_preserved() {
+	mut pair := run_handshake(Config{}, Config{})!
+
+	for i in 0 .. 5 {
+		pair.client.write([]u8{len: 10 + i, init: u8(i)})!
+	}
+	for i in 0 .. 5 {
+		received := pair.server.read(5 * time.second)!
+		assert received.len == 10 + i
+		assert received.all(it == u8(i))
+	}
+}
