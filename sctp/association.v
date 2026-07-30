@@ -72,3 +72,29 @@ pub const default_rto_initial = 3 * time.second
 // default_rto_min and default_rto_max bound it.
 pub const default_rto_min = 200 * time.millisecond
 pub const default_rto_max = 60 * time.second
+
+// default_max_retransmits is how many times a chunk is resent before the
+// association is declared dead.
+pub const default_max_retransmits = 10
+
+// default_sack_delay is how long acknowledgement is held back to let it ride
+// with outgoing data or cover several chunks (RFC 4960 section 6.2).
+pub const default_sack_delay = 200 * time.millisecond
+
+// max_datagram is the largest packet the association will read.
+const max_datagram = 65536
+
+// tick_interval is how often the association loop wakes to run its timers when
+// nothing is arriving.
+const tick_interval = 20 * time.millisecond
+
+// Transport is the datagram channel an association runs over.
+//
+// A dtls.Conn satisfies it as written, which is the intended pairing: SCTP over
+// DTLS is what RFC 8261 specifies and what a data channel is built on.
+pub interface Transport {
+mut:
+	write(data []u8) !int
+	read(timeout time.Duration) ![]u8
+	max_write() int
+}
