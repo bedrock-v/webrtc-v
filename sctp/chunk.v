@@ -202,3 +202,56 @@ fn marshal_chunk(mut w codec.Writer, typ u8, flags u8, value []u8) ! {
 	w.bytes(value)
 	w.pad(4)
 }
+
+// unmarshal_chunks decodes every chunk in a packet body.
+pub fn unmarshal_chunks(body []u8, max_chunks int) ![]RawChunk {
+	mut out := []RawChunk{}
+	mut r := codec.Reader.new(body)
+
+	for r.remaining() > 0 {
+		if out.len >= max_chunks {
+			return DecodeError{
+				reason: .too_many_chunks
+				detail: 'more than ${max_chunks} chunks in one packet'
+			}
+		}
+		if r.remaining() < chunk_header_size {
+			return DecodeError{
+				reason: .bad_length
+				detail: '${r.remaining()} trailing bytes are not a chunk header'
+			}
+		}
+		typ := r.u8('chunk type')!
+		flags := r.u8('chunk flags')!
+		length := int(r.u16('chunk length')!)
+
+		if length < chunk_header_size {
+			// A length below the header size would make the reader loop
+			// forever, which is exactly what a hostile peer would send.
+			return DecodeError{
+				reason: .bad_length
+				detail: 'chunk declares a length of ${length}, below the ${chunk_header_size}-byte header'
+			}
+		}
+		value_length := length - chunk_header_size
+		value := r.bytes(value_length, 'chunk value') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'chunk declares ${value_length} value bytes but only ${r.remaining()} remain'
+			}
+		}
+		// Padding follows every chunk except, possibly, the last one in a
+		// packet. Being tolerant of a missing final pad costs nothing.
+		pad := padded_size(length) - length
+		if pad > 0 && r.remaining() >= pad {
+			r.skip(pad, 'chunk padding')!
+		}
+
+		out << RawChunk{
+			typ:   typ
+			flags: flags
+			value: value
+		}
+	}
+	return out
+}
