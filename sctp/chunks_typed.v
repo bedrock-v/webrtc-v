@@ -22,3 +22,8 @@ pub const param_hmac_algorithm = u16(0x8004)
 pub const param_padding = u16(0x8005)
 pub const param_supported_extensions = u16(0x8008)
 pub const param_forward_tsn_supported = u16(0xC000)
+
+// data_chunk_fixed_size is the DATA chunk's fixed fields, before the user data:
+// the TSN, the stream identifier and sequence number, and the payload protocol
+// identifier.
+pub const data_chunk_fixed_size = 12
