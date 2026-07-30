@@ -157,3 +157,9 @@ pub:
 	flags u8
 	value []u8
 }
+
+// chunk_type returns the decoded type, or none for one this implementation does
+// not know.
+pub fn (c RawChunk) chunk_type() ?ChunkType {
+	return chunk_type_from_value(c.typ)
+}
