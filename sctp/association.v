@@ -155,3 +155,29 @@ pub fn (e AssociationError) msg() string {
 pub fn (e AssociationError) code() int {
 	return int(e.reason) + 40
 }
+
+// InflightChunk is a DATA chunk that has been sent and not yet acknowledged.
+struct InflightChunk {
+mut:
+	data Data
+	// sent_at is when it last went out, which the retransmission timer and the
+	// round-trip measurement both use.
+	sent_at time.Time
+	// retransmits counts how many times it has been resent. A chunk that has
+	// been retransmitted is not used to measure the round trip, because there
+	// is no way to tell which transmission the acknowledgement answers.
+	retransmits int
+	// max_retransmits and expires_at are the stream's partial reliability
+	// policy, captured when the chunk was queued. They are held per chunk
+	// rather than read from the stream, so that changing a stream's policy
+	// cannot give one message's fragments two different deadlines.
+	max_retransmits ?u16
+	expires_at      ?time.Time
+	// acked marks a chunk covered by a gap block but not yet by the cumulative
+	// acknowledgement. It stays in flight until the cumulative point passes it,
+	// because the peer is entitled to renege.
+	acked bool
+	// missing_reports counts how many acknowledgements have named a later TSN
+	// while leaving this one out, which is what triggers a fast retransmit.
+	missing_reports int
+}
