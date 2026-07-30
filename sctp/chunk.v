@@ -171,3 +171,9 @@ pub fn (c RawChunk) name() string {
 	}
 	return 'chunk ${c.typ}'
 }
+
+// padded_len is the number of bytes the chunk occupies on the wire.
+@[inline]
+pub fn (c RawChunk) padded_len() int {
+	return padded_size(chunk_header_size + c.value.len)
+}
