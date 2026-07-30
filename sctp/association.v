@@ -1,0 +1,23 @@
+module sctp
+
+import sync
+import time
+import webrtc.internal.randutil
+import webrtc.logging
+
+// The SCTP association: its state, configuration and lifecycle.
+//
+// The concurrency model matches the ICE agent's, and for the same reason. One
+// thread owns every piece of mutable state: it reads from the transport,
+// processes chunks, runs the retransmission and acknowledgement timers, and
+// sends. Public methods take a mutex to queue work or read a snapshot. SCTP has
+// a great many ordering rules - what to acknowledge, when to retransmit, when a
+// message becomes deliverable - and they are far easier to keep straight in one
+// place.
+
+// Role decides which end initiates. RFC 8841 makes the DTLS client the SCTP
+// client, so a caller normally passes the DTLS role straight through.
+pub enum Role {
+	client
+	server
+}
