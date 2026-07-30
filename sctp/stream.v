@@ -203,3 +203,30 @@ fn sequence_after(a u16, b u16) bool {
 	diff := u16(a - b)
 	return diff != 0 && diff < 0x8000
 }
+
+// tsn_after reports whether a is after b in the wrapping 32-bit TSN space.
+//
+// Transmission sequence numbers wrap, and every comparison in the protocol -
+// what to acknowledge, what to retransmit, what is a duplicate - depends on
+// getting this right. A naive `>` stalls an association the moment it wraps.
+@[inline]
+fn tsn_after(a u32, b u32) bool {
+	diff := u32(a - b)
+	return diff != 0 && diff < 0x80000000
+}
+
+// tsn_before is the mirror of tsn_after.
+@[inline]
+fn tsn_before(a u32, b u32) bool {
+	return tsn_after(b, a)
+}
+
+// tsn_distance returns how far a is ahead of b, as a signed count.
+@[inline]
+fn tsn_distance(a u32, b u32) i64 {
+	diff := u32(a - b)
+	if diff < 0x80000000 {
+		return i64(diff)
+	}
+	return i64(diff) - 0x100000000
+}
