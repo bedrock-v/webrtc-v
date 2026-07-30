@@ -126,3 +126,11 @@ pub enum DecodeReason {
 	unknown_chunk
 	too_many_chunks
 }
+
+pub fn (e DecodeError) msg() string {
+	return 'sctp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e DecodeError) code() int {
+	return int(e.reason) + 1
+}
