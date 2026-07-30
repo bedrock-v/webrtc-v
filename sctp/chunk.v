@@ -163,3 +163,11 @@ pub:
 pub fn (c RawChunk) chunk_type() ?ChunkType {
 	return chunk_type_from_value(c.typ)
 }
+
+// name returns a readable name for diagnostics.
+pub fn (c RawChunk) name() string {
+	if typ := c.chunk_type() {
+		return typ.str()
+	}
+	return 'chunk ${c.typ}'
+}
