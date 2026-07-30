@@ -177,3 +177,12 @@ pub fn (c RawChunk) name() string {
 pub fn (c RawChunk) padded_len() int {
 	return padded_size(chunk_header_size + c.value.len)
 }
+
+@[inline]
+fn padded_size(n int) int {
+	rem := n % 4
+	if rem == 0 {
+		return n
+	}
+	return n + (4 - rem)
+}
