@@ -27,3 +27,10 @@ pub const param_forward_tsn_supported = u16(0xC000)
 // the TSN, the stream identifier and sequence number, and the payload protocol
 // identifier.
 pub const data_chunk_fixed_size = 12
+
+// DATA chunk flags. The bits are the low three of the flags byte
+// (RFC 4960 section 3.3.1).
+pub const data_flag_end = u8(0x01)
+pub const data_flag_beginning = u8(0x02)
+pub const data_flag_unordered = u8(0x04)
+pub const data_flag_immediate_sack = u8(0x08)
