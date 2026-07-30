@@ -34,3 +34,10 @@ pub const data_flag_end = u8(0x01)
 pub const data_flag_beginning = u8(0x02)
 pub const data_flag_unordered = u8(0x04)
 pub const data_flag_immediate_sack = u8(0x08)
+
+// Payload protocol identifiers for data channels (RFC 8831 section 8).
+//
+// SCTP itself does not care what these mean; they are what tells a receiver
+// whether a message is a string or binary, and whether it is a data channel
+// control message rather than user data.
+pub const ppid_dcep = u32(50)
