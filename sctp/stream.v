@@ -180,3 +180,26 @@ fn (mut s InboundStream) skip_to(sequence u16) []Message {
 	}
 	return out
 }
+
+// OutboundStream tracks the sequence numbering for one stream we send on.
+struct OutboundStream {
+mut:
+	identifier    u16
+	next_sequence u16
+}
+
+// next_sequence_number returns the number for the next ordered message.
+// Unordered messages do not consume one.
+fn (mut s OutboundStream) next_sequence_number() u16 {
+	sequence := s.next_sequence
+	s.next_sequence++
+	return sequence
+}
+
+// sequence_after reports whether a is after b in the wrapping 16-bit stream
+// sequence space.
+@[inline]
+fn sequence_after(a u16, b u16) bool {
+	diff := u16(a - b)
+	return diff != 0 && diff < 0x8000
+}
