@@ -41,3 +41,34 @@ pub enum State {
 	shutdown_ack_sent
 	aborted
 }
+
+pub fn (s State) str() string {
+	return match s {
+		.closed { 'closed' }
+		.cookie_wait { 'cookie-wait' }
+		.cookie_echoed { 'cookie-echoed' }
+		.established { 'established' }
+		.shutdown_pending { 'shutdown-pending' }
+		.shutdown_sent { 'shutdown-sent' }
+		.shutdown_received { 'shutdown-received' }
+		.shutdown_ack_sent { 'shutdown-ack-sent' }
+		.aborted { 'aborted' }
+	}
+}
+
+// default_streams is how many streams each direction offers. WebRTC data
+// channels take one stream each, so this is the channel ceiling.
+pub const default_streams = u16(1024)
+
+// default_receive_window is what we advertise as buffer space. It is SCTP's
+// flow control: a sender may not have more than this many unacknowledged bytes
+// outstanding, so it is the knob that stops a fast sender from overrunning us.
+pub const default_receive_window = u32(1024 * 1024)
+
+// default_rto_initial is the starting retransmission timeout
+// (RFC 4960 section 15).
+pub const default_rto_initial = 3 * time.second
+
+// default_rto_min and default_rto_max bound it.
+pub const default_rto_min = 200 * time.millisecond
+pub const default_rto_max = 60 * time.second
