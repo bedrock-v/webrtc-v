@@ -140,3 +140,11 @@ pub struct EncodeError {
 pub:
 	detail string
 }
+
+pub fn (e EncodeError) msg() string {
+	return 'sctp: ${e.detail}'
+}
+
+pub fn (e EncodeError) code() int {
+	return 20
+}
