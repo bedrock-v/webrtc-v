@@ -54,3 +54,20 @@ pub:
 	typ   u16
 	value []u8
 }
+
+fn marshal_parameters(parameters []Parameter) ![]u8 {
+	mut w := codec.Writer.new()
+	for parameter in parameters {
+		total := 4 + parameter.value.len
+		if total > 0xFFFF {
+			return EncodeError{
+				detail: 'parameter of ${total} bytes exceeds the 16-bit length field'
+			}
+		}
+		w.u16(parameter.typ)
+		w.u16(u16(total))
+		w.bytes(parameter.value)
+		w.pad(4)
+	}
+	return w.buf
+}
