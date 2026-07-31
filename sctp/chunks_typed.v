@@ -41,3 +41,9 @@ pub const data_flag_immediate_sack = u8(0x08)
 // whether a message is a string or binary, and whether it is a data channel
 // control message rather than user data.
 pub const ppid_dcep = u32(50)
+pub const ppid_string = u32(51)
+pub const ppid_binary_partial = u32(52)
+pub const ppid_binary = u32(53)
+pub const ppid_string_partial = u32(54)
+pub const ppid_string_empty = u32(56)
+pub const ppid_binary_empty = u32(57)
