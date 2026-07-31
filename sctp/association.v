@@ -334,3 +334,24 @@ pub fn Association.new(transport Transport, config Config) !&Association {
 		rto:                  config.rto_initial
 	}
 }
+
+// state returns the association's current state.
+pub fn (mut a Association) state() State {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.state
+}
+
+// role returns which end of the handshake this association took.
+@[inline]
+pub fn (a &Association) role() Role {
+	return if a.is_client { Role.client } else { Role.server }
+}
+
+// max_message_size is the largest message this association will send or accept.
+@[inline]
+pub fn (a &Association) max_message_size() int {
+	return a.config.max_message_size
+}
