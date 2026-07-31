@@ -190,3 +190,9 @@ fn unmarshal_init(value []u8) !Init {
 pub fn (i &Init) supports_forward_tsn() bool {
 	return find_parameter(i.parameters, param_forward_tsn_supported) != none
 }
+
+// state_cookie returns the opaque cookie from an INIT_ACK.
+pub fn (i &Init) state_cookie() ?[]u8 {
+	parameter := find_parameter(i.parameters, param_state_cookie)?
+	return parameter.value
+}
