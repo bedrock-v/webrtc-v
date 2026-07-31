@@ -182,3 +182,11 @@ fn unmarshal_init(value []u8) !Init {
 		parameters:                 unmarshal_parameters(r.rest_view())!
 	}
 }
+
+// supports_forward_tsn reports whether the peer advertised partial reliability.
+//
+// Without it, a message abandoned by `maxRetransmits` would leave a permanent
+// hole in the stream and the receiver would wait for it forever.
+pub fn (i &Init) supports_forward_tsn() bool {
+	return find_parameter(i.parameters, param_forward_tsn_supported) != none
+}
