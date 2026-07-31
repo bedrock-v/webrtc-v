@@ -355,3 +355,21 @@ pub fn (a &Association) role() Role {
 pub fn (a &Association) max_message_size() int {
 	return a.config.max_message_size
 }
+
+// is_closed reports whether the association has been shut down.
+fn (mut a Association) is_closed() bool {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.closed
+}
+
+// set_state records a state transition. The caller must hold the mutex.
+fn (mut a Association) set_state(state State) {
+	if a.state == state {
+		return
+	}
+	a.log.debug('state ${a.state} -> ${state}')
+	a.state = state
+}
