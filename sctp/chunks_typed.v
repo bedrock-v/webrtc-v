@@ -130,3 +130,24 @@ pub mut:
 	initial_tsn                u32
 	parameters                 []Parameter
 }
+
+fn (i Init) marshal() ![]u8 {
+	if i.initiate_tag == 0 {
+		return EncodeError{
+			detail: 'the initiate tag must not be zero'
+		}
+	}
+	if i.outbound_streams == 0 || i.inbound_streams == 0 {
+		return EncodeError{
+			detail: 'an association needs at least one stream in each direction'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u32(i.initiate_tag)
+	w.u32(i.advertised_receiver_window)
+	w.u16(i.outbound_streams)
+	w.u16(i.inbound_streams)
+	w.u32(i.initial_tsn)
+	w.bytes(marshal_parameters(i.parameters)!)
+	return w.buf
+}
