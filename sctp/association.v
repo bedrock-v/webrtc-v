@@ -282,3 +282,55 @@ mut:
 	// something better than "closed".
 	abort_reason string
 }
+
+// Association.new creates an association over the given transport. No packet is
+// sent until connect is called.
+pub fn Association.new(transport Transport, config Config) !&Association {
+	mut link := transport
+	if config.streams == 0 {
+		return AssociationError{
+			reason: .wrong_state
+			detail: 'an association needs at least one stream'
+		}
+	}
+	if config.max_message_size <= 0 {
+		return AssociationError{
+			reason: .wrong_state
+			detail: 'max_message_size must be positive'
+		}
+	}
+
+	// The verification tag and the initial TSN are both random. The tag is what
+	// stops an off-path attacker from injecting into the association, and a
+	// predictable initial TSN would let one guess which sequence numbers a
+	// receiver is waiting for.
+	verification_tag := randutil.next_u32_nonzero()!
+	initial_tsn := randutil.next_u32()!
+
+	// One MTU of congestion window to start with, which is what RFC 4960
+	// section 7.2.1 allows for a path whose MTU is not yet known.
+	initial_window := u32(4 * link.max_write())
+
+	return &Association{
+		transport:           transport
+		config:              config
+		log:                 config.logger.with_scope('sctp')
+		is_client:           config.role == .client
+		my_verification_tag: verification_tag
+		my_next_tsn:         initial_tsn
+		my_receive_window:   config.receive_window
+		// The acknowledgement point starts one below the first TSN we will
+		// send. Leaving it at zero would be wrong for any initial TSN in the
+		// upper half of the space: every acknowledgement the peer sent would
+		// compare as older than the sentinel under wrapping arithmetic and be
+		// discarded, the congestion window would never open, and any transfer
+		// larger than the initial window would stall for good. The initial TSN
+		// is random, so that is roughly every other connection.
+		peer_cumulative_ack:  initial_tsn - 1
+		forward_point:        initial_tsn - 1
+		last_received_tsn:    0
+		congestion_window:    initial_window
+		slow_start_threshold: config.receive_window
+		rto:                  config.rto_initial
+	}
+}
