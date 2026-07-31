@@ -373,3 +373,23 @@ fn (mut a Association) set_state(state State) {
 	a.log.debug('state ${a.state} -> ${state}')
 	a.state = state
 }
+
+// payload_limit is how many bytes of user data fit one DATA chunk inside one
+// packet the transport will accept.
+//
+// The padding is the part that is easy to forget. A chunk is rounded up to a
+// four-byte boundary on the wire, so subtracting only the headers gives a limit
+// that happens to be right when the transport's maximum is itself aligned and
+// is up to three bytes too large when it is not. The packets that result are
+// one byte over and the transport refuses them - silently, since a datagram
+// write that fails looks exactly like a datagram that was lost.
+fn (mut a Association) payload_limit() int {
+	budget := a.transport.max_write() - packet_header_size
+	// Round down to a multiple of four, so the padded chunk still fits.
+	aligned := budget & ~3
+	limit := aligned - chunk_header_size - data_chunk_fixed_size
+	if limit < 1 {
+		return 1
+	}
+	return limit
+}
