@@ -47,3 +47,10 @@ pub const ppid_binary = u32(53)
 pub const ppid_string_partial = u32(54)
 pub const ppid_string_empty = u32(56)
 pub const ppid_binary_empty = u32(57)
+
+// Parameter is a type-length-value inside a chunk.
+pub struct Parameter {
+pub:
+	typ   u16
+	value []u8
+}
