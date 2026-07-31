@@ -101,3 +101,13 @@ fn unmarshal_parameters(body []u8) ![]Parameter {
 	}
 	return out
 }
+
+// find_parameter returns the first parameter of the given type.
+pub fn find_parameter(parameters []Parameter, typ u16) ?Parameter {
+	for parameter in parameters {
+		if parameter.typ == typ {
+			return parameter
+		}
+	}
+	return none
+}
