@@ -254,3 +254,30 @@ fn (d Data) marshal() ![]u8 {
 	w.bytes(d.user_data)
 	return w.buf
 }
+
+fn unmarshal_data(flags u8, value []u8) !Data {
+	mut r := codec.Reader.new(value)
+	tsn := r.u32('TSN') or { return short('DATA') }
+	stream_identifier := r.u16('stream identifier') or { return short('DATA') }
+	stream_sequence := r.u16('stream sequence') or { return short('DATA') }
+	ppid := r.u32('payload protocol identifier') or { return short('DATA') }
+	user_data := r.rest()
+
+	if user_data.len == 0 {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'DATA chunk with no user data'
+		}
+	}
+	return Data{
+		tsn:                         tsn
+		stream_identifier:           stream_identifier
+		stream_sequence_number:      stream_sequence
+		payload_protocol_identifier: ppid
+		user_data:                   user_data
+		beginning:                   flags & data_flag_beginning != 0
+		end:                         flags & data_flag_end != 0
+		unordered:                   flags & data_flag_unordered != 0
+		immediate_sack:              flags & data_flag_immediate_sack != 0
+	}
+}
