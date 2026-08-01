@@ -110,3 +110,34 @@ fn (mut a Association) send_init() ! {
 		},
 	])!
 }
+
+// handle_init answers a peer's INIT. The caller must hold the mutex.
+fn (mut a Association) handle_init(init Init) ! {
+	// A cookie the peer must echo back. RFC 4960 makes this a self-contained
+	// authenticated blob so a server can stay stateless under flood; here the
+	// association already exists behind an authenticated DTLS connection with
+	// exactly one peer, so a remembered random value gives the same guarantee
+	// without the machinery.
+	a.cookie = randutil.bytes(32)!
+
+	a.peer_verification_tag = init.initiate_tag
+	a.peer_receive_window = init.advertised_receiver_window
+	a.peer_supports_forward_tsn = init.supports_forward_tsn()
+	// Everything below the peer's initial TSN counts as already received, so
+	// the first data chunk closes the gap rather than opening one.
+	a.last_received_tsn = init.initial_tsn - 1
+
+	ack := Init{
+		initiate_tag:               a.my_verification_tag
+		advertised_receiver_window: a.my_receive_window
+		outbound_streams:           min_u16(a.config.streams, init.inbound_streams)
+		inbound_streams:            min_u16(a.config.streams, init.outbound_streams)
+		initial_tsn:                a.my_next_tsn
+		parameters:                 a.negotiated_parameters_with_cookie()
+	}
+
+	a.queue_outbound(RawChunk{
+		typ:   u8(ChunkType.init_ack)
+		value: ack.marshal()!
+	})
+}
