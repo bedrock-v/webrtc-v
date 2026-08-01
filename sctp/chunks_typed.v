@@ -378,3 +378,9 @@ pub mut:
 	// skip to. Without it an ordered stream would stall on the gap.
 	streams []ForwardTsnStream
 }
+
+pub struct ForwardTsnStream {
+pub:
+	identifier      u16
+	sequence_number u16
+}
