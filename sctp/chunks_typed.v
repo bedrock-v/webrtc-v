@@ -322,3 +322,49 @@ fn (s Sack) marshal() ![]u8 {
 	}
 	return w.buf
 }
+
+fn unmarshal_sack(value []u8) !Sack {
+	mut r := codec.Reader.new(value)
+	cumulative := r.u32('cumulative TSN ack') or { return short('SACK') }
+	advertised := r.u32('a_rwnd') or { return short('SACK') }
+	gap_count := int(r.u16('gap block count') or { return short('SACK') })
+	duplicate_count := int(r.u16('duplicate count') or { return short('SACK') })
+
+	mut gaps := []GapAckBlock{cap: gap_count}
+	for i in 0 .. gap_count {
+		start := r.u16('gap block ${i} start') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'SACK declares ${gap_count} gap blocks but block ${i} is truncated'
+			}
+		}
+		end := r.u16('gap block ${i} end') or { return short('SACK') }
+		if end < start {
+			return DecodeError{
+				reason: .bad_value
+				detail: 'SACK gap block ${i} ends before it starts'
+			}
+		}
+		gaps << GapAckBlock{
+			start: start
+			end:   end
+		}
+	}
+
+	mut duplicates := []u32{cap: duplicate_count}
+	for i in 0 .. duplicate_count {
+		duplicates << r.u32('duplicate ${i}') or {
+			return DecodeError{
+				reason: .bad_length
+				detail: 'SACK declares ${duplicate_count} duplicates but entry ${i} is truncated'
+			}
+		}
+	}
+
+	return Sack{
+		cumulative_tsn_ack:         cumulative
+		advertised_receiver_window: advertised
+		gap_ack_blocks:             gaps
+		duplicate_tsns:             duplicates
+	}
+}
