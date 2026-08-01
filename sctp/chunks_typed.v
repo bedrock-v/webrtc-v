@@ -368,3 +368,13 @@ fn unmarshal_sack(value []u8) !Sack {
 		duplicate_tsns:             duplicates
 	}
 }
+
+// ForwardTsn tells the receiver to give up on everything below a TSN, because
+// the sender has abandoned it (RFC 3758 section 3.2).
+pub struct ForwardTsn {
+pub mut:
+	new_cumulative_tsn u32
+	// streams carries, for each affected ordered stream, the sequence number to
+	// skip to. Without it an ordered stream would stall on the gap.
+	streams []ForwardTsnStream
+}
