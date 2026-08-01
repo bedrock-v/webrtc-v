@@ -281,3 +281,11 @@ fn unmarshal_data(flags u8, value []u8) !Data {
 		immediate_sack:              flags & data_flag_immediate_sack != 0
 	}
 }
+
+// GapAckBlock names a run of received TSNs above the cumulative acknowledgement,
+// as an offset from it.
+pub struct GapAckBlock {
+pub:
+	start u16
+	end   u16
+}
