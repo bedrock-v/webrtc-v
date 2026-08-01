@@ -301,3 +301,24 @@ pub mut:
 	gap_ack_blocks             []GapAckBlock
 	duplicate_tsns             []u32
 }
+
+fn (s Sack) marshal() ![]u8 {
+	if s.gap_ack_blocks.len > 0xFFFF || s.duplicate_tsns.len > 0xFFFF {
+		return EncodeError{
+			detail: 'too many gap blocks or duplicate TSNs for the 16-bit counts'
+		}
+	}
+	mut w := codec.Writer.new()
+	w.u32(s.cumulative_tsn_ack)
+	w.u32(s.advertised_receiver_window)
+	w.u16(u16(s.gap_ack_blocks.len))
+	w.u16(u16(s.duplicate_tsns.len))
+	for block in s.gap_ack_blocks {
+		w.u16(block.start)
+		w.u16(block.end)
+	}
+	for tsn in s.duplicate_tsns {
+		w.u32(tsn)
+	}
+	return w.buf
+}
