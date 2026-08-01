@@ -72,3 +72,41 @@ pub fn (mut a Association) connect(timeout time.Duration) ! {
 		detail: 'the association did not establish within ${timeout.milliseconds()}ms'
 	}
 }
+
+// start launches the association loop.
+fn (mut a Association) start() {
+	a.mu.lock()
+	if a.closed || a.threads.len > 0 {
+		a.mu.unlock()
+		return
+	}
+	a.mu.unlock()
+	a.threads << spawn a.run()
+}
+
+// send_init sends the first chunk of the handshake.
+fn (mut a Association) send_init() ! {
+	a.mu.lock()
+	init := Init{
+		initiate_tag:               a.my_verification_tag
+		advertised_receiver_window: a.my_receive_window
+		outbound_streams:           a.config.streams
+		inbound_streams:            a.config.streams
+		initial_tsn:                a.my_next_tsn
+		// Advertising partial reliability up front is what lets a data channel
+		// later use maxRetransmits; a peer that does not answer in kind simply
+		// gets reliable delivery.
+		parameters: a.negotiated_parameters()
+	}
+	a.set_state(.cookie_wait)
+	a.mu.unlock()
+
+	// An INIT is sent with a zero verification tag: the peer has not told us
+	// its tag yet, and this is the packet that asks for it.
+	a.send_chunks(0, [
+		RawChunk{
+			typ:   u8(ChunkType.init)
+			value: init.marshal()!
+		},
+	])!
+}
