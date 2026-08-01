@@ -384,3 +384,13 @@ pub:
 	identifier      u16
 	sequence_number u16
 }
+
+fn (f ForwardTsn) marshal() ![]u8 {
+	mut w := codec.Writer.new()
+	w.u32(f.new_cumulative_tsn)
+	for stream in f.streams {
+		w.u16(stream.identifier)
+		w.u16(stream.sequence_number)
+	}
+	return w.buf
+}
