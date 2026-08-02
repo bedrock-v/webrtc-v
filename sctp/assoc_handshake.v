@@ -249,3 +249,26 @@ fn (mut a Association) abort(reason string) {
 	}
 	a.set_state(.aborted)
 }
+
+// close shuts the association down immediately, without waiting for the peer.
+pub fn (mut a Association) close() {
+	a.mu.lock()
+	if a.closed {
+		a.mu.unlock()
+		return
+	}
+	a.closed = true
+	a.torn_down = true
+	if a.state != .aborted {
+		a.set_state(.closed)
+	}
+	a.mu.unlock()
+
+	a.delivered.close()
+	for handle in a.threads {
+		handle.wait()
+	}
+	a.mu.lock()
+	a.threads.clear()
+	a.mu.unlock()
+}
