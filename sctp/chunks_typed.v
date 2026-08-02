@@ -412,3 +412,10 @@ fn unmarshal_forward_tsn(value []u8) !ForwardTsn {
 		streams:            streams
 	}
 }
+
+// ErrorCause is one entry in an ERROR or ABORT chunk.
+pub struct ErrorCause {
+pub:
+	code  u16
+	value []u8
+}
