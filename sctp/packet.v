@@ -14,3 +14,8 @@ const checksum_offset = 8
 // work for the receiver, and the count comes from a peer that has not
 // necessarily been authenticated yet.
 pub const default_max_chunks = 64
+
+// webrtc_port is the SCTP port both ends of a WebRTC association use. The value
+// carries no meaning - there is one association per DTLS connection - but
+// RFC 8841 fixes it at 5000 and the `a=sctp-port` attribute carries it.
+pub const webrtc_port = u16(5000)
