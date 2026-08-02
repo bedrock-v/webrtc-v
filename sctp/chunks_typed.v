@@ -434,3 +434,22 @@ pub const cause_cookie_received_while_shutting_down = u16(10)
 pub const cause_restart_with_new_addresses = u16(11)
 pub const cause_user_initiated_abort = u16(12)
 pub const cause_protocol_violation = u16(13)
+
+pub fn cause_name(code u16) string {
+	return match code {
+		cause_invalid_stream_identifier { 'invalid stream identifier' }
+		cause_missing_mandatory_parameter { 'missing mandatory parameter' }
+		cause_stale_cookie { 'stale cookie' }
+		cause_out_of_resource { 'out of resource' }
+		cause_unresolvable_address { 'unresolvable address' }
+		cause_unrecognized_chunk_type { 'unrecognized chunk type' }
+		cause_invalid_mandatory_parameter { 'invalid mandatory parameter' }
+		cause_unrecognized_parameters { 'unrecognized parameters' }
+		cause_no_user_data { 'no user data' }
+		cause_cookie_received_while_shutting_down { 'cookie received while shutting down' }
+		cause_restart_with_new_addresses { 'restart with new addresses' }
+		cause_user_initiated_abort { 'user initiated abort' }
+		cause_protocol_violation { 'protocol violation' }
+		else { 'cause ${code}' }
+	}
+}
