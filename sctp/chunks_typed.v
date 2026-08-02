@@ -419,3 +419,10 @@ pub:
 	code  u16
 	value []u8
 }
+
+// Error cause codes from RFC 4960 section 3.3.10.
+pub const cause_invalid_stream_identifier = u16(1)
+pub const cause_missing_mandatory_parameter = u16(2)
+pub const cause_stale_cookie = u16(3)
+pub const cause_out_of_resource = u16(4)
+pub const cause_unresolvable_address = u16(5)
