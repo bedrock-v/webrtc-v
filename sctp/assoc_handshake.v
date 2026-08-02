@@ -226,3 +226,26 @@ pub fn (mut a Association) shutdown(timeout time.Duration) ! {
 	}
 	a.close()
 }
+
+// abort tears the association down and tells the peer why. The caller must hold
+// the mutex.
+fn (mut a Association) abort(reason string) {
+	if a.state == .aborted || a.state == .closed {
+		return
+	}
+	a.log.warn('aborting: ${reason}')
+	a.abort_reason = reason
+
+	mut causes := []ErrorCause{}
+	causes << ErrorCause{
+		code:  cause_user_initiated_abort
+		value: reason.bytes()
+	}
+	if body := marshal_error_causes(causes) {
+		a.queue_outbound(RawChunk{
+			typ:   u8(ChunkType.abort)
+			value: body
+		})
+	}
+	a.set_state(.aborted)
+}
