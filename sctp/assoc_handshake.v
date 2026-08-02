@@ -272,3 +272,24 @@ pub fn (mut a Association) close() {
 	a.threads.clear()
 	a.mu.unlock()
 }
+
+fn min_u16(a u16, b u16) u16 {
+	return if a < b { a } else { b }
+}
+
+// negotiated_parameters are the INIT parameters this end offers.
+fn (a &Association) negotiated_parameters() []Parameter {
+	if !a.config.partial_reliability {
+		return []Parameter{}
+	}
+	return [
+		Parameter{
+			typ:   param_forward_tsn_supported
+			value: []u8{}
+		},
+		Parameter{
+			typ:   param_supported_extensions
+			value: [u8(ChunkType.forward_tsn), u8(ChunkType.reconfig)]
+		},
+	]
+}
