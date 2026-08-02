@@ -293,3 +293,21 @@ fn (a &Association) negotiated_parameters() []Parameter {
 		},
 	]
 }
+
+// negotiated_parameters_with_cookie is the same for an INIT ACK, which must
+// also carry the state cookie.
+fn (a &Association) negotiated_parameters_with_cookie() []Parameter {
+	mut out := [
+		Parameter{
+			typ:   param_state_cookie
+			value: a.cookie
+		},
+	]
+	if a.config.partial_reliability {
+		out << Parameter{
+			typ:   param_forward_tsn_supported
+			value: []u8{}
+		}
+	}
+	return out
+}
