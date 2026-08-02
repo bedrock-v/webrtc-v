@@ -453,3 +453,14 @@ pub fn cause_name(code u16) string {
 		else { 'cause ${code}' }
 	}
 }
+
+fn marshal_error_causes(causes []ErrorCause) ![]u8 {
+	mut parameters := []Parameter{cap: causes.len}
+	for cause in causes {
+		parameters << Parameter{
+			typ:   cause.code
+			value: cause.value
+		}
+	}
+	return marshal_parameters(parameters)!
+}
