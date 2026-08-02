@@ -476,3 +476,10 @@ fn unmarshal_error_causes(value []u8) ![]ErrorCause {
 	}
 	return out
 }
+
+fn short(name string) DecodeError {
+	return DecodeError{
+		reason: .too_short
+		detail: '${name} is shorter than its fixed fields require'
+	}
+}
