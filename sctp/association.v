@@ -83,3 +83,7 @@ pub const default_sack_delay = 200 * time.millisecond
 
 // max_datagram is the largest packet the association will read.
 const max_datagram = 65536
+
+// tick_interval is how often the association loop wakes to run its timers when
+// nothing is arriving.
+const tick_interval = 20 * time.millisecond
