@@ -72,3 +72,14 @@ pub fn (mut a Association) connect(timeout time.Duration) ! {
 		detail: 'the association did not establish within ${timeout.milliseconds()}ms'
 	}
 }
+
+// start launches the association loop.
+fn (mut a Association) start() {
+	a.mu.lock()
+	if a.closed || a.threads.len > 0 {
+		a.mu.unlock()
+		return
+	}
+	a.mu.unlock()
+	a.threads << spawn a.run()
+}
