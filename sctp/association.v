@@ -64,3 +64,11 @@ pub const default_streams = u16(1024)
 // flow control: a sender may not have more than this many unacknowledged bytes
 // outstanding, so it is the knob that stops a fast sender from overrunning us.
 pub const default_receive_window = u32(1024 * 1024)
+
+// default_rto_initial is the starting retransmission timeout
+// (RFC 4960 section 15).
+pub const default_rto_initial = 3 * time.second
+
+// default_rto_min and default_rto_max bound it.
+pub const default_rto_min = 200 * time.millisecond
+pub const default_rto_max = 60 * time.second
