@@ -187,3 +187,11 @@ mut:
 	identifier    u16
 	next_sequence u16
 }
+
+// next_sequence_number returns the number for the next ordered message.
+// Unordered messages do not consume one.
+fn (mut s OutboundStream) next_sequence_number() u16 {
+	sequence := s.next_sequence
+	s.next_sequence++
+	return sequence
+}
