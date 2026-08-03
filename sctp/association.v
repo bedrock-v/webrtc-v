@@ -123,3 +123,11 @@ pub:
 	handshake_timeout   time.Duration  = 10 * time.second
 	logger              logging.Logger = logging.nop()
 }
+
+// AssociationError is returned when an association cannot be established or
+// used.
+pub struct AssociationError {
+pub:
+	reason AssociationErrorReason
+	detail string
+}
