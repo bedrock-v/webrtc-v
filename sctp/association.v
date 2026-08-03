@@ -131,3 +131,19 @@ pub:
 	reason AssociationErrorReason
 	detail string
 }
+
+pub enum AssociationErrorReason {
+	closed
+	wrong_state
+	timed_out
+	// aborted: the peer sent an ABORT, or a protocol violation forced one.
+	aborted
+	// too_large: the message exceeds what one association will carry.
+	too_large
+	// no_stream: the stream identifier is outside what was negotiated.
+	no_stream
+	// transport: the underlying datagram channel failed.
+	transport
+	// protocol: the peer sent something the association cannot proceed from.
+	protocol
+}
