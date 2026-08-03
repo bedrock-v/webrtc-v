@@ -55,3 +55,7 @@ pub fn (s State) str() string {
 		.aborted { 'aborted' }
 	}
 }
+
+// default_streams is how many streams each direction offers. WebRTC data
+// channels take one stream each, so this is the channel ceiling.
+pub const default_streams = u16(1024)
