@@ -364,3 +364,12 @@ fn (mut a Association) is_closed() bool {
 	}
 	return a.closed
 }
+
+// set_state records a state transition. The caller must hold the mutex.
+fn (mut a Association) set_state(state State) {
+	if a.state == state {
+		return
+	}
+	a.log.debug('state ${a.state} -> ${state}')
+	a.state = state
+}
