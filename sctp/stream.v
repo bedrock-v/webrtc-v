@@ -24,3 +24,6 @@ pub:
 // limit. RFC 8831 puts the WebRTC default at 64 KiB and browsers negotiate
 // 256 KiB.
 pub const default_max_message_size = 262144
+
+// max_reassembly_fragments bounds how many fragments one message may take.
+const max_reassembly_fragments = 4096
