@@ -246,3 +246,37 @@ fn (mut a Association) handle_data(data Data) ! {
 	send_now := gap_opened || data.immediate_sack || a.data_since_sack >= 2
 	a.schedule_sack(send_now)
 }
+
+// advance_cumulative_ack moves the cumulative point over every TSN that is now
+// contiguous, delivering the data as it goes.
+fn (mut a Association) advance_cumulative_ack() ! {
+	for {
+		next := a.last_received_tsn + 1
+		data := a.out_of_order[next] or { break }
+		a.out_of_order.delete(next)
+		a.last_received_tsn = next
+		a.deliver(data)!
+	}
+}
+
+// deliver hands a chunk to its stream and forwards whatever became complete.
+fn (mut a Association) deliver(data Data) ! {
+	mut stream := a.inbound[data.stream_identifier] or {
+		InboundStream{
+			identifier: data.stream_identifier
+		}
+	}
+	messages := stream.accept(data, a.config.max_message_size) or {
+		a.inbound[data.stream_identifier] = stream
+		a.abort('reassembly failed: ${err.msg()}')
+		return AssociationError{
+			reason: .protocol
+			detail: err.msg()
+		}
+	}
+	a.inbound[data.stream_identifier] = stream
+
+	for message in messages {
+		a.forward(message)
+	}
+}
