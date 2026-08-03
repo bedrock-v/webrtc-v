@@ -214,3 +214,9 @@ fn tsn_after(a u32, b u32) bool {
 	diff := u32(a - b)
 	return diff != 0 && diff < 0x80000000
 }
+
+// tsn_before is the mirror of tsn_after.
+@[inline]
+fn tsn_before(a u32, b u32) bool {
+	return tsn_after(b, a)
+}
