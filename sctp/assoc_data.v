@@ -583,3 +583,24 @@ fn (mut a Association) update_rto(sample time.Duration) {
 	}
 	a.rto = clamp_duration(a.smoothed_rtt + 4 * a.rtt_variation, a.config.rto_min, a.config.rto_max)
 }
+
+// grow_congestion_window opens the window in response to acknowledged data.
+fn (mut a Association) grow_congestion_window(acked u32) {
+	if acked == 0 {
+		return
+	}
+	mtu := u32(a.transport.max_write())
+	if a.congestion_window <= a.slow_start_threshold {
+		// Slow start: one more packet per packet acknowledged, which doubles
+		// the window every round trip.
+		a.congestion_window += min_u32(acked, mtu)
+		return
+	}
+	// Congestion avoidance: one more packet per round trip, not per
+	// acknowledgement.
+	a.bytes_acked += acked
+	if a.bytes_acked >= a.congestion_window {
+		a.bytes_acked -= a.congestion_window
+		a.congestion_window += mtu
+	}
+}
