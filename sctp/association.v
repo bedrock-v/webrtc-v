@@ -21,3 +21,10 @@ pub enum Role {
 	client
 	server
 }
+
+pub fn (r Role) str() string {
+	return match r {
+		.client { 'client' }
+		.server { 'server' }
+	}
+}
