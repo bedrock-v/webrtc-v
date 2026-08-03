@@ -60,3 +60,82 @@ fn (mut s InboundStream) reset() {
 	s.partial.clear()
 	s.ready.clear()
 }
+
+// accept folds one DATA chunk into the stream and returns any messages that
+// became deliverable.
+fn (mut s InboundStream) accept(data Data, max_message_size int) ![]Message {
+	// A message that arrives whole is the common case and needs no buffering.
+	if data.beginning && data.end {
+		if data.user_data.len > max_message_size {
+			return DecodeError{
+				reason: .bad_value
+				detail: 'message of ${data.user_data.len} bytes exceeds the ${max_message_size}-byte limit'
+			}
+		}
+		message := Message{
+			stream_identifier:           data.stream_identifier
+			payload_protocol_identifier: data.payload_protocol_identifier
+			data:                        data.user_data
+			unordered:                   data.unordered
+		}
+		if data.unordered {
+			return [message]
+		}
+		return s.deliver_ordered(data.stream_sequence_number, message)
+	}
+
+	mut partial := s.partial[data.stream_sequence_number] or {
+		PartialMessage{
+			payload_protocol_identifier: data.payload_protocol_identifier
+			unordered:                   data.unordered
+		}
+	}
+	if partial.fragments.len >= max_reassembly_fragments {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'message on stream ${data.stream_identifier} exceeds ${max_reassembly_fragments} fragments'
+		}
+	}
+	if partial.total_bytes + data.user_data.len > max_message_size {
+		return DecodeError{
+			reason: .bad_value
+			detail: 'message on stream ${data.stream_identifier} exceeds the ${max_message_size}-byte limit'
+		}
+	}
+
+	if data.beginning {
+		partial.seen_beginning = true
+		partial.payload_protocol_identifier = data.payload_protocol_identifier
+	}
+	if data.end {
+		partial.seen_end = true
+	}
+	partial.fragments << data.user_data
+	partial.total_bytes += data.user_data.len
+	s.partial[data.stream_sequence_number] = partial
+
+	if !partial.seen_beginning || !partial.seen_end {
+		return []Message{}
+	}
+
+	// The transmission sequence numbers guarantee the fragments arrive in
+	// order, because the association only hands over chunks below the
+	// cumulative acknowledgement point. Concatenating in arrival order is
+	// therefore correct.
+	mut body := []u8{cap: partial.total_bytes}
+	for fragment in partial.fragments {
+		body << fragment
+	}
+	s.partial.delete(data.stream_sequence_number)
+
+	message := Message{
+		stream_identifier:           data.stream_identifier
+		payload_protocol_identifier: partial.payload_protocol_identifier
+		data:                        body
+		unordered:                   partial.unordered
+	}
+	if partial.unordered {
+		return [message]
+	}
+	return s.deliver_ordered(data.stream_sequence_number, message)
+}
