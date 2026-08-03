@@ -55,3 +55,8 @@ mut:
 	seen_end                    bool
 	total_bytes                 int
 }
+
+fn (mut s InboundStream) reset() {
+	s.partial.clear()
+	s.ready.clear()
+}
