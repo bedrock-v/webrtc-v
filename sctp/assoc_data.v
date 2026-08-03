@@ -384,3 +384,71 @@ fn (mut a Association) available_receive_window() u32 {
 	}
 	return a.my_receive_window - used
 }
+
+// handle_sack processes an acknowledgement from the peer.
+fn (mut a Association) handle_sack(sack Sack) {
+	if tsn_before(sack.cumulative_tsn_ack, a.peer_cumulative_ack) {
+		// An acknowledgement older than one already processed. Acting on it
+		// would move the window backwards.
+		return
+	}
+	a.peer_cumulative_ack = sack.cumulative_tsn_ack
+	a.peer_receive_window = sack.advertised_receiver_window
+	a.release_abandoned(sack.cumulative_tsn_ack)
+	if tsn_before(sack.cumulative_tsn_ack, a.forward_point) {
+		// The peer is still behind the point it was told to skip to, so its
+		// FORWARD_TSN was lost. RFC 3758 section 3.5 says to send it again.
+		a.queue_forward_tsn()
+	}
+
+	mut newly_acked := u32(0)
+	mut rtt_sample := time.Duration(0)
+	mut have_sample := false
+
+	// Everything at or below the cumulative point is done with.
+	mut done := []u32{}
+	for tsn, chunk in a.inflight {
+		if tsn_after(tsn, sack.cumulative_tsn_ack) {
+			continue
+		}
+		done << tsn
+		if !chunk.acked {
+			newly_acked += u32(chunk.data.user_data.len)
+		}
+		// Only a chunk that was sent once gives a usable round-trip
+		// measurement; for a retransmitted one there is no way to tell which
+		// transmission the acknowledgement answers (Karn's algorithm).
+		if chunk.retransmits == 0 && !have_sample {
+			rtt_sample = time.now() - chunk.sent_at
+			have_sample = true
+		}
+	}
+	for tsn in done {
+		a.inflight.delete(tsn)
+	}
+
+	// Gap blocks mark chunks as received without retiring them: the peer may
+	// still renege, and only the cumulative point is a promise.
+	for block in sack.gap_ack_blocks {
+		start := sack.cumulative_tsn_ack + u32(block.start)
+		end := sack.cumulative_tsn_ack + u32(block.end)
+		mut tsn := start
+		for !tsn_after(tsn, end) {
+			if mut chunk := a.inflight[tsn] {
+				if !chunk.acked {
+					chunk.acked = true
+					newly_acked += u32(chunk.data.user_data.len)
+					a.inflight[tsn] = chunk
+				}
+			}
+			tsn++
+		}
+	}
+	a.count_missing_reports(sack)
+
+	if have_sample {
+		a.update_rto(rtt_sample)
+	}
+	a.grow_congestion_window(newly_acked)
+	a.fill_congestion_window()
+}
