@@ -646,3 +646,25 @@ fn (mut a Association) handle_forward_tsn(forward ForwardTsn) {
 	a.advance_cumulative_ack() or {}
 	a.schedule_sack(true)
 }
+
+fn max_u32(a u32, b u32) u32 {
+	return if a > b { a } else { b }
+}
+
+fn min_u32(a u32, b u32) u32 {
+	return if a < b { a } else { b }
+}
+
+fn min_duration(a time.Duration, b time.Duration) time.Duration {
+	return if a < b { a } else { b }
+}
+
+fn clamp_duration(value time.Duration, low time.Duration, high time.Duration) time.Duration {
+	if value < low {
+		return low
+	}
+	if value > high {
+		return high
+	}
+	return value
+}
