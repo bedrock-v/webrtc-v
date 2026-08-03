@@ -311,3 +311,50 @@ fn (mut a Association) schedule_sack(now bool) {
 		a.sack_due_at = time.now().add(a.config.sack_delay)
 	}
 }
+
+// build_sack assembles the acknowledgement for the current receive state.
+fn (mut a Association) build_sack() RawChunk {
+	mut sack := Sack{
+		cumulative_tsn_ack:         a.last_received_tsn
+		advertised_receiver_window: a.available_receive_window()
+		duplicate_tsns:             a.seen_duplicates.clone()
+	}
+	a.seen_duplicates.clear()
+	a.data_since_sack = 0
+
+	// Gap blocks name the runs that arrived above the cumulative point, as
+	// offsets from it, so the sender knows exactly what is missing.
+	if a.out_of_order.len > 0 {
+		mut tsns := []u32{cap: a.out_of_order.len}
+		for tsn, _ in a.out_of_order {
+			tsns << tsn
+		}
+		tsns.sort_with_compare(fn (x &u32, y &u32) int {
+			if tsn_before(*x, *y) {
+				return -1
+			}
+			if tsn_after(*x, *y) {
+				return 1
+			}
+			return 0
+		})
+
+		mut run_start := tsns[0]
+		mut run_end := tsns[0]
+		for tsn in tsns[1..] {
+			if tsn == run_end + 1 {
+				run_end = tsn
+				continue
+			}
+			sack.gap_ack_blocks << a.gap_block(run_start, run_end)
+			run_start = tsn
+			run_end = tsn
+		}
+		sack.gap_ack_blocks << a.gap_block(run_start, run_end)
+	}
+
+	return RawChunk{
+		typ:   u8(ChunkType.sack)
+		value: sack.marshal() or { []u8{} }
+	}
+}
