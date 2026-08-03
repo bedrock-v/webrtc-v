@@ -76,3 +76,10 @@ pub const default_rto_max = 60 * time.second
 // default_max_retransmits is how many times a chunk is resent before the
 // association is declared dead.
 pub const default_max_retransmits = 10
+
+// default_sack_delay is how long acknowledgement is held back to let it ride
+// with outgoing data or cover several chunks (RFC 4960 section 6.2).
+pub const default_sack_delay = 200 * time.millisecond
+
+// max_datagram is the largest packet the association will read.
+const max_datagram = 65536
