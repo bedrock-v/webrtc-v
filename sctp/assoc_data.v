@@ -103,3 +103,41 @@ pub fn (mut a Association) send(stream_identifier u16, payload_protocol_identifi
 	a.fill_congestion_window()
 	a.flush()
 }
+
+// recv returns the next complete message, waiting up to timeout.
+pub fn (mut a Association) recv(timeout time.Duration) !Message {
+	if a.is_closed() {
+		return AssociationError{
+			reason: .closed
+			detail: 'the association is closed'
+		}
+	}
+	select {
+		message := <-a.delivered {
+			return message
+		}
+		timeout {
+			return AssociationError{
+				reason: .timed_out
+				detail: 'no message within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return AssociationError{
+		reason: .closed
+		detail: 'the association is closed'
+	}
+}
+
+// try_recv returns a message if one is already queued.
+pub fn (mut a Association) try_recv() ?Message {
+	select {
+		message := <-a.delivered {
+			return message
+		}
+		else {
+			return none
+		}
+	}
+	return none
+}
