@@ -349,3 +349,9 @@ pub fn (mut a Association) state() State {
 pub fn (a &Association) role() Role {
 	return if a.is_client { Role.client } else { Role.server }
 }
+
+// max_message_size is the largest message this association will send or accept.
+@[inline]
+pub fn (a &Association) max_message_size() int {
+	return a.config.max_message_size
+}
