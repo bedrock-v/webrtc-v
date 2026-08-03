@@ -57,3 +57,43 @@ pub fn (p &Packet) marshal() ![]u8 {
 	raw[checksum_offset + 3] = u8(checksum >> 24)
 	return raw
 }
+
+// Packet.decode parses a packet and verifies its checksum.
+pub fn Packet.decode(data []u8, max_chunks int) !Packet {
+	if data.len < packet_header_size {
+		return DecodeError{
+			reason: .too_short
+			detail: '${data.len} bytes is smaller than the ${packet_header_size}-byte header'
+		}
+	}
+
+	mut r := codec.Reader.new(data)
+	source_port := r.u16('source port')!
+	destination_port := r.u16('destination port')!
+	verification_tag := r.u32('verification tag')!
+	received := (u32(data[checksum_offset]) | (u32(data[checksum_offset + 1]) << 8) | (u32(data[
+		checksum_offset + 2]) << 16) | (u32(data[checksum_offset + 3]) << 24))
+	r.skip(4, 'checksum')!
+
+	// Recompute over a copy with the checksum zeroed, which is how the sender
+	// computed it.
+	mut zeroed := data.clone()
+	for i in 0 .. 4 {
+		zeroed[checksum_offset + i] = 0
+	}
+	expected := crc32c(zeroed)
+	if received != expected {
+		return DecodeError{
+			reason: .bad_checksum
+			detail: 'checksum 0x${received.hex()} does not match the computed 0x${expected.hex()}'
+		}
+	}
+
+	chunks := unmarshal_chunks(r.rest_view(), max_chunks)!
+	return Packet{
+		source_port:      source_port
+		destination_port: destination_port
+		verification_tag: verification_tag
+		chunks:           chunks
+	}
+}
