@@ -173,3 +173,37 @@ fn (mut a Association) handle_chunk(chunk RawChunk) ! {
 		}
 	}
 }
+
+// tick runs the timers and sends whatever is due.
+fn (mut a Association) tick() {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return
+	}
+
+	a.expire_queued()
+	a.expire_retransmissions()
+	a.fill_congestion_window()
+	a.maybe_shutdown()
+	a.flush()
+}
+
+// maybe_shutdown sends the SHUTDOWN once everything queued has been
+// acknowledged, which is what makes it graceful rather than abrupt.
+fn (mut a Association) maybe_shutdown() {
+	if a.state != .shutdown_pending {
+		return
+	}
+	if a.pending.len > 0 || a.inflight.len > 0 {
+		return
+	}
+	a.queue_outbound(RawChunk{
+		typ:   u8(ChunkType.shutdown)
+		value: [u8(a.last_received_tsn >> 24), u8(a.last_received_tsn >> 16),
+			u8(a.last_received_tsn >> 8), u8(a.last_received_tsn)]
+	})
+	a.set_state(.shutdown_sent)
+}
