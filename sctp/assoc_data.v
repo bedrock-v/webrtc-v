@@ -195,3 +195,14 @@ fn (mut a Association) fill_congestion_window() {
 		outstanding += size
 	}
 }
+
+// bytes_in_flight is how much unacknowledged data is outstanding.
+fn (mut a Association) bytes_in_flight() u32 {
+	mut total := u32(0)
+	for _, chunk in a.inflight {
+		if !chunk.acked {
+			total += u32(chunk.data.user_data.len)
+		}
+	}
+	return total
+}
