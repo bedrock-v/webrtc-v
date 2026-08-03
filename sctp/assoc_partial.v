@@ -74,3 +74,33 @@ pub fn (mut a Association) stream_reliability(stream_identifier u16) Reliability
 	}
 	return a.reliability[stream_identifier] or { Reliability{} }
 }
+
+// expire_queued abandons messages whose deadline passed before they were ever
+// sent.
+//
+// A message can spend its whole lifetime waiting behind a full congestion
+// window. Sending it once the deadline has gone by is worse than useless: it is
+// too late to be wanted and still costs the bandwidth that the next message
+// needs. The caller must hold the mutex.
+fn (mut a Association) expire_queued() {
+	if a.pending_deadlines.len == 0 || !a.peer_supports_forward_tsn || !a.config.partial_reliability {
+		return
+	}
+	now := time.now()
+	mut expired := []u32{}
+	for tsn, deadline in a.pending_deadlines {
+		if now >= deadline {
+			expired << tsn
+		}
+	}
+	for tsn in expired {
+		a.pending_deadlines.delete(tsn)
+		if a.fragment_at(tsn) == none {
+			continue
+		}
+		a.abandon_message(tsn)
+	}
+	if expired.len > 0 {
+		a.advance_forward_point()
+	}
+}
