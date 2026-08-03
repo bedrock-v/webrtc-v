@@ -98,3 +98,28 @@ mut:
 	read(timeout time.Duration) ![]u8
 	max_write() int
 }
+
+// Config configures an association.
+@[params]
+pub struct Config {
+pub:
+	role Role = .client
+	// streams is how many streams to offer in each direction.
+	streams u16 = default_streams
+	// receive_window is the buffer space advertised to the peer.
+	receive_window u32 = default_receive_window
+	// max_message_size bounds one reassembled message.
+	max_message_size int           = default_max_message_size
+	rto_initial      time.Duration = default_rto_initial
+	rto_min          time.Duration = default_rto_min
+	rto_max          time.Duration = default_rto_max
+	max_retransmits  int           = default_max_retransmits
+	sack_delay       time.Duration = default_sack_delay
+	// partial_reliability advertises FORWARD_TSN support, which is what lets a
+	// stream give up on a message. Turning it off makes every stream reliable
+	// whatever policy is set on it, and is here mostly so the behaviour against
+	// a peer that does not support it can be exercised.
+	partial_reliability bool           = true
+	handshake_timeout   time.Duration  = 10 * time.second
+	logger              logging.Logger = logging.nop()
+}
