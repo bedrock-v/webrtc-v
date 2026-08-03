@@ -72,3 +72,7 @@ pub const default_rto_initial = 3 * time.second
 // default_rto_min and default_rto_max bound it.
 pub const default_rto_min = 200 * time.millisecond
 pub const default_rto_max = 60 * time.second
+
+// default_max_retransmits is how many times a chunk is resent before the
+// association is declared dead.
+pub const default_max_retransmits = 10
