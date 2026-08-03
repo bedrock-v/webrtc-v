@@ -220,3 +220,13 @@ fn tsn_after(a u32, b u32) bool {
 fn tsn_before(a u32, b u32) bool {
 	return tsn_after(b, a)
 }
+
+// tsn_distance returns how far a is ahead of b, as a signed count.
+@[inline]
+fn tsn_distance(a u32, b u32) i64 {
+	diff := u32(a - b)
+	if diff < 0x80000000 {
+		return i64(diff)
+	}
+	return i64(diff) - 0x100000000
+}
