@@ -141,3 +141,57 @@ pub fn (mut a Association) try_recv() ?Message {
 	}
 	return none
 }
+
+// fill_congestion_window moves queued chunks into flight, as far as the
+// congestion window and the peer's advertised receive window allow.
+//
+// Two separate limits apply and both must be respected. The congestion window
+// is what the network is believed to carry; the receive window is what the peer
+// has room for. Ignoring the first congests the path, ignoring the second
+// overruns the peer.
+fn (mut a Association) fill_congestion_window() {
+	if a.state != .established && a.state != .shutdown_pending {
+		return
+	}
+	mut outstanding := a.bytes_in_flight()
+
+	for a.pending.len > 0 {
+		next := a.pending[0]
+		size := u32(next.user_data.len)
+
+		if outstanding + size > a.congestion_window {
+			break
+		}
+		// The peer's window is what it said it had, less what we have already
+		// sent it. A zero window still permits one chunk, which is what stops
+		// the association deadlocking when the peer's window opens but the
+		// notification is lost.
+		if outstanding > 0 && outstanding + size > a.peer_receive_window {
+			break
+		}
+
+		a.pending.delete(0)
+		policy := a.reliability[next.stream_identifier] or { Reliability{} }
+		// The lifetime is measured from when the application handed the message
+		// over, not from when it first went out. A message that spent its
+		// deadline waiting behind a full congestion window is exactly the one
+		// the deadline was meant to discard.
+		mut expires_at := ?time.Time(none)
+		if deadline := a.pending_deadlines[next.tsn] {
+			expires_at = deadline
+		}
+		a.pending_deadlines.delete(next.tsn)
+		a.inflight[next.tsn] = InflightChunk{
+			data:            next
+			sent_at:         time.now()
+			max_retransmits: policy.max_retransmits
+			expires_at:      expires_at
+		}
+		a.control_queue << RawChunk{
+			typ:   u8(ChunkType.data)
+			flags: next.flags()
+			value: next.marshal() or { continue }
+		}
+		outstanding += size
+	}
+}
