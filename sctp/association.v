@@ -181,3 +181,104 @@ mut:
 	// while leaving this one out, which is what triggers a fast retransmit.
 	missing_reports int
 }
+
+// Association is one SCTP association.
+pub struct Association {
+mut:
+	transport Transport
+	config    Config
+	log       logging.Logger
+	mu        &sync.Mutex = sync.new_mutex()
+
+	is_client bool
+	state     State = .closed
+
+	// Local side of the association.
+	my_verification_tag u32
+	my_next_tsn         u32
+	my_receive_window   u32
+
+	// Peer side.
+	peer_verification_tag u32
+	peer_receive_window   u32
+	// peer_cumulative_ack is the highest TSN the peer has acknowledged
+	// cumulatively.
+	peer_cumulative_ack u32
+	// last_received_tsn is the highest TSN below which we have everything, and
+	// is what our own SACK reports.
+	last_received_tsn u32
+	// out_of_order holds TSNs received above the cumulative point, so they can
+	// be reported as gap blocks and delivered once the gap fills.
+	out_of_order map[u32]Data
+	// seen_duplicates are TSNs received again since the last acknowledgement.
+	seen_duplicates []u32
+
+	peer_supports_forward_tsn bool
+	// reliability is the per-stream partial reliability policy; a stream with no
+	// entry is fully reliable.
+	reliability map[u16]Reliability
+	// abandoned records chunks given up on but not yet acknowledged past, which
+	// is what FORWARD_TSN is rebuilt from when it has to be resent.
+	abandoned map[u32]AbandonedChunk
+	// forward_point is the highest TSN this end has told the peer to skip to.
+	forward_point u32
+	// pending_deadlines holds, for queued fragments of a stream with a lifetime
+	// policy, when that message stops being worth sending.
+	pending_deadlines map[u32]time.Time
+
+	// Streams.
+	inbound  map[u16]InboundStream
+	outbound map[u16]OutboundStream
+
+	// Outbound queues.
+	pending  []Data
+	inflight map[u32]InflightChunk
+
+	// Congestion control (RFC 4960 section 7).
+	congestion_window    u32
+	slow_start_threshold u32
+	// bytes_acked accumulates during congestion avoidance, which increases the
+	// window by one MTU per round trip rather than per acknowledgement.
+	bytes_acked u32
+
+	// Retransmission timing (RFC 4960 section 6.3).
+	rto           time.Duration
+	smoothed_rtt  time.Duration
+	rtt_variation time.Duration
+	has_rtt       bool
+
+	// Acknowledgement scheduling.
+	sack_due_at  time.Time
+	sack_pending bool
+	// immediate_sack forces the next tick to acknowledge without waiting for
+	// the delay, which RFC 4960 requires after a gap or a duplicate.
+	immediate_sack bool
+	// data_since_sack counts chunks received since the last acknowledgement, so
+	// that every second one is acknowledged without waiting for the timer.
+	data_since_sack int
+
+	// State cookie, held by the server between INIT_ACK and COOKIE_ECHO.
+	cookie []u8
+
+	// control_queue is what goes out in the next packet. Queueing rather than
+	// sending immediately lets several answers - an acknowledgement, a
+	// heartbeat reply, more data - ride in one datagram.
+	control_queue []RawChunk
+	// held holds messages the application has not collected. They count against
+	// the advertised receive window, which is how the application's slowness
+	// reaches the sender rather than being absorbed by an unbounded queue.
+	held []Message
+
+	closed bool
+	// torn_down separates "not started yet" from "finished". Both are the
+	// CLOSED state in RFC 4960's diagram, but connect has to tell them apart:
+	// a server sits in CLOSED until the client's INIT arrives, and treating
+	// that as a teardown would make it give up before it began.
+	torn_down bool
+	threads   []thread
+	// delivered carries complete messages to the application.
+	delivered chan Message = chan Message{cap: 256}
+	// abort_reason records why the association died, so a later call can report
+	// something better than "closed".
+	abort_reason string
+}
