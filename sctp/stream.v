@@ -195,3 +195,11 @@ fn (mut s OutboundStream) next_sequence_number() u16 {
 	s.next_sequence++
 	return sequence
 }
+
+// sequence_after reports whether a is after b in the wrapping 16-bit stream
+// sequence space.
+@[inline]
+fn sequence_after(a u16, b u16) bool {
+	diff := u16(a - b)
+	return diff != 0 && diff < 0x8000
+}
