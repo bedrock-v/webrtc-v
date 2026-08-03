@@ -355,3 +355,12 @@ pub fn (a &Association) role() Role {
 pub fn (a &Association) max_message_size() int {
 	return a.config.max_message_size
 }
+
+// is_closed reports whether the association has been shut down.
+fn (mut a Association) is_closed() bool {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.closed
+}
