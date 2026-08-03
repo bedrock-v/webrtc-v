@@ -561,3 +561,25 @@ fn (mut a Association) expire_retransmissions() {
 	a.log.debug('retransmission timeout: ${expired.len} chunks expired, rto now ${a.rto.milliseconds()}ms')
 	a.advance_forward_point()
 }
+
+// update_rto folds a round-trip measurement into the retransmission timer
+// (RFC 4960 section 6.3.1).
+fn (mut a Association) update_rto(sample time.Duration) {
+	if !a.has_rtt {
+		a.has_rtt = true
+		a.smoothed_rtt = sample
+		a.rtt_variation = sample / 2
+	} else {
+		difference := if sample > a.smoothed_rtt {
+			sample - a.smoothed_rtt
+		} else {
+			a.smoothed_rtt - sample
+		}
+		// The RFC's constants: the variation moves a quarter of the way to the
+		// new difference, the smoothed estimate an eighth of the way to the new
+		// sample.
+		a.rtt_variation = (a.rtt_variation * 3 + difference) / 4
+		a.smoothed_rtt = (a.smoothed_rtt * 7 + sample) / 8
+	}
+	a.rto = clamp_duration(a.smoothed_rtt + 4 * a.rtt_variation, a.config.rto_min, a.config.rto_max)
+}
