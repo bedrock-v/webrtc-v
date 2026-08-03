@@ -343,3 +343,9 @@ pub fn (mut a Association) state() State {
 	}
 	return a.state
 }
+
+// role returns which end of the handshake this association took.
+@[inline]
+pub fn (a &Association) role() Role {
+	return if a.is_client { Role.client } else { Role.server }
+}
