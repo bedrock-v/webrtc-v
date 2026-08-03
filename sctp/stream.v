@@ -180,3 +180,10 @@ fn (mut s InboundStream) skip_to(sequence u16) []Message {
 	}
 	return out
 }
+
+// OutboundStream tracks the sequence numbering for one stream we send on.
+struct OutboundStream {
+mut:
+	identifier    u16
+	next_sequence u16
+}
