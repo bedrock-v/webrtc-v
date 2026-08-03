@@ -28,3 +28,16 @@ pub fn (r Role) str() string {
 		.server { 'server' }
 	}
 }
+
+// State follows the association state diagram of RFC 4960 section 4.
+pub enum State {
+	closed
+	cookie_wait
+	cookie_echoed
+	established
+	shutdown_pending
+	shutdown_sent
+	shutdown_received
+	shutdown_ack_sent
+	aborted
+}
