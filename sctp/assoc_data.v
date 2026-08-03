@@ -358,3 +358,29 @@ fn (mut a Association) build_sack() RawChunk {
 		value: sack.marshal() or { []u8{} }
 	}
 }
+
+fn (mut a Association) gap_block(start u32, end u32) GapAckBlock {
+	return GapAckBlock{
+		start: u16(tsn_distance(start, a.last_received_tsn))
+		end:   u16(tsn_distance(end, a.last_received_tsn))
+	}
+}
+
+// available_receive_window is what is left of the advertised buffer.
+//
+// Reporting it honestly is what makes back pressure work: a peer that is told
+// there is no room stops sending, and the application's own slowness reaches
+// the sender instead of being absorbed by an unbounded queue.
+fn (mut a Association) available_receive_window() u32 {
+	mut used := u32(0)
+	for _, data in a.out_of_order {
+		used += u32(data.user_data.len)
+	}
+	for message in a.held {
+		used += u32(message.data.len)
+	}
+	if used >= a.my_receive_window {
+		return 0
+	}
+	return a.my_receive_window - used
+}
