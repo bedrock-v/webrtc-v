@@ -41,3 +41,17 @@ pub enum State {
 	shutdown_ack_sent
 	aborted
 }
+
+pub fn (s State) str() string {
+	return match s {
+		.closed { 'closed' }
+		.cookie_wait { 'cookie-wait' }
+		.cookie_echoed { 'cookie-echoed' }
+		.established { 'established' }
+		.shutdown_pending { 'shutdown-pending' }
+		.shutdown_sent { 'shutdown-sent' }
+		.shutdown_received { 'shutdown-received' }
+		.shutdown_ack_sent { 'shutdown-ack-sent' }
+		.aborted { 'aborted' }
+	}
+}
