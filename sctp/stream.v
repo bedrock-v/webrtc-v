@@ -18,3 +18,9 @@ pub:
 	data                        []u8
 	unordered                   bool
 }
+
+// max_message_size bounds one reassembled message. The peer chooses how many
+// fragments to send, so without a ceiling it could make us buffer without
+// limit. RFC 8831 puts the WebRTC default at 64 KiB and browsers negotiate
+// 256 KiB.
+pub const default_max_message_size = 262144
