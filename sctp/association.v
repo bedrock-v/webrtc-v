@@ -147,3 +147,11 @@ pub enum AssociationErrorReason {
 	// protocol: the peer sent something the association cannot proceed from.
 	protocol
 }
+
+pub fn (e AssociationError) msg() string {
+	return 'sctp: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e AssociationError) code() int {
+	return int(e.reason) + 40
+}
