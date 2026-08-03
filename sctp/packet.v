@@ -97,3 +97,11 @@ pub fn Packet.decode(data []u8, max_chunks int) !Packet {
 		chunks:           chunks
 	}
 }
+
+pub fn (p &Packet) str() string {
+	mut names := []string{cap: p.chunks.len}
+	for chunk in p.chunks {
+		names << chunk.name()
+	}
+	return 'SCTP tag=0x${p.verification_tag.hex()} [${names.join(', ')}]'
+}
