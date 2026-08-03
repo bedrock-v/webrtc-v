@@ -334,3 +334,12 @@ pub fn Association.new(transport Transport, config Config) !&Association {
 		rto:                  config.rto_initial
 	}
 }
+
+// state returns the association's current state.
+pub fn (mut a Association) state() State {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.state
+}
