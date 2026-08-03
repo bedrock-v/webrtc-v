@@ -59,3 +59,8 @@ pub fn (s State) str() string {
 // default_streams is how many streams each direction offers. WebRTC data
 // channels take one stream each, so this is the channel ceiling.
 pub const default_streams = u16(1024)
+
+// default_receive_window is what we advertise as buffer space. It is SCTP's
+// flow control: a sender may not have more than this many unacknowledged bytes
+// outstanding, so it is the knob that stops a fast sender from overrunning us.
+pub const default_receive_window = u32(1024 * 1024)
