@@ -87,3 +87,14 @@ const max_datagram = 65536
 // tick_interval is how often the association loop wakes to run its timers when
 // nothing is arriving.
 const tick_interval = 20 * time.millisecond
+
+// Transport is the datagram channel an association runs over.
+//
+// A dtls.Conn satisfies it as written, which is the intended pairing: SCTP over
+// DTLS is what RFC 8261 specifies and what a data channel is built on.
+pub interface Transport {
+mut:
+	write(data []u8) !int
+	read(timeout time.Duration) ![]u8
+	max_write() int
+}
