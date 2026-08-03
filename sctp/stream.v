@@ -157,3 +157,26 @@ fn (mut s InboundStream) deliver_ordered(sequence u16, message Message) []Messag
 	}
 	return out
 }
+
+// skip_to advances the ordered sequence past messages the sender abandoned,
+// which is what a FORWARD_TSN means for an ordered stream.
+fn (mut s InboundStream) skip_to(sequence u16) []Message {
+	// The comparison is on the wrapping 16-bit space, so a stream that has been
+	// running long enough to wrap is not stalled by it.
+	if !sequence_after(sequence, s.next_sequence) && sequence != s.next_sequence {
+		return []Message{}
+	}
+	for s.next_sequence != sequence + 1 {
+		s.partial.delete(s.next_sequence)
+		s.ready.delete(s.next_sequence)
+		s.next_sequence++
+	}
+	mut out := []Message{}
+	for {
+		waiting := s.ready[s.next_sequence] or { break }
+		out << waiting
+		s.ready.delete(s.next_sequence)
+		s.next_sequence++
+	}
+	return out
+}
