@@ -123,3 +123,25 @@ fn (mut a Association) should_abandon(chunk InflightChunk) bool {
 	}
 	return false
 }
+
+// abandon_message drops every fragment of the message containing tsn.
+//
+// Fragments are contiguous in transmission sequence number, so the message is
+// found by walking out from this one to the fragment marked as the beginning
+// and the one marked as the end. Both directions have to look in the queue as
+// well as in flight: a large message can be half sent.
+//
+// The caller must hold the mutex.
+fn (mut a Association) abandon_message(tsn u32) {
+	start := a.walk_to_message_start(tsn)
+	end := a.walk_to_message_end(tsn)
+
+	mut current := start
+	for {
+		a.abandon_chunk(current)
+		if current == end {
+			break
+		}
+		current++
+	}
+}
