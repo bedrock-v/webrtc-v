@@ -215,3 +215,40 @@ fn (mut a Association) abandon_chunk(tsn u32) {
 		unordered:              data.unordered
 	}
 }
+
+// advance_forward_point moves the point below which everything is finished, and
+// tells the peer if it moved.
+//
+// The point may pass a transmission sequence number that was abandoned or one
+// the peer has already acknowledged in a gap block; anything else is still
+// owed. The caller must hold the mutex.
+fn (mut a Association) advance_forward_point() {
+	if a.abandoned.len == 0 {
+		return
+	}
+
+	mut point := a.peer_cumulative_ack
+	for {
+		next := point + 1
+		// Named rather than `_`: V 0.5.2's if-guard with a discard binding on a
+		// map lookup succeeds whether or not the key is there, which quietly
+		// advanced this point over data that was still owed.
+		if _ok := a.abandoned[next] {
+			point = next
+			continue
+		}
+		if chunk := a.inflight[next] {
+			if chunk.acked {
+				point = next
+				continue
+			}
+		}
+		break
+	}
+
+	if !tsn_after(point, a.peer_cumulative_ack) {
+		return
+	}
+	a.forward_point = point
+	a.queue_forward_tsn()
+}
