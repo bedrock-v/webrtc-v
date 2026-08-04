@@ -184,3 +184,34 @@ fn (mut a Association) walk_to_message_end(tsn u32) u32 {
 	}
 	return current
 }
+
+// fragment_at returns the DATA chunk with this TSN, whether it is queued or in
+// flight.
+fn (a &Association) fragment_at(tsn u32) ?Data {
+	if chunk := a.inflight[tsn] {
+		return chunk.data
+	}
+	for pending in a.pending {
+		if pending.tsn == tsn {
+			return pending
+		}
+	}
+	return none
+}
+
+// abandon_chunk removes one fragment and records what the peer must skip.
+fn (mut a Association) abandon_chunk(tsn u32) {
+	data := a.fragment_at(tsn) or { return }
+	a.inflight.delete(tsn)
+	for index, pending in a.pending {
+		if pending.tsn == tsn {
+			a.pending.delete(index)
+			break
+		}
+	}
+	a.abandoned[tsn] = AbandonedChunk{
+		stream_identifier:      data.stream_identifier
+		stream_sequence_number: data.stream_sequence_number
+		unordered:              data.unordered
+	}
+}
