@@ -22,3 +22,29 @@ fn test_crc32c_is_not_crc32() {
 	// A guard against someone "simplifying" this to hash.crc32.
 	assert crc32c('123456789'.bytes()) != 0xCBF43926
 }
+
+// -- Packets and chunks ----------------------------------------------------
+
+fn test_packet_round_trip() {
+	packet := Packet{
+		verification_tag: 0xDEADBEEF
+		chunks:           [
+			RawChunk{
+				typ:   u8(ChunkType.cookie_ack)
+				value: []u8{}
+			},
+			RawChunk{
+				typ:   u8(ChunkType.heartbeat)
+				value: [u8(1), 2, 3]
+			},
+		]
+	}
+	raw := packet.marshal()!
+	decoded := Packet.decode(raw, default_max_chunks)!
+
+	assert decoded.verification_tag == 0xDEADBEEF
+	assert decoded.source_port == webrtc_port
+	assert decoded.chunks.len == 2
+	assert decoded.chunks[0].chunk_type()? == .cookie_ack
+	assert decoded.chunks[1].value == [u8(1), 2, 3]
+}
