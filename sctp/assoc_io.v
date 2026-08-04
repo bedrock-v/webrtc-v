@@ -207,3 +207,42 @@ fn (mut a Association) maybe_shutdown() {
 	})
 	a.set_state(.shutdown_sent)
 }
+
+// flush sends the queued control chunks and any acknowledgement that is due.
+// The caller must hold the mutex.
+fn (mut a Association) flush() {
+	if a.sack_pending && (a.immediate_sack || time.now() >= a.sack_due_at) {
+		a.control_queue << a.build_sack()
+		a.sack_pending = false
+		a.immediate_sack = false
+	}
+	if a.control_queue.len == 0 {
+		return
+	}
+
+	chunks := a.control_queue.clone()
+	a.control_queue.clear()
+	tag := a.peer_verification_tag
+	limit := a.transport.max_write()
+
+	// Chunks are packed into as few packets as will hold them, but never into a
+	// packet larger than the transport will carry. Sending one oversized packet
+	// works against a test pipe and fails against DTLS, which refuses a write
+	// bigger than one record - so the limit is enforced here rather than
+	// discovered in production.
+	mut batch := []RawChunk{}
+	mut size := packet_header_size
+	for chunk in chunks {
+		chunk_size := chunk.padded_len()
+		if batch.len > 0 && size + chunk_size > limit {
+			a.send_chunks_locked(tag, batch)
+			batch = []RawChunk{}
+			size = packet_header_size
+		}
+		batch << chunk
+		size += chunk_size
+	}
+	if batch.len > 0 {
+		a.send_chunks_locked(tag, batch)
+	}
+}
