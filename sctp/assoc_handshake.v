@@ -141,3 +141,29 @@ fn (mut a Association) handle_init(init Init) ! {
 		value: ack.marshal()!
 	})
 }
+
+// handle_init_ack completes the client's half of the handshake.
+fn (mut a Association) handle_init_ack(init Init) ! {
+	if a.state != .cookie_wait {
+		// A duplicate INIT_ACK for a handshake already past this point.
+		return
+	}
+	cookie := init.state_cookie() or {
+		a.abort('the INIT_ACK carried no state cookie')
+		return AssociationError{
+			reason: .protocol
+			detail: 'the INIT_ACK carried no state cookie'
+		}
+	}
+
+	a.peer_verification_tag = init.initiate_tag
+	a.peer_receive_window = init.advertised_receiver_window
+	a.peer_supports_forward_tsn = init.supports_forward_tsn()
+	a.last_received_tsn = init.initial_tsn - 1
+	a.set_state(.cookie_echoed)
+
+	a.queue_outbound(RawChunk{
+		typ:   u8(ChunkType.cookie_echo)
+		value: cookie
+	})
+}
