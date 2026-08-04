@@ -164,3 +164,23 @@ fn (mut a Association) walk_to_message_start(tsn u32) u32 {
 	}
 	return current
 }
+
+// walk_to_message_end finds the last fragment of the message holding tsn.
+fn (mut a Association) walk_to_message_end(tsn u32) u32 {
+	mut current := tsn
+	for {
+		data := a.fragment_at(current) or { return current }
+		if data.end {
+			return current
+		}
+		next := current + 1
+		if a.fragment_at(next) == none {
+			// The rest of the message has not been queued yet. Abandoning what
+			// exists would leave the receiver holding a fragment of a message
+			// whose tail is still coming, so stop here.
+			return current
+		}
+		current = next
+	}
+	return current
+}
