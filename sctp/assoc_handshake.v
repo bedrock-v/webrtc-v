@@ -203,3 +203,26 @@ fn (mut a Association) handle_cookie_ack() {
 	a.set_state(.established)
 	a.log.info('association established as ${a.role()}')
 }
+
+// shutdown closes the association gracefully, letting data already queued be
+// delivered first (RFC 4960 section 9.2).
+pub fn (mut a Association) shutdown(timeout time.Duration) ! {
+	a.mu.lock()
+	if a.state != .established {
+		a.mu.unlock()
+		a.close()
+		return
+	}
+	a.set_state(.shutdown_pending)
+	a.mu.unlock()
+
+	deadline := time.now().add(timeout)
+	for time.now() < deadline {
+		state := a.state()
+		if state == .closed || state == .aborted {
+			break
+		}
+		time.sleep(5 * time.millisecond)
+	}
+	a.close()
+}
