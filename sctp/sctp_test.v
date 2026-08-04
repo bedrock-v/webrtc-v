@@ -48,3 +48,25 @@ fn test_packet_round_trip() {
 	assert decoded.chunks[0].chunk_type()? == .cookie_ack
 	assert decoded.chunks[1].value == [u8(1), 2, 3]
 }
+
+fn test_packet_checksum_is_verified() {
+	packet := Packet{
+		verification_tag: 1
+		chunks:           [
+			RawChunk{
+				typ:   u8(ChunkType.cookie_ack)
+				value: []u8{}
+			},
+		]
+	}
+	raw := packet.marshal()!
+
+	// Flipping any byte must be caught, including one inside the checksum
+	// field itself.
+	for i in 0 .. raw.len {
+		mut tampered := raw.clone()
+		tampered[i] ^= 0x01
+		Packet.decode(tampered, default_max_chunks) or { continue }
+		assert false, 'flipping byte ${i} was not detected'
+	}
+}
