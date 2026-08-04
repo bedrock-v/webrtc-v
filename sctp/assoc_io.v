@@ -173,3 +173,20 @@ fn (mut a Association) handle_chunk(chunk RawChunk) ! {
 		}
 	}
 }
+
+// tick runs the timers and sends whatever is due.
+fn (mut a Association) tick() {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return
+	}
+
+	a.expire_queued()
+	a.expire_retransmissions()
+	a.fill_congestion_window()
+	a.maybe_shutdown()
+	a.flush()
+}
