@@ -75,3 +75,101 @@ fn (mut a Association) handle_datagram(datagram []u8) {
 		}
 	}
 }
+
+// handle_chunk dispatches one chunk. The caller must hold the mutex.
+fn (mut a Association) handle_chunk(chunk RawChunk) ! {
+	typ := chunk.chunk_type() or {
+		// An unknown chunk is handled by the rule its type number encodes,
+		// which is what makes the protocol extensible.
+		match unrecognised_chunk_action(chunk.typ) {
+			.stop_processing, .stop_and_report {
+				return AssociationError{
+					reason: .protocol
+					detail: 'unrecognised chunk type ${chunk.typ} requires the packet to be discarded'
+				}
+			}
+			.skip, .skip_and_report {
+				a.log.debug('skipping unrecognised chunk type ${chunk.typ}')
+				return
+			}
+		}
+		return
+	}
+
+	match typ {
+		.init {
+			a.handle_init(unmarshal_init(chunk.value)!)!
+		}
+		.init_ack {
+			a.handle_init_ack(unmarshal_init(chunk.value)!)!
+		}
+		.cookie_echo {
+			a.handle_cookie_echo(chunk.value)!
+		}
+		.cookie_ack {
+			a.handle_cookie_ack()
+		}
+		.data {
+			a.handle_data(unmarshal_data(chunk.flags, chunk.value)!)!
+		}
+		.sack {
+			a.handle_sack(unmarshal_sack(chunk.value)!)
+		}
+		.forward_tsn {
+			a.handle_forward_tsn(unmarshal_forward_tsn(chunk.value)!)
+		}
+		.heartbeat {
+			// Echo the payload back unchanged; that is the whole protocol.
+			a.queue_outbound(RawChunk{
+				typ:   u8(ChunkType.heartbeat_ack)
+				value: chunk.value
+			})
+		}
+		.heartbeat_ack {}
+		.abort {
+			causes := unmarshal_error_causes(chunk.value) or { []ErrorCause{} }
+			mut reasons := []string{cap: causes.len}
+			for cause in causes {
+				reasons << cause_name(cause.code)
+			}
+			a.abort_reason = if reasons.len > 0 {
+				'the peer aborted: ${reasons.join(', ')}'
+			} else {
+				'the peer aborted'
+			}
+			a.log.warn(a.abort_reason)
+			a.set_state(.aborted)
+		}
+		.shutdown {
+			a.set_state(.shutdown_received)
+			a.queue_outbound(RawChunk{
+				typ: u8(ChunkType.shutdown_ack)
+			})
+			a.set_state(.shutdown_ack_sent)
+		}
+		.shutdown_ack {
+			a.queue_outbound(RawChunk{
+				typ: u8(ChunkType.shutdown_complete)
+			})
+			a.torn_down = true
+			a.set_state(.closed)
+		}
+		.shutdown_complete {
+			a.torn_down = true
+			a.set_state(.closed)
+		}
+		.error {
+			causes := unmarshal_error_causes(chunk.value) or { []ErrorCause{} }
+			for cause in causes {
+				a.log.warn('peer reported ${cause_name(cause.code)}')
+			}
+		}
+		.ecne, .cwr, .reconfig {
+			// Explicit congestion notification and stream reconfiguration are
+			// not implemented. Ignoring them is safe: the association continues
+			// with its own congestion control, and a channel closed through
+			// RECONFIG is instead closed by the layer above.
+			a.log.debug('ignoring a ${typ} chunk')
+		}
+	}
+}
