@@ -194,3 +194,12 @@ fn (mut a Association) handle_cookie_echo(value []u8) ! {
 	a.set_state(.established)
 	a.log.info('association established as ${a.role()}')
 }
+
+// handle_cookie_ack is the last message of the handshake.
+fn (mut a Association) handle_cookie_ack() {
+	if a.state != .cookie_echoed {
+		return
+	}
+	a.set_state(.established)
+	a.log.info('association established as ${a.role()}')
+}
