@@ -18,3 +18,21 @@ struct OutboundChunk {
 fn (mut a Association) queue_outbound(chunk RawChunk) {
 	a.control_queue << chunk
 }
+
+// run is the association loop.
+fn (mut a Association) run() {
+	for {
+		if a.is_closed() {
+			return
+		}
+		// A short read timeout is what lets the timers run when nothing is
+		// arriving. The transport is expected to return an error on timeout
+		// rather than block.
+		datagram := a.transport.read(tick_interval) or {
+			a.tick()
+			continue
+		}
+		a.handle_datagram(datagram)
+		a.tick()
+	}
+}
