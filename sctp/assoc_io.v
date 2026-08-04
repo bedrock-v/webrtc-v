@@ -190,3 +190,20 @@ fn (mut a Association) tick() {
 	a.maybe_shutdown()
 	a.flush()
 }
+
+// maybe_shutdown sends the SHUTDOWN once everything queued has been
+// acknowledged, which is what makes it graceful rather than abrupt.
+fn (mut a Association) maybe_shutdown() {
+	if a.state != .shutdown_pending {
+		return
+	}
+	if a.pending.len > 0 || a.inflight.len > 0 {
+		return
+	}
+	a.queue_outbound(RawChunk{
+		typ:   u8(ChunkType.shutdown)
+		value: [u8(a.last_received_tsn >> 24), u8(a.last_received_tsn >> 16),
+			u8(a.last_received_tsn >> 8), u8(a.last_received_tsn)]
+	})
+	a.set_state(.shutdown_sent)
+}
