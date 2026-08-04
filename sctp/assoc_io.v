@@ -12,3 +12,9 @@ import time
 struct OutboundChunk {
 	chunk RawChunk
 }
+
+// queue_outbound adds a control chunk to the next outgoing packet. The caller
+// must hold the mutex.
+fn (mut a Association) queue_outbound(chunk RawChunk) {
+	a.control_queue << chunk
+}
