@@ -272,3 +272,7 @@ pub fn (mut a Association) close() {
 	a.threads.clear()
 	a.mu.unlock()
 }
+
+fn min_u16(a u16, b u16) u16 {
+	return if a < b { a } else { b }
+}
