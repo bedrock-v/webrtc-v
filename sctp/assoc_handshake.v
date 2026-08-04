@@ -167,3 +167,30 @@ fn (mut a Association) handle_init_ack(init Init) ! {
 		value: cookie
 	})
 }
+
+// handle_cookie_echo completes the server's half.
+fn (mut a Association) handle_cookie_echo(value []u8) ! {
+	if a.cookie.len == 0 {
+		return AssociationError{
+			reason: .protocol
+			detail: 'a COOKIE_ECHO arrived before any INIT'
+		}
+	}
+	// The comparison is not constant-time on purpose: the cookie is not a
+	// secret that survives the handshake, and both ends are already
+	// authenticated by DTLS. What it stops is a stale or misdirected echo, not
+	// an attacker who can already read the connection.
+	if value != a.cookie {
+		a.abort('the COOKIE_ECHO did not match the cookie we issued')
+		return AssociationError{
+			reason: .protocol
+			detail: 'the COOKIE_ECHO did not match'
+		}
+	}
+
+	a.queue_outbound(RawChunk{
+		typ: u8(ChunkType.cookie_ack)
+	})
+	a.set_state(.established)
+	a.log.info('association established as ${a.role()}')
+}
