@@ -36,3 +36,42 @@ fn (mut a Association) run() {
 		a.tick()
 	}
 }
+
+// handle_datagram decodes a packet and dispatches its chunks.
+fn (mut a Association) handle_datagram(datagram []u8) {
+	packet := Packet.decode(datagram, default_max_chunks) or {
+		a.log.debug('discarded a packet: ${err.msg()}')
+		return
+	}
+
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if a.closed {
+		return
+	}
+
+	// The verification tag is what binds a packet to this association. An INIT
+	// carries zero because the peer has not learned our tag yet, and an ABORT
+	// may echo either tag; everything else must match, and a packet that does
+	// not is discarded without any state change.
+	if packet.chunks.len > 0 {
+		first := packet.chunks[0].chunk_type() or { ChunkType.data }
+		is_init := first == .init
+		if !is_init && packet.verification_tag != a.my_verification_tag {
+			a.log.debug('discarded a packet with verification tag 0x${packet.verification_tag.hex()}')
+			return
+		}
+	}
+
+	for chunk in packet.chunks {
+		a.handle_chunk(chunk) or {
+			a.log.debug('${chunk.name()}: ${err.msg()}')
+			return
+		}
+		if a.state == .aborted || a.closed {
+			return
+		}
+	}
+}
