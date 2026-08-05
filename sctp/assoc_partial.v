@@ -65,3 +65,12 @@ pub fn (mut a Association) set_stream_reliability(stream_identifier u16, reliabi
 	}
 	a.reliability[stream_identifier] = reliability
 }
+
+// stream_reliability returns the policy in force for a stream.
+pub fn (mut a Association) stream_reliability(stream_identifier u16) Reliability {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.reliability[stream_identifier] or { Reliability{} }
+}
