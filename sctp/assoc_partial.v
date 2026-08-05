@@ -40,3 +40,11 @@ pub:
 pub fn (r Reliability) is_reliable() bool {
 	return r.max_retransmits == none && r.max_packet_lifetime == none
 }
+
+// abandoned_chunk is what has to be remembered about a chunk after it is
+// dropped: enough to tell the peer which stream to skip and how far.
+struct AbandonedChunk {
+	stream_identifier      u16
+	stream_sequence_number u16
+	unordered              bool
+}
