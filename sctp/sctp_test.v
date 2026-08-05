@@ -410,3 +410,36 @@ fn test_ordered_delivery_waits_for_the_gap() {
 	assert messages[0].data == 'first'.bytes()
 	assert messages[1].data == 'second'.bytes()
 }
+
+fn test_unordered_delivery_does_not_wait() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	messages := stream.accept(make_data(2, 5, 'now', true, true, true), default_max_message_size)!
+	assert messages.len == 1
+	assert messages[0].unordered
+}
+
+fn test_reassembly_enforces_the_message_limit() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	stream.accept(make_data(1, 0, 'aaaa', true, false, false), 6)!
+	stream.accept(make_data(2, 0, 'bbbb', false, true, false), 6) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a message over the limit must be rejected rather than buffered'
+}
+
+fn test_forward_tsn_skips_an_ordered_stream() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	// Sequence 2 arrives while 0 and 1 are still missing.
+	assert stream.accept(make_data(3, 2, 'third', true, true, false), default_max_message_size)!.len == 0
+	// The sender abandons 0 and 1; skipping to 1 releases what was waiting.
+	messages := stream.skip_to(1)
+	assert messages.len == 1
+	assert messages[0].data == 'third'.bytes()
+}
