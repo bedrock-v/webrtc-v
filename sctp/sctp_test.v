@@ -548,3 +548,29 @@ fn connect_pair(config Config) !AssociationPair {
 fn connect_over(mut client_pipe PipeTransport, mut server_pipe PipeTransport, config Config) !AssociationPair {
 	return connect_over_with(mut client_pipe, mut server_pipe, config, config)!
 }
+
+// connect_over_with gives the two ends different configurations, which is how a
+// peer lacking an optional feature is exercised.
+fn connect_over_with(mut client_pipe PipeTransport, mut server_pipe PipeTransport, client_config Config, server_config Config) !AssociationPair {
+	mut client := Association.new(client_pipe, Config{
+		...client_config
+		role:   .client
+		logger: logging.from_env('client')
+	})!
+	mut server := Association.new(server_pipe, Config{
+		...server_config
+		role:   .server
+		logger: logging.from_env('server')
+	})!
+
+	server_thread := spawn fn (mut a Association) ! {
+		a.connect(10 * time.second)!
+	}(mut server)
+	client.connect(10 * time.second)!
+	server_thread.wait()!
+
+	return AssociationPair{
+		client: client
+		server: server
+	}
+}
