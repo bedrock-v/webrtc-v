@@ -452,3 +452,59 @@ fn (mut a Association) handle_sack(sack Sack) {
 	a.grow_congestion_window(newly_acked)
 	a.fill_congestion_window()
 }
+
+// count_missing_reports marks chunks the peer has now reported missing more
+// than once, and retransmits those that cross the threshold.
+fn (mut a Association) count_missing_reports(sack Sack) {
+	if sack.gap_ack_blocks.len == 0 {
+		return
+	}
+	// The highest TSN named by any gap block. Anything below it that has not
+	// been acknowledged is genuinely missing rather than merely in flight.
+	mut highest := sack.cumulative_tsn_ack
+	for block in sack.gap_ack_blocks {
+		candidate := sack.cumulative_tsn_ack + u32(block.end)
+		if tsn_after(candidate, highest) {
+			highest = candidate
+		}
+	}
+
+	mut resend := []u32{}
+	for tsn, mut chunk in a.inflight {
+		if chunk.acked || !tsn_before(tsn, highest) {
+			continue
+		}
+		chunk.missing_reports++
+		a.inflight[tsn] = chunk
+		if chunk.missing_reports >= fast_retransmit_threshold {
+			resend << tsn
+		}
+	}
+	if resend.len == 0 {
+		return
+	}
+
+	// A fast retransmit halves the window rather than collapsing it, because
+	// the acknowledgements prove the path is still carrying traffic.
+	a.slow_start_threshold = max_u32(a.congestion_window / 2, u32(4 * a.transport.max_write()))
+	a.congestion_window = a.slow_start_threshold
+
+	for tsn in resend {
+		mut chunk := a.inflight[tsn] or { continue }
+		if a.should_abandon(chunk) {
+			a.abandon_message(tsn)
+			continue
+		}
+		chunk.missing_reports = 0
+		chunk.retransmits++
+		chunk.sent_at = time.now()
+		a.inflight[tsn] = chunk
+		a.control_queue << RawChunk{
+			typ:   u8(ChunkType.data)
+			flags: chunk.data.flags()
+			value: chunk.data.marshal() or { continue }
+		}
+		a.log.debug('fast retransmit of TSN ${tsn}')
+	}
+	a.advance_forward_point()
+}
