@@ -246,3 +246,18 @@ fn (mut a Association) flush() {
 		a.send_chunks_locked(tag, batch)
 	}
 }
+
+// send_chunks_locked sends a packet. The caller must hold the mutex; the write
+// itself happens with it held, which is acceptable because the transport is a
+// DTLS connection whose write is a single non-blocking datagram.
+fn (mut a Association) send_chunks_locked(tag u32, chunks []RawChunk) {
+	packet := Packet{
+		verification_tag: tag
+		chunks:           chunks
+	}
+	raw := packet.marshal() or {
+		a.log.warn('could not marshal a packet: ${err.msg()}')
+		return
+	}
+	a.transport.write(raw) or { a.log.debug('write failed: ${err.msg()}') }
+}
