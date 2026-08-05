@@ -104,3 +104,22 @@ fn (mut a Association) expire_queued() {
 		a.advance_forward_point()
 	}
 }
+
+// should_abandon reports whether a chunk has exhausted its stream's policy.
+// The caller must hold the mutex.
+fn (mut a Association) should_abandon(chunk InflightChunk) bool {
+	if !a.peer_supports_forward_tsn || !a.config.partial_reliability {
+		return false
+	}
+	if limit := chunk.max_retransmits {
+		if chunk.retransmits >= int(limit) {
+			return true
+		}
+	}
+	if deadline := chunk.expires_at {
+		if time.now() >= deadline {
+			return true
+		}
+	}
+	return false
+}
