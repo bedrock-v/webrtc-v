@@ -280,3 +280,17 @@ fn (mut a Association) deliver(data Data) ! {
 		a.forward(message)
 	}
 }
+
+// forward queues a message for the application.
+fn (mut a Association) forward(message Message) {
+	select {
+		a.delivered <- message {}
+		else {
+			// The application is not keeping up. Dropping here would break the
+			// reliability the stream promised, so the message is kept and the
+			// receive window is what tells the peer to slow down.
+			a.log.warn('delivery queue full; message on stream ${message.stream_identifier} held')
+			a.held << message
+		}
+	}
+}
