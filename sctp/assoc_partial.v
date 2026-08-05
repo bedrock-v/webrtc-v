@@ -145,3 +145,22 @@ fn (mut a Association) abandon_message(tsn u32) {
 		current++
 	}
 }
+
+// walk_to_message_start finds the first fragment of the message holding tsn.
+fn (mut a Association) walk_to_message_start(tsn u32) u32 {
+	mut current := tsn
+	for {
+		data := a.fragment_at(current) or { return current }
+		if data.beginning {
+			return current
+		}
+		// Guard against walking off the bottom: anything at or below the peer's
+		// cumulative acknowledgement is already delivered and is not ours to
+		// abandon.
+		if !tsn_after(current, a.peer_cumulative_ack + 1) {
+			return current
+		}
+		current--
+	}
+	return current
+}
