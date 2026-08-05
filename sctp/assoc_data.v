@@ -258,3 +258,25 @@ fn (mut a Association) advance_cumulative_ack() ! {
 		a.deliver(data)!
 	}
 }
+
+// deliver hands a chunk to its stream and forwards whatever became complete.
+fn (mut a Association) deliver(data Data) ! {
+	mut stream := a.inbound[data.stream_identifier] or {
+		InboundStream{
+			identifier: data.stream_identifier
+		}
+	}
+	messages := stream.accept(data, a.config.max_message_size) or {
+		a.inbound[data.stream_identifier] = stream
+		a.abort('reassembly failed: ${err.msg()}')
+		return AssociationError{
+			reason: .protocol
+			detail: err.msg()
+		}
+	}
+	a.inbound[data.stream_identifier] = stream
+
+	for message in messages {
+		a.forward(message)
+	}
+}
