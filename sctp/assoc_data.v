@@ -246,3 +246,15 @@ fn (mut a Association) handle_data(data Data) ! {
 	send_now := gap_opened || data.immediate_sack || a.data_since_sack >= 2
 	a.schedule_sack(send_now)
 }
+
+// advance_cumulative_ack moves the cumulative point over every TSN that is now
+// contiguous, delivering the data as it goes.
+fn (mut a Association) advance_cumulative_ack() ! {
+	for {
+		next := a.last_received_tsn + 1
+		data := a.out_of_order[next] or { break }
+		a.out_of_order.delete(next)
+		a.last_received_tsn = next
+		a.deliver(data)!
+	}
+}
