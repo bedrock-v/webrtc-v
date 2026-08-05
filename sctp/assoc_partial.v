@@ -198,3 +198,20 @@ fn (a &Association) fragment_at(tsn u32) ?Data {
 	}
 	return none
 }
+
+// abandon_chunk removes one fragment and records what the peer must skip.
+fn (mut a Association) abandon_chunk(tsn u32) {
+	data := a.fragment_at(tsn) or { return }
+	a.inflight.delete(tsn)
+	for index, pending in a.pending {
+		if pending.tsn == tsn {
+			a.pending.delete(index)
+			break
+		}
+	}
+	a.abandoned[tsn] = AbandonedChunk{
+		stream_identifier:      data.stream_identifier
+		stream_sequence_number: data.stream_sequence_number
+		unordered:              data.unordered
+	}
+}
