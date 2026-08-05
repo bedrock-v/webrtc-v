@@ -606,3 +606,38 @@ fn test_ordered_message_round_trip() {
 	assert reply.data == [u8(1), 2, 3]
 	assert reply.payload_protocol_identifier == ppid_binary
 }
+
+fn test_ordering_is_preserved_within_a_stream() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	for i in 0 .. 20 {
+		pair.client.send(0, ppid_string, 'message ${i}'.bytes(), true)!
+	}
+	for i in 0 .. 20 {
+		message := pair.server.recv(5 * time.second)!
+		assert message.data.bytestr() == 'message ${i}', 'out of order at ${i}'
+	}
+}
+
+fn test_streams_are_independent() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.send(1, ppid_string, 'on one'.bytes(), true)!
+	pair.client.send(2, ppid_string, 'on two'.bytes(), true)!
+
+	mut seen := map[u16]string{}
+	for _ in 0 .. 2 {
+		message := pair.server.recv(5 * time.second)!
+		seen[message.stream_identifier] = message.data.bytestr()
+	}
+	assert seen[u16(1)] == 'on one'
+	assert seen[u16(2)] == 'on two'
+}
