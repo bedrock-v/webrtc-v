@@ -261,3 +261,19 @@ fn (mut a Association) send_chunks_locked(tag u32, chunks []RawChunk) {
 	}
 	a.transport.write(raw) or { a.log.debug('write failed: ${err.msg()}') }
 }
+
+// send_chunks sends a packet without holding the mutex, for the handshake paths
+// that run before the loop owns the state.
+fn (mut a Association) send_chunks(tag u32, chunks []RawChunk) ! {
+	packet := Packet{
+		verification_tag: tag
+		chunks:           chunks
+	}
+	raw := packet.marshal()!
+	a.transport.write(raw) or {
+		return AssociationError{
+			reason: .transport
+			detail: 'write failed: ${err.msg()}'
+		}
+	}
+}
