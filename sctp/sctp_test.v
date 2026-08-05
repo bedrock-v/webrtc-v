@@ -115,3 +115,37 @@ fn test_chunk_count_is_bounded() {
 	}
 	assert false, 'the chunk count limit must be enforced'
 }
+
+fn test_chunk_padding_round_trips() {
+	// A three-byte value pads to a four-byte boundary, and the length field
+	// counts the value but not the padding.
+	packet := Packet{
+		verification_tag: 1
+		chunks:           [
+			RawChunk{
+				typ:   u8(ChunkType.heartbeat)
+				value: [u8(1), 2, 3]
+			},
+			RawChunk{
+				typ:   u8(ChunkType.cookie_ack)
+				value: []u8{}
+			},
+		]
+	}
+	raw := packet.marshal()!
+	assert raw.len % 4 == 0
+
+	decoded := Packet.decode(raw, default_max_chunks)!
+	assert decoded.chunks[0].value == [u8(1), 2, 3]
+	assert decoded.chunks[1].value.len == 0
+}
+
+fn test_unrecognised_chunk_action_from_type() {
+	// The top two bits of the type say what a receiver must do with a chunk it
+	// does not know, which is what makes the protocol extensible.
+	assert unrecognised_chunk_action(0x00) == .stop_processing
+	assert unrecognised_chunk_action(0x40) == .stop_and_report
+	assert unrecognised_chunk_action(0x80) == .skip
+	assert unrecognised_chunk_action(0xC0) == .skip_and_report
+	assert unrecognised_chunk_action(u8(ChunkType.forward_tsn)) == .skip_and_report
+}
