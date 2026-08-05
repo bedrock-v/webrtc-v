@@ -179,3 +179,29 @@ fn test_init_round_trip() {
 	assert decoded.supports_forward_tsn()
 	assert decoded.state_cookie()? == [u8(9), 9, 9]
 }
+
+fn test_init_rejects_invalid_values() {
+	// A zero initiate tag is reserved and would let a packet with no tag be
+	// accepted into the association.
+	zero_tag := Init{
+		outbound_streams: 1
+		inbound_streams:  1
+	}
+	zero_tag.marshal() or {
+		no_streams := Init{
+			initiate_tag: 1
+		}
+		no_streams.marshal() or { return }
+		assert false, 'zero streams must be rejected'
+	}
+	assert false, 'a zero initiate tag must be rejected'
+}
+
+fn test_init_decode_rejects_peer_zero_tag() {
+	// Twenty bytes of zeros: a syntactically valid INIT with a zero tag.
+	unmarshal_init([]u8{len: 20}) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a peer sending a zero initiate tag must be rejected'
+}
