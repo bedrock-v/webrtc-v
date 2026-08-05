@@ -654,3 +654,7 @@ fn max_u32(a u32, b u32) u32 {
 fn min_u32(a u32, b u32) u32 {
 	return if a < b { a } else { b }
 }
+
+fn min_duration(a time.Duration, b time.Duration) time.Duration {
+	return if a < b { a } else { b }
+}
