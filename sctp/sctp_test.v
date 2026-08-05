@@ -70,3 +70,27 @@ fn test_packet_checksum_is_verified() {
 		assert false, 'flipping byte ${i} was not detected'
 	}
 }
+
+fn test_packet_rejects_malformed_input() {
+	Packet.decode([]u8{len: 4}, default_max_chunks) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .too_short
+		}
+		return
+	}
+	assert false, 'a short packet must be rejected'
+}
+
+fn test_chunk_length_below_the_header_is_rejected() {
+	// A length under four would make the chunk walker loop forever, which is
+	// exactly what a hostile peer would send.
+	unmarshal_chunks([u8(0x0B), 0x00, 0x00, 0x02], default_max_chunks) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .bad_length
+		}
+		return
+	}
+	assert false, 'a chunk length below the header size must be rejected'
+}
