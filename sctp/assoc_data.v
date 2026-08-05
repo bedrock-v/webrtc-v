@@ -128,3 +128,16 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 		detail: 'the association is closed'
 	}
 }
+
+// try_recv returns a message if one is already queued.
+pub fn (mut a Association) try_recv() ?Message {
+	select {
+		message := <-a.delivered {
+			return message
+		}
+		else {
+			return none
+		}
+	}
+	return none
+}
