@@ -658,3 +658,37 @@ fn test_large_message_is_fragmented_and_reassembled() {
 	assert message.data.len == payload.len
 	assert message.data == payload
 }
+
+fn test_unordered_messages_are_delivered() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	for i in 0 .. 10 {
+		pair.client.send(0, ppid_string, 'unordered ${i}'.bytes(), false)!
+	}
+	mut received := 0
+	for _ in 0 .. 10 {
+		message := pair.server.recv(5 * time.second)!
+		assert message.unordered
+		received++
+	}
+	assert received == 10
+}
+
+fn test_empty_message_round_trips() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	// An empty DATA chunk is forbidden, so RFC 8831 sends one padding byte
+	// under a distinct protocol identifier. The receiver must see the empty
+	// message, not the padding.
+	pair.client.send(0, ppid_string, []u8{}, true)!
+	message := pair.server.recv(5 * time.second)!
+	assert message.payload_protocol_identifier == ppid_string_empty
+}
