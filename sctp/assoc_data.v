@@ -658,3 +658,13 @@ fn min_u32(a u32, b u32) u32 {
 fn min_duration(a time.Duration, b time.Duration) time.Duration {
 	return if a < b { a } else { b }
 }
+
+fn clamp_duration(value time.Duration, low time.Duration, high time.Duration) time.Duration {
+	if value < low {
+		return low
+	}
+	if value > high {
+		return high
+	}
+	return value
+}
