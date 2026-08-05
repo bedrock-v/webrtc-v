@@ -34,3 +34,9 @@ pub:
 	// max_packet_lifetime abandons a message this long after it was queued.
 	max_packet_lifetime ?time.Duration
 }
+
+// is_reliable reports whether this policy ever gives up.
+@[inline]
+pub fn (r Reliability) is_reliable() bool {
+	return r.max_retransmits == none && r.max_packet_lifetime == none
+}
