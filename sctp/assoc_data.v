@@ -358,3 +358,10 @@ fn (mut a Association) build_sack() RawChunk {
 		value: sack.marshal() or { []u8{} }
 	}
 }
+
+fn (mut a Association) gap_block(start u32, end u32) GapAckBlock {
+	return GapAckBlock{
+		start: u16(tsn_distance(start, a.last_received_tsn))
+		end:   u16(tsn_distance(end, a.last_received_tsn))
+	}
+}
