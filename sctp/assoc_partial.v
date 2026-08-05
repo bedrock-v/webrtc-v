@@ -184,3 +184,17 @@ fn (mut a Association) walk_to_message_end(tsn u32) u32 {
 	}
 	return current
 }
+
+// fragment_at returns the DATA chunk with this TSN, whether it is queued or in
+// flight.
+fn (a &Association) fragment_at(tsn u32) ?Data {
+	if chunk := a.inflight[tsn] {
+		return chunk.data
+	}
+	for pending in a.pending {
+		if pending.tsn == tsn {
+			return pending
+		}
+	}
+	return none
+}
