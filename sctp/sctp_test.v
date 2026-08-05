@@ -268,3 +268,23 @@ fn test_sack_round_trip() {
 	assert decoded.gap_ack_blocks[1].end == 7
 	assert decoded.duplicate_tsns == [u32(498), 499]
 }
+
+fn test_sack_rejects_inverted_gap_block() {
+	raw := hex.decode('000001f400008000000100000004000200000000'.substr(0, 32))!
+	unmarshal_sack(raw) or { return }
+	// If it parsed, the block must at least be well formed.
+	decoded := unmarshal_sack(raw) or { return }
+	for block in decoded.gap_ack_blocks {
+		assert block.end >= block.start
+	}
+}
+
+fn test_sack_truncated_counts_are_rejected() {
+	// Declares two gap blocks but carries none.
+	raw := [u8(0), 0, 0, 1, 0, 0, 0x80, 0, 0, 2, 0, 0]
+	unmarshal_sack(raw) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a SACK declaring more gap blocks than it carries must be rejected'
+}
