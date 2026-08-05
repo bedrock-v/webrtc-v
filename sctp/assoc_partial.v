@@ -48,3 +48,20 @@ struct AbandonedChunk {
 	stream_sequence_number u16
 	unordered              bool
 }
+
+// set_stream_reliability sets the delivery policy for one stream.
+//
+// It applies to messages queued after it, not to messages already in flight:
+// changing the policy underneath a message that is halfway out would give its
+// fragments two different deadlines.
+pub fn (mut a Association) set_stream_reliability(stream_identifier u16, reliability Reliability) {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	if reliability.is_reliable() {
+		a.reliability.delete(stream_identifier)
+		return
+	}
+	a.reliability[stream_identifier] = reliability
+}
