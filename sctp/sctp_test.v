@@ -505,3 +505,29 @@ fn (mut p PipeTransport) write(data []u8) !int {
 	}
 	return data.len
 }
+
+fn (mut p PipeTransport) read(timeout time.Duration) ![]u8 {
+	select {
+		data := <-p.inbound {
+			return data
+		}
+		timeout {
+			return error('timeout')
+		}
+	}
+	return error('closed')
+}
+
+fn (mut p PipeTransport) max_write() int {
+	// Deliberately not a multiple of four. A limit that happens to be aligned
+	// hides a chunk-padding miscalculation, because the oversized packet lands
+	// exactly on the boundary instead of one byte past it. This is the figure a
+	// DTLS transport actually reports.
+	return 1163
+}
+
+fn (mut p PipeTransport) close() {
+	p.mu.lock()
+	p.closed = true
+	p.mu.unlock()
+}
