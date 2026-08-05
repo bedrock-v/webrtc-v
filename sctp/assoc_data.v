@@ -508,3 +508,56 @@ fn (mut a Association) count_missing_reports(sack Sack) {
 	}
 	a.advance_forward_point()
 }
+
+// expire_retransmissions resends chunks whose timer has run out.
+fn (mut a Association) expire_retransmissions() {
+	if a.inflight.len == 0 {
+		return
+	}
+	now := time.now()
+	mut expired := []u32{}
+	for tsn, chunk in a.inflight {
+		if chunk.acked {
+			continue
+		}
+		if now - chunk.sent_at >= a.rto {
+			expired << tsn
+		}
+	}
+	if expired.len == 0 {
+		return
+	}
+
+	for tsn in expired {
+		mut chunk := a.inflight[tsn] or { continue }
+		if a.should_abandon(chunk) {
+			// Partial reliability: give up on this message rather than the
+			// association, and tell the peer so its stream does not stall
+			// behind the gap.
+			a.abandon_message(tsn)
+			continue
+		}
+		if chunk.retransmits >= a.config.max_retransmits {
+			a.abort('TSN ${tsn} was retransmitted ${chunk.retransmits} times without acknowledgement')
+			return
+		}
+		chunk.retransmits++
+		chunk.sent_at = now
+		chunk.missing_reports = 0
+		a.inflight[tsn] = chunk
+		a.control_queue << RawChunk{
+			typ:   u8(ChunkType.data)
+			flags: chunk.data.flags()
+			value: chunk.data.marshal() or { continue }
+		}
+	}
+
+	// A timeout is the strong signal of congestion, so the window collapses to
+	// one packet and the timer doubles (RFC 4960 sections 6.3.3 and 7.2.3).
+	a.slow_start_threshold = max_u32(a.congestion_window / 2, u32(4 * a.transport.max_write()))
+	a.congestion_window = u32(a.transport.max_write())
+	a.bytes_acked = 0
+	a.rto = min_duration(a.rto * 2, a.config.rto_max)
+	a.log.debug('retransmission timeout: ${expired.len} chunks expired, rto now ${a.rto.milliseconds()}ms')
+	a.advance_forward_point()
+}
