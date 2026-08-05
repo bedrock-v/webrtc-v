@@ -17,3 +17,8 @@ fn test_crc32c_check_values() {
 	assert crc32c('a'.bytes()) == 0xC1D04330
 	assert crc32c('The quick brown fox jumps over the lazy dog'.bytes()) == 0x22620404
 }
+
+fn test_crc32c_is_not_crc32() {
+	// A guard against someone "simplifying" this to hash.crc32.
+	assert crc32c('123456789'.bytes()) != 0xCBF43926
+}
