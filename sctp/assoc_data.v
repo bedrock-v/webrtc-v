@@ -206,3 +206,43 @@ fn (mut a Association) bytes_in_flight() u32 {
 	}
 	return total
 }
+
+// handle_data folds an arriving DATA chunk into the receive state.
+fn (mut a Association) handle_data(data Data) ! {
+	if a.state != .established && a.state != .shutdown_pending && a.state != .shutdown_received {
+		return
+	}
+
+	// Anything at or below the cumulative point has already been delivered.
+	// Acknowledging it again is required - the peer's copy of the
+	// acknowledgement was evidently lost - but delivering it again is not.
+	if !tsn_after(data.tsn, a.last_received_tsn) {
+		a.seen_duplicates << data.tsn
+		a.schedule_sack(true)
+		return
+	}
+	if data.tsn in a.out_of_order {
+		a.seen_duplicates << data.tsn
+		a.schedule_sack(true)
+		return
+	}
+	if data.stream_identifier >= a.config.streams {
+		a.log.debug('data for stream ${data.stream_identifier}, outside the ${a.config.streams} negotiated')
+		a.schedule_sack(true)
+		return
+	}
+
+	a.out_of_order[data.tsn] = data
+	// A chunk that does not close the gap needs an immediate acknowledgement so
+	// the sender can fast-retransmit rather than wait for its timer.
+	gap_opened := data.tsn != a.last_received_tsn + 1
+	a.advance_cumulative_ack()!
+
+	// RFC 4960 section 6.2 requires an acknowledgement at least every second
+	// packet. Waiting for the delay timer on every chunk instead would hold the
+	// sender's congestion window shut and collapse throughput to one window per
+	// delay interval.
+	a.data_since_sack++
+	send_now := gap_opened || data.immediate_sack || a.data_since_sack >= 2
+	a.schedule_sack(send_now)
+}
