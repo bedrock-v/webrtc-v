@@ -604,3 +604,45 @@ fn (mut a Association) grow_congestion_window(acked u32) {
 		a.congestion_window += mtu
 	}
 }
+
+// handle_forward_tsn skips over data the peer abandoned (RFC 3758).
+fn (mut a Association) handle_forward_tsn(forward ForwardTsn) {
+	if !tsn_after(forward.new_cumulative_tsn, a.last_received_tsn) {
+		return
+	}
+	// Everything in the range that never arrived is gone for good; holding the
+	// gap open would stall every ordered stream behind it.
+	//
+	// What did arrive is delivered rather than discarded. The sender's point may
+	// legitimately cover data it saw acknowledged in a gap block - RFC 3758
+	// section 3.5 lets the advanced acknowledgement point move over anything the
+	// receiver already has - and throwing that away would lose a message the
+	// sender believes was delivered.
+	mut tsn := a.last_received_tsn + 1
+	for !tsn_after(tsn, forward.new_cumulative_tsn) {
+		if data := a.out_of_order[tsn] {
+			a.out_of_order.delete(tsn)
+			a.last_received_tsn = tsn
+			a.deliver(data) or {
+				a.log.debug('could not deliver TSN ${tsn} while skipping ahead: ${err.msg()}')
+			}
+		}
+		tsn++
+	}
+	a.last_received_tsn = forward.new_cumulative_tsn
+
+	for stream in forward.streams {
+		mut inbound := a.inbound[stream.identifier] or {
+			InboundStream{
+				identifier: stream.identifier
+			}
+		}
+		for message in inbound.skip_to(stream.sequence_number) {
+			a.forward(message)
+		}
+		a.inbound[stream.identifier] = inbound
+	}
+
+	a.advance_cumulative_ack() or {}
+	a.schedule_sack(true)
+}
