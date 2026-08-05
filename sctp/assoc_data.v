@@ -294,3 +294,20 @@ fn (mut a Association) forward(message Message) {
 		}
 	}
 }
+
+// schedule_sack arranges for an acknowledgement.
+//
+// It is delayed by default so that it can ride with outgoing data or cover
+// several chunks at once, which is what RFC 4960 section 6.2 asks for. A gap or
+// a duplicate cancels the delay: those are the cases where the sender is
+// waiting on the answer.
+fn (mut a Association) schedule_sack(now bool) {
+	a.sack_pending = true
+	if now {
+		a.immediate_sack = true
+		return
+	}
+	if a.sack_due_at == time.Time{} || time.now() > a.sack_due_at {
+		a.sack_due_at = time.now().add(a.config.sack_delay)
+	}
+}
