@@ -574,3 +574,35 @@ fn connect_over_with(mut client_pipe PipeTransport, mut server_pipe PipeTranspor
 		server: server
 	}
 }
+
+fn test_association_establishes() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	assert pair.client.state() == .established
+	assert pair.server.state() == .established
+	assert pair.client.role() == .client
+	assert pair.server.role() == .server
+}
+
+fn test_ordered_message_round_trip() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.send(0, ppid_string, 'hello over SCTP'.bytes(), true)!
+	message := pair.server.recv(5 * time.second)!
+	assert message.data == 'hello over SCTP'.bytes()
+	assert message.stream_identifier == 0
+	assert message.payload_protocol_identifier == ppid_string
+	assert !message.unordered
+
+	pair.server.send(0, ppid_binary, [u8(1), 2, 3], true)!
+	reply := pair.client.recv(5 * time.second)!
+	assert reply.data == [u8(1), 2, 3]
+	assert reply.payload_protocol_identifier == ppid_binary
+}
