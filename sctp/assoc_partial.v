@@ -252,3 +252,45 @@ fn (mut a Association) advance_forward_point() {
 	a.forward_point = point
 	a.queue_forward_tsn()
 }
+
+// queue_forward_tsn builds the chunk that tells the peer to skip ahead.
+//
+// One entry per ordered stream, carrying the highest sequence number abandoned
+// on it. Unordered messages need no entry - there is no per-stream order for
+// them to block - but their transmission sequence numbers still have to be
+// covered by the cumulative point.
+fn (mut a Association) queue_forward_tsn() {
+	mut highest := map[u16]u16{}
+	for tsn, chunk in a.abandoned {
+		if chunk.unordered {
+			continue
+		}
+		if tsn_after(tsn, a.forward_point) {
+			continue
+		}
+		if current := highest[chunk.stream_identifier] {
+			if !sequence_after(chunk.stream_sequence_number, current) {
+				continue
+			}
+		}
+		highest[chunk.stream_identifier] = chunk.stream_sequence_number
+	}
+
+	mut streams := []ForwardTsnStream{cap: highest.len}
+	for identifier, sequence in highest {
+		streams << ForwardTsnStream{
+			identifier:      identifier
+			sequence_number: sequence
+		}
+	}
+
+	forward := ForwardTsn{
+		new_cumulative_tsn: a.forward_point
+		streams:            streams
+	}
+	a.control_queue << RawChunk{
+		typ:   u8(ChunkType.forward_tsn)
+		value: forward.marshal() or { return }
+	}
+	a.log.debug('abandoned up to TSN ${a.forward_point}, ${streams.len} ordered streams skipped')
+}
