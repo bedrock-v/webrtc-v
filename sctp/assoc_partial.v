@@ -294,3 +294,20 @@ fn (mut a Association) queue_forward_tsn() {
 	}
 	a.log.debug('abandoned up to TSN ${a.forward_point}, ${streams.len} ordered streams skipped')
 }
+
+// release_abandoned forgets abandoned chunks the peer has acknowledged past.
+// The caller must hold the mutex.
+fn (mut a Association) release_abandoned(cumulative u32) {
+	if a.abandoned.len == 0 {
+		return
+	}
+	mut done := []u32{}
+	for tsn, _ in a.abandoned {
+		if !tsn_after(tsn, cumulative) {
+			done << tsn
+		}
+	}
+	for tsn in done {
+		a.abandoned.delete(tsn)
+	}
+}
