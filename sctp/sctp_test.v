@@ -351,3 +351,10 @@ fn test_tsn_comparisons_wrap() {
 	assert tsn_distance(1, 5) == -4
 	assert tsn_distance(1, 0xFFFFFFFF) == 2
 }
+
+fn test_stream_sequence_comparison_wraps() {
+	assert sequence_after(1, 0)
+	assert sequence_after(0, 65535)
+	assert !sequence_after(65535, 0)
+	assert !sequence_after(5, 5)
+}
