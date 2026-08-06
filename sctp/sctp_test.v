@@ -810,3 +810,29 @@ fn test_acknowledgement_point_starts_in_the_right_place() {
 		assert tsn_after(association.my_next_tsn, association.peer_cumulative_ack)
 	}
 }
+
+fn test_repeated_large_transfers() {
+	// Each association draws a fresh random initial TSN, so running this a few
+	// times covers both halves of the TSN space.
+	for attempt in 0 .. 4 {
+		mut pair := connect_pair(Config{})!
+		payload := []u8{len: 30000, init: u8(index % 251)}
+		pair.client.send(0, ppid_binary, payload, true)!
+		message := pair.server.recv(20 * time.second) or {
+			pair.client.close()
+			pair.server.close()
+			assert false, 'attempt ${attempt} stalled: ${err}'
+			return
+		}
+		assert message.data == payload
+		pair.client.close()
+		pair.server.close()
+	}
+}
+
+// quick_rto shortens the retransmission timer, so a test that has to wait for
+// one takes milliseconds rather than seconds.
+const quick_rto = Config{
+	rto_initial: 100 * time.millisecond
+	rto_min:     50 * time.millisecond
+}
