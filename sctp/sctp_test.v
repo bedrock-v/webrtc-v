@@ -410,3 +410,12 @@ fn test_ordered_delivery_waits_for_the_gap() {
 	assert messages[0].data == 'first'.bytes()
 	assert messages[1].data == 'second'.bytes()
 }
+
+fn test_unordered_delivery_does_not_wait() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	messages := stream.accept(make_data(2, 5, 'now', true, true, true), default_max_message_size)!
+	assert messages.len == 1
+	assert messages[0].unordered
+}
