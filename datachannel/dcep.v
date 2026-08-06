@@ -62,3 +62,29 @@ pub fn (t ChannelType) is_ordered() bool {
 pub fn (t ChannelType) is_reliable() bool {
 	return u8(t) & 0x7F == 0
 }
+
+fn channel_type_from_value(v u8) ?ChannelType {
+	return match v {
+		0x00 { ChannelType.reliable }
+		0x01 { ChannelType.partial_reliable_rexmit }
+		0x02 { ChannelType.partial_reliable_timed }
+		0x80 { ChannelType.reliable_unordered }
+		0x81 { ChannelType.partial_reliable_rexmit_unordered }
+		0x82 { ChannelType.partial_reliable_timed_unordered }
+		else { none }
+	}
+}
+
+// DcepError is returned when a DCEP message cannot be built or parsed.
+pub struct DcepError {
+pub:
+	detail string
+}
+
+pub fn (e DcepError) msg() string {
+	return 'datachannel: ${e.detail}'
+}
+
+pub fn (e DcepError) code() int {
+	return 1
+}
