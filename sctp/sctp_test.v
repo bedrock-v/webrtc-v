@@ -308,3 +308,23 @@ fn test_forward_tsn_round_trip() {
 	assert decoded.streams.len == 2
 	assert decoded.streams[1].sequence_number == 9
 }
+
+fn test_parameters_pad_to_a_word() {
+	body := marshal_parameters([
+		Parameter{
+			typ:   param_state_cookie
+			value: [u8(1), 2, 3]
+		},
+		Parameter{
+			typ:   param_forward_tsn_supported
+			value: []u8{}
+		},
+	])!
+	assert body.len % 4 == 0
+
+	decoded := unmarshal_parameters(body)!
+	assert decoded.len == 2
+	assert decoded[0].value == [u8(1), 2, 3]
+	assert find_parameter(decoded, param_forward_tsn_supported) != none
+	assert find_parameter(decoded, param_random) == none
+}
