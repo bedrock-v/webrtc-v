@@ -373,3 +373,14 @@ fn make_data(tsn u32, sequence u16, payload string, beginning bool, end bool, un
 		unordered:                   unordered
 	}
 }
+
+fn test_whole_message_is_delivered_immediately() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	messages :=
+		stream.accept(make_data(1, 0, 'hello', true, true, false), default_max_message_size)!
+	assert messages.len == 1
+	assert messages[0].data == 'hello'.bytes()
+	assert !messages[0].unordered
+}
