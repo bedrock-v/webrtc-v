@@ -70,3 +70,14 @@ fn test_packet_checksum_is_verified() {
 		assert false, 'flipping byte ${i} was not detected'
 	}
 }
+
+fn test_packet_rejects_malformed_input() {
+	Packet.decode([]u8{len: 4}, default_max_chunks) or {
+		assert err is DecodeError
+		if err is DecodeError {
+			assert err.reason == .too_short
+		}
+		return
+	}
+	assert false, 'a short packet must be rejected'
+}
