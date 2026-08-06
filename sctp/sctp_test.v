@@ -395,3 +395,18 @@ fn test_fragments_reassemble() {
 	assert messages.len == 1
 	assert messages[0].data == 'hello'.bytes()
 }
+
+fn test_ordered_delivery_waits_for_the_gap() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	// Sequence 1 arrives first and must be held until 0 has been delivered,
+	// which is what "ordered" means at the stream level.
+	assert stream.accept(make_data(2, 1, 'second', true, true, false), default_max_message_size)!.len == 0
+
+	messages :=
+		stream.accept(make_data(1, 0, 'first', true, true, false), default_max_message_size)!
+	assert messages.len == 2
+	assert messages[0].data == 'first'.bytes()
+	assert messages[1].data == 'second'.bytes()
+}
