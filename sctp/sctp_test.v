@@ -384,3 +384,14 @@ fn test_whole_message_is_delivered_immediately() {
 	assert messages[0].data == 'hello'.bytes()
 	assert !messages[0].unordered
 }
+
+fn test_fragments_reassemble() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	assert stream.accept(make_data(1, 0, 'he', true, false, false), default_max_message_size)!.len == 0
+	assert stream.accept(make_data(2, 0, 'll', false, false, false), default_max_message_size)!.len == 0
+	messages := stream.accept(make_data(3, 0, 'o', false, true, false), default_max_message_size)!
+	assert messages.len == 1
+	assert messages[0].data == 'hello'.bytes()
+}
