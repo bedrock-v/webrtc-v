@@ -468,3 +468,40 @@ fn new_pipe_pair() (&PipeTransport, &PipeTransport) {
 	b.peer = a
 	return a, b
 }
+
+fn (mut p PipeTransport) write(data []u8) !int {
+	p.mu.lock()
+	if p.closed {
+		p.mu.unlock()
+		return error('pipe closed')
+	}
+	p.sent++
+	mut drop := false
+	if p.drop_next > 0 {
+		p.drop_next--
+		drop = true
+	} else if p.drop_every > 0 && p.sent % p.drop_every == 0 {
+		drop = true
+	}
+	p.mu.unlock()
+
+	if data.len > p.max_write() {
+		// A real transport refuses an oversized write. Enforcing it here is what
+		// stops a packing bug from passing the tests and failing over DTLS.
+		return error('datagram of ${data.len} bytes exceeds the ${p.max_write()}-byte limit')
+	}
+	if drop {
+		return data.len
+	}
+	mut peer := p.peer
+	// The payload is copied into a variable first: V 0.5.2 sends a zero value
+	// when the expression in a select-send is a call.
+	copy := data.clone()
+	select {
+		peer.inbound <- copy {}
+		else {
+			return error('peer queue full')
+		}
+	}
+	return data.len
+}
