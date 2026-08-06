@@ -542,3 +542,9 @@ fn connect_pair(config Config) !AssociationPair {
 	mut client_pipe, mut server_pipe := new_pipe_pair()
 	return connect_over(mut client_pipe, mut server_pipe, config)!
 }
+
+// connect_over establishes an association over pipes the caller keeps a handle
+// on, which is what a test that wants to drop specific datagrams needs.
+fn connect_over(mut client_pipe PipeTransport, mut server_pipe PipeTransport, config Config) !AssociationPair {
+	return connect_over_with(mut client_pipe, mut server_pipe, config, config)!
+}
