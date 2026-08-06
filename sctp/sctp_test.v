@@ -149,3 +149,33 @@ fn test_unrecognised_chunk_action_from_type() {
 	assert unrecognised_chunk_action(0xC0) == .skip_and_report
 	assert unrecognised_chunk_action(u8(ChunkType.forward_tsn)) == .skip_and_report
 }
+
+// -- Typed chunks ----------------------------------------------------------
+
+fn test_init_round_trip() {
+	init := Init{
+		initiate_tag:               0x11223344
+		advertised_receiver_window: 65536
+		outbound_streams:           1024
+		inbound_streams:            1024
+		initial_tsn:                0xAABBCCDD
+		parameters:                 [
+			Parameter{
+				typ:   param_forward_tsn_supported
+				value: []u8{}
+			},
+			Parameter{
+				typ:   param_state_cookie
+				value: [u8(9), 9, 9]
+			},
+		]
+	}
+	decoded := unmarshal_init(init.marshal()!)!
+
+	assert decoded.initiate_tag == 0x11223344
+	assert decoded.advertised_receiver_window == 65536
+	assert decoded.outbound_streams == 1024
+	assert decoded.initial_tsn == 0xAABBCCDD
+	assert decoded.supports_forward_tsn()
+	assert decoded.state_cookie()? == [u8(9), 9, 9]
+}
