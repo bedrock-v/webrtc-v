@@ -795,3 +795,18 @@ fn test_graceful_shutdown() {
 	pair.client.shutdown(5 * time.second)!
 	assert pair.client.state() in [State.closed, .shutdown_sent, .aborted]
 }
+
+fn test_acknowledgement_point_starts_in_the_right_place() {
+	// The initial TSN is random and spans the whole 32-bit space. If the
+	// acknowledgement point started at zero, every SACK for a connection whose
+	// TSNs landed in the upper half would compare as older than it under
+	// wrapping arithmetic and be discarded - so the window would never open and
+	// any transfer larger than it would stall permanently.
+	mut pipe, mut unused_peer := new_pipe_pair()
+	for _ in 0 .. 200 {
+		mut association := Association.new(pipe, role: .client)!
+		assert !tsn_before(association.my_next_tsn, association.peer_cumulative_ack), 'the first TSN must not compare as older than the acknowledgement point'
+
+		assert tsn_after(association.my_next_tsn, association.peer_cumulative_ack)
+	}
+}
