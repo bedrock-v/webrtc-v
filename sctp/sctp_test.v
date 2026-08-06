@@ -859,3 +859,21 @@ fn test_a_message_is_abandoned_after_its_retransmission_limit() {
 	assert pair.client.state() == .established
 	assert pair.server.state() == .established
 }
+
+fn test_an_unordered_message_is_abandoned_without_blocking_the_stream() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut pair := connect_over(mut client_pipe, mut server_pipe, quick_rto)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.set_stream_reliability(1, max_retransmits: 0)
+	client_pipe.drop_next = 1
+	pair.client.send(1, ppid_binary, 'gone'.bytes(), false)!
+	pair.client.send(3, ppid_binary, 'here'.bytes(), false)!
+
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == 'here'.bytes()
+	assert message.unordered
+}
