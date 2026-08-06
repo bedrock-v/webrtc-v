@@ -460,3 +460,11 @@ mut:
 	sent       int
 	closed     bool
 }
+
+fn new_pipe_pair() (&PipeTransport, &PipeTransport) {
+	mut a := &PipeTransport{}
+	mut b := &PipeTransport{}
+	a.peer = b
+	b.peer = a
+	return a, b
+}
