@@ -230,3 +230,15 @@ fn test_data_round_trip_and_flags() {
 	assert decoded.user_data == 'hello'.bytes()
 	assert decoded.beginning && decoded.end && decoded.unordered
 }
+
+fn test_empty_data_chunk_is_rejected() {
+	// RFC 4960 section 3.3.1 forbids it, and a peer that receives one aborts.
+	empty := Data{
+		tsn: 1
+	}
+	empty.marshal() or {
+		unmarshal_data(0x03, [u8(0), 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 51]) or { return }
+		assert false, 'a received empty DATA chunk must be rejected'
+	}
+	assert false, 'an empty DATA chunk must not be encodable'
+}
