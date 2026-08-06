@@ -205,3 +205,28 @@ fn test_init_decode_rejects_peer_zero_tag() {
 	}
 	assert false, 'a peer sending a zero initiate tag must be rejected'
 }
+
+fn test_data_round_trip_and_flags() {
+	data := Data{
+		tsn:                         100
+		stream_identifier:           3
+		stream_sequence_number:      7
+		payload_protocol_identifier: ppid_string
+		user_data:                   'hello'.bytes()
+		beginning:                   true
+		end:                         true
+		unordered:                   true
+	}
+	flags := data.flags()
+	assert flags & data_flag_beginning != 0
+	assert flags & data_flag_end != 0
+	assert flags & data_flag_unordered != 0
+
+	decoded := unmarshal_data(flags, data.marshal()!)!
+	assert decoded.tsn == 100
+	assert decoded.stream_identifier == 3
+	assert decoded.stream_sequence_number == 7
+	assert decoded.payload_protocol_identifier == ppid_string
+	assert decoded.user_data == 'hello'.bytes()
+	assert decoded.beginning && decoded.end && decoded.unordered
+}
