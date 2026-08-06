@@ -115,3 +115,27 @@ fn test_chunk_count_is_bounded() {
 	}
 	assert false, 'the chunk count limit must be enforced'
 }
+
+fn test_chunk_padding_round_trips() {
+	// A three-byte value pads to a four-byte boundary, and the length field
+	// counts the value but not the padding.
+	packet := Packet{
+		verification_tag: 1
+		chunks:           [
+			RawChunk{
+				typ:   u8(ChunkType.heartbeat)
+				value: [u8(1), 2, 3]
+			},
+			RawChunk{
+				typ:   u8(ChunkType.cookie_ack)
+				value: []u8{}
+			},
+		]
+	}
+	raw := packet.marshal()!
+	assert raw.len % 4 == 0
+
+	decoded := Packet.decode(raw, default_max_chunks)!
+	assert decoded.chunks[0].value == [u8(1), 2, 3]
+	assert decoded.chunks[1].value.len == 0
+}
