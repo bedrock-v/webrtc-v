@@ -419,3 +419,15 @@ fn test_unordered_delivery_does_not_wait() {
 	assert messages.len == 1
 	assert messages[0].unordered
 }
+
+fn test_reassembly_enforces_the_message_limit() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	stream.accept(make_data(1, 0, 'aaaa', true, false, false), 6)!
+	stream.accept(make_data(2, 0, 'bbbb', false, true, false), 6) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a message over the limit must be rejected rather than buffered'
+}
