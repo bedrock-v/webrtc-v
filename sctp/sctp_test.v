@@ -525,3 +525,9 @@ fn (mut p PipeTransport) max_write() int {
 	// DTLS transport actually reports.
 	return 1163
 }
+
+fn (mut p PipeTransport) close() {
+	p.mu.lock()
+	p.closed = true
+	p.mu.unlock()
+}
