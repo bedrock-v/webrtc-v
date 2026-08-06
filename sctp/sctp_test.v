@@ -288,3 +288,23 @@ fn test_sack_truncated_counts_are_rejected() {
 	}
 	assert false, 'a SACK declaring more gap blocks than it carries must be rejected'
 }
+
+fn test_forward_tsn_round_trip() {
+	forward := ForwardTsn{
+		new_cumulative_tsn: 900
+		streams:            [
+			ForwardTsnStream{
+				identifier:      1
+				sequence_number: 5
+			},
+			ForwardTsnStream{
+				identifier:      2
+				sequence_number: 9
+			},
+		]
+	}
+	decoded := unmarshal_forward_tsn(forward.marshal()!)!
+	assert decoded.new_cumulative_tsn == 900
+	assert decoded.streams.len == 2
+	assert decoded.streams[1].sequence_number == 9
+}
