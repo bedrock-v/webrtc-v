@@ -933,3 +933,40 @@ fn test_nothing_is_abandoned_against_a_peer_without_forward_tsn() {
 	message := pair.server.recv(10 * time.second)!
 	assert message.data == 'delivered anyway'.bytes()
 }
+
+fn test_a_fragmented_message_is_abandoned_whole() {
+	// Half a message reassembles into corrupt data, so abandoning has to take
+	// every fragment.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut pair := connect_over(mut client_pipe, mut server_pipe, quick_rto)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.set_stream_reliability(0, max_retransmits: 0)
+	client_pipe.drop_next = 1
+	large := []u8{len: 8000, init: u8(index & 0xff)}
+	pair.client.send(0, ppid_binary, large, true)!
+	pair.client.send(2, ppid_string, 'after'.bytes(), true)!
+
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == 'after'.bytes(), 'a partial reassembly leaked through'
+}
+
+fn test_the_stream_policy_can_be_read_back() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	assert pair.client.stream_reliability(3).is_reliable()
+
+	pair.client.set_stream_reliability(3, max_retransmits: 2)
+	policy := pair.client.stream_reliability(3)
+	assert !policy.is_reliable()
+	assert policy.max_retransmits? == 2
+
+	pair.client.set_stream_reliability(3, Reliability{})
+	assert pair.client.stream_reliability(3).is_reliable()
+}
