@@ -358,3 +358,18 @@ fn test_stream_sequence_comparison_wraps() {
 	assert !sequence_after(65535, 0)
 	assert !sequence_after(5, 5)
 }
+
+// -- Stream reassembly -----------------------------------------------------
+
+fn make_data(tsn u32, sequence u16, payload string, beginning bool, end bool, unordered bool) Data {
+	return Data{
+		tsn:                         tsn
+		stream_identifier:           1
+		stream_sequence_number:      sequence
+		payload_protocol_identifier: ppid_string
+		user_data:                   payload.bytes()
+		beginning:                   beginning
+		end:                         end
+		unordered:                   unordered
+	}
+}
