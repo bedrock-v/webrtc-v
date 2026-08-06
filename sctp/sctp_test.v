@@ -196,3 +196,12 @@ fn test_init_rejects_invalid_values() {
 	}
 	assert false, 'a zero initiate tag must be rejected'
 }
+
+fn test_init_decode_rejects_peer_zero_tag() {
+	// Twenty bytes of zeros: a syntactically valid INIT with a zero tag.
+	unmarshal_init([]u8{len: 20}) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a peer sending a zero initiate tag must be rejected'
+}
