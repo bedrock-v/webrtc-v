@@ -278,3 +278,13 @@ fn test_sack_rejects_inverted_gap_block() {
 		assert block.end >= block.start
 	}
 }
+
+fn test_sack_truncated_counts_are_rejected() {
+	// Declares two gap blocks but carries none.
+	raw := [u8(0), 0, 0, 1, 0, 0, 0x80, 0, 0, 2, 0, 0]
+	unmarshal_sack(raw) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a SACK declaring more gap blocks than it carries must be rejected'
+}
