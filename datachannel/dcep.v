@@ -39,3 +39,26 @@ pub enum ChannelType as u8 {
 	partial_reliable_rexmit_unordered = 0x81
 	partial_reliable_timed_unordered  = 0x82
 }
+
+pub fn (t ChannelType) str() string {
+	return match t {
+		.reliable { 'reliable' }
+		.partial_reliable_rexmit { 'partial-reliable (retransmits)' }
+		.partial_reliable_timed { 'partial-reliable (timed)' }
+		.reliable_unordered { 'reliable unordered' }
+		.partial_reliable_rexmit_unordered { 'partial-reliable unordered (retransmits)' }
+		.partial_reliable_timed_unordered { 'partial-reliable unordered (timed)' }
+	}
+}
+
+// is_ordered reports whether the channel preserves message order.
+@[inline]
+pub fn (t ChannelType) is_ordered() bool {
+	return u8(t) & 0x80 == 0
+}
+
+// is_reliable reports whether every message is guaranteed to arrive.
+@[inline]
+pub fn (t ChannelType) is_reliable() bool {
+	return u8(t) & 0x7F == 0
+}
