@@ -26,3 +26,27 @@ pub:
 	is_string bool
 	data      []u8
 }
+
+// text returns the message as a string. It is only meaningful when is_string
+// is set.
+pub fn (m Message) text() string {
+	return m.data.bytestr()
+}
+
+// ChannelState follows the RTCDataChannel readyState values.
+pub enum ChannelState {
+	// connecting: the OPEN has been sent and the ACK has not arrived.
+	connecting
+	open
+	closing
+	closed
+}
+
+pub fn (s ChannelState) str() string {
+	return match s {
+		.connecting { 'connecting' }
+		.open { 'open' }
+		.closing { 'closing' }
+		.closed { 'closed' }
+	}
+}
