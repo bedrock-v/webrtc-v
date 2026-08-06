@@ -94,3 +94,24 @@ fn test_chunk_length_below_the_header_is_rejected() {
 	}
 	assert false, 'a chunk length below the header size must be rejected'
 }
+
+fn test_chunk_count_is_bounded() {
+	mut chunks := []RawChunk{}
+	for _ in 0 .. 20 {
+		chunks << RawChunk{
+			typ: u8(ChunkType.cookie_ack)
+		}
+	}
+	raw := Packet{
+		verification_tag: 1
+		chunks:           chunks
+	}.marshal()!
+
+	Packet.decode(raw, 5) or {
+		assert err is DecodeError
+		// The same bytes decode fine under a larger limit.
+		Packet.decode(raw, default_max_chunks)!
+		return
+	}
+	assert false, 'the chunk count limit must be enforced'
+}
