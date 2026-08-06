@@ -443,3 +443,20 @@ fn test_forward_tsn_skips_an_ordered_stream() {
 	assert messages.len == 1
 	assert messages[0].data == 'third'.bytes()
 }
+
+// -- Association over a pipe -----------------------------------------------
+
+// PipeTransport is an in-memory datagram channel with the properties SCTP has
+// to cope with: message boundaries, loss, and a bounded write size.
+struct PipeTransport {
+mut:
+	inbound   chan []u8      = chan []u8{cap: 256}
+	peer      &PipeTransport = unsafe { nil }
+	mu        &sync.Mutex    = sync.new_mutex()
+	drop_next int
+	// drop_every discards one datagram in n, which is how the retransmission
+	// and gap handling get exercised.
+	drop_every int
+	sent       int
+	closed     bool
+}
