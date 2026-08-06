@@ -328,3 +328,11 @@ fn test_parameters_pad_to_a_word() {
 	assert find_parameter(decoded, param_forward_tsn_supported) != none
 	assert find_parameter(decoded, param_random) == none
 }
+
+fn test_parameter_length_below_header_is_rejected() {
+	unmarshal_parameters([u8(0), 7, 0, 2]) or {
+		assert err is DecodeError
+		return
+	}
+	assert false, 'a parameter length below its header must be rejected'
+}
