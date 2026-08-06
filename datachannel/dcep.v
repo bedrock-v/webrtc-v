@@ -177,3 +177,19 @@ pub fn Open.decode(data []u8) !Open {
 		protocol:              protocol.bytestr()
 	}
 }
+
+// ack_message is the whole of a DATA_CHANNEL_ACK.
+pub fn ack_message() []u8 {
+	return [message_type_ack]
+}
+
+// is_ack reports whether a DCEP payload is an acknowledgement.
+pub fn is_ack(data []u8) bool {
+	return data.len == 1 && data[0] == message_type_ack
+}
+
+fn short() DcepError {
+	return DcepError{
+		detail: 'DCEP message is shorter than its fields require'
+	}
+}
