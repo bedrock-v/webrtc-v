@@ -769,3 +769,29 @@ fn test_send_rejects_an_oversized_message() {
 	}
 	assert false, 'a message over the negotiated maximum must be refused'
 }
+
+fn test_operations_after_close_are_refused() {
+	mut pair := connect_pair(Config{})!
+	pair.server.close()
+	pair.client.close()
+
+	pair.client.send(0, ppid_string, 'x'.bytes(), true) or {
+		pair.client.recv(50 * time.millisecond) or { return }
+		assert false, 'receiving after close must fail'
+	}
+	assert false, 'sending after close must fail'
+}
+
+fn test_graceful_shutdown() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.send(0, ppid_string, 'last message'.bytes(), true)!
+	assert pair.server.recv(5 * time.second)!.data == 'last message'.bytes()
+
+	pair.client.shutdown(5 * time.second)!
+	assert pair.client.state() in [State.closed, .shutdown_sent, .aborted]
+}
