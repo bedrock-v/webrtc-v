@@ -517,3 +517,11 @@ fn (mut p PipeTransport) read(timeout time.Duration) ![]u8 {
 	}
 	return error('closed')
 }
+
+fn (mut p PipeTransport) max_write() int {
+	// Deliberately not a multiple of four. A limit that happens to be aligned
+	// hides a chunk-padding miscalculation, because the oversized packet lands
+	// exactly on the boundary instead of one byte past it. This is the figure a
+	// DTLS transport actually reports.
+	return 1163
+}
