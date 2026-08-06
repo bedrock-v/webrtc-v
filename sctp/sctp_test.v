@@ -431,3 +431,15 @@ fn test_reassembly_enforces_the_message_limit() {
 	}
 	assert false, 'a message over the limit must be rejected rather than buffered'
 }
+
+fn test_forward_tsn_skips_an_ordered_stream() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	// Sequence 2 arrives while 0 and 1 are still missing.
+	assert stream.accept(make_data(3, 2, 'third', true, true, false), default_max_message_size)!.len == 0
+	// The sender abandons 0 and 1; skipping to 1 releases what was waiting.
+	messages := stream.skip_to(1)
+	assert messages.len == 1
+	assert messages[0].data == 'third'.bytes()
+}
