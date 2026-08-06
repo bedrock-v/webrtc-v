@@ -242,3 +242,29 @@ fn test_empty_data_chunk_is_rejected() {
 	}
 	assert false, 'an empty DATA chunk must not be encodable'
 }
+
+fn test_sack_round_trip() {
+	sack := Sack{
+		cumulative_tsn_ack:         500
+		advertised_receiver_window: 32768
+		gap_ack_blocks:             [
+			GapAckBlock{
+				start: 2
+				end:   4
+			},
+			GapAckBlock{
+				start: 7
+				end:   7
+			},
+		]
+		duplicate_tsns:             [u32(498), 499]
+	}
+	decoded := unmarshal_sack(sack.marshal()!)!
+
+	assert decoded.cumulative_tsn_ack == 500
+	assert decoded.advertised_receiver_window == 32768
+	assert decoded.gap_ack_blocks.len == 2
+	assert decoded.gap_ack_blocks[0].start == 2
+	assert decoded.gap_ack_blocks[1].end == 7
+	assert decoded.duplicate_tsns == [u32(498), 499]
+}
