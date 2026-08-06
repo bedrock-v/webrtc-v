@@ -19,3 +19,23 @@ pub const message_type_open = u8(0x03)
 // without a ceiling one message could ask us to allocate 128 KiB of text.
 pub const max_label_bytes = 8192
 pub const max_protocol_bytes = 8192
+
+// ChannelType is the reliability and ordering a channel asks for
+// (RFC 8832 section 8.2.1).
+//
+// The unordered variants have the high bit set, which is why they are 0x80
+// apart from their ordered counterparts rather than sequential.
+pub enum ChannelType as u8 {
+	// reliable: every message arrives, in order. The default, and what a
+	// browser gives you when you pass no options.
+	reliable = 0x00
+	// partial_reliable_rexmit: a message is abandoned after a number of
+	// retransmissions. This is `maxRetransmits`.
+	partial_reliable_rexmit = 0x01
+	// partial_reliable_timed: a message is abandoned after a time. This is
+	// `maxPacketLifeTime`.
+	partial_reliable_timed            = 0x02
+	reliable_unordered                = 0x80
+	partial_reliable_rexmit_unordered = 0x81
+	partial_reliable_timed_unordered  = 0x82
+}
