@@ -50,3 +50,23 @@ pub fn (s ChannelState) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// ChannelOptions configures a channel, mirroring RTCDataChannelInit.
+@[params]
+pub struct ChannelOptions {
+pub:
+	// ordered preserves message order. Turning it off lets a later message be
+	// delivered while an earlier one is still being retransmitted, which is
+	// what a latency-sensitive application wants.
+	ordered bool = true
+	// max_retransmits abandons a message after this many retransmissions.
+	// Setting it makes the channel partially reliable.
+	max_retransmits ?u16
+	// max_packet_lifetime abandons a message after this long. It is the other
+	// way to make a channel partially reliable, and the two are mutually
+	// exclusive.
+	max_packet_lifetime ?u16
+	// protocol is an optional subprotocol name.
+	protocol string
+	priority u16
+}
