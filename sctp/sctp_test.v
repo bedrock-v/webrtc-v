@@ -877,3 +877,37 @@ fn test_an_unordered_message_is_abandoned_without_blocking_the_stream() {
 	assert message.data == 'here'.bytes()
 	assert message.unordered
 }
+
+fn test_a_message_is_abandoned_after_its_lifetime() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut pair := connect_over(mut client_pipe, mut server_pipe, quick_rto)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.set_stream_reliability(0, max_packet_lifetime: 20 * time.millisecond)
+	client_pipe.drop_next = 1
+	pair.client.send(0, ppid_string, 'stale'.bytes(), true)!
+	pair.client.send(2, ppid_string, 'fresh'.bytes(), true)!
+
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == 'fresh'.bytes()
+	assert message.stream_identifier == 2
+}
+
+fn test_a_reliable_stream_still_retransmits() {
+	// The policy is per stream, so an untouched stream must keep the delivery
+	// guarantee even while a partially reliable one is dropping messages.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut pair := connect_over(mut client_pipe, mut server_pipe, quick_rto)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	client_pipe.drop_next = 1
+	pair.client.send(0, ppid_string, 'must arrive'.bytes(), true)!
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == 'must arrive'.bytes()
+}
