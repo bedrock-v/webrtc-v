@@ -531,3 +531,9 @@ fn (mut p PipeTransport) close() {
 	p.closed = true
 	p.mu.unlock()
 }
+
+struct AssociationPair {
+mut:
+	client &Association
+	server &Association
+}
