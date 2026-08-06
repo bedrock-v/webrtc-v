@@ -574,3 +574,15 @@ fn connect_over_with(mut client_pipe PipeTransport, mut server_pipe PipeTranspor
 		server: server
 	}
 }
+
+fn test_association_establishes() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	assert pair.client.state() == .established
+	assert pair.server.state() == .established
+	assert pair.client.role() == .client
+	assert pair.server.role() == .server
+}
