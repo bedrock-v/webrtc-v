@@ -911,3 +911,25 @@ fn test_a_reliable_stream_still_retransmits() {
 	message := pair.server.recv(10 * time.second)!
 	assert message.data == 'must arrive'.bytes()
 }
+
+fn test_nothing_is_abandoned_against_a_peer_without_forward_tsn() {
+	// RFC 3758 section 3.1: partial reliability needs both ends. Against a peer
+	// that did not advertise it, a message must be delivered reliably rather
+	// than dropped into a gap the peer can never close.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut pair := connect_over_with(mut client_pipe, mut server_pipe, quick_rto, Config{
+		...quick_rto
+		partial_reliability: false
+	})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.set_stream_reliability(0, max_retransmits: 0)
+	client_pipe.drop_next = 1
+	pair.client.send(0, ppid_string, 'delivered anyway'.bytes(), true)!
+
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == 'delivered anyway'.bytes()
+}
