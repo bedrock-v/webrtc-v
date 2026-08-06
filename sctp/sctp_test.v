@@ -537,3 +537,8 @@ mut:
 	client &Association
 	server &Association
 }
+
+fn connect_pair(config Config) !AssociationPair {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	return connect_over(mut client_pipe, mut server_pipe, config)!
+}
