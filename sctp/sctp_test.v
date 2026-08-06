@@ -336,3 +336,18 @@ fn test_parameter_length_below_header_is_rejected() {
 	}
 	assert false, 'a parameter length below its header must be rejected'
 }
+
+// -- Sequence arithmetic ---------------------------------------------------
+
+fn test_tsn_comparisons_wrap() {
+	assert tsn_after(2, 1)
+	assert !tsn_after(1, 2)
+	assert !tsn_after(1, 1)
+	// Across the wrap: 0 comes after 0xFFFFFFFF.
+	assert tsn_after(0, 0xFFFFFFFF)
+	assert !tsn_after(0xFFFFFFFF, 0)
+	assert tsn_before(0xFFFFFFFF, 0)
+	assert tsn_distance(5, 1) == 4
+	assert tsn_distance(1, 5) == -4
+	assert tsn_distance(1, 0xFFFFFFFF) == 2
+}
