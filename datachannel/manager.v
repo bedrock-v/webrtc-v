@@ -98,3 +98,38 @@ fn (o ChannelOptions) channel_type() !ChannelType {
 	}
 	return if o.ordered { ChannelType.reliable } else { ChannelType.reliable_unordered }
 }
+
+fn (o ChannelOptions) reliability_parameter() u32 {
+	if retransmits := o.max_retransmits {
+		return u32(retransmits)
+	}
+	if lifetime := o.max_packet_lifetime {
+		return u32(lifetime)
+	}
+	return 0
+}
+
+// ChannelError is returned when a channel cannot be created or used.
+pub struct ChannelError {
+pub:
+	reason ChannelErrorReason
+	detail string
+}
+
+pub enum ChannelErrorReason {
+	closed
+	wrong_state
+	timed_out
+	too_large
+	// exhausted: no stream identifier is available.
+	exhausted
+	protocol
+}
+
+pub fn (e ChannelError) msg() string {
+	return 'datachannel: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e ChannelError) code() int {
+	return int(e.reason) + 10
+}
