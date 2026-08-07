@@ -74,3 +74,9 @@ fn channel_type_from_value(v u8) ?ChannelType {
 		else { none }
 	}
 }
+
+// DcepError is returned when a DCEP message cannot be built or parsed.
+pub struct DcepError {
+pub:
+	detail string
+}
