@@ -151,3 +151,39 @@ pub:
 	// than opening through DCEP.
 	negotiated bool
 }
+
+// state returns the channel's ready state.
+pub fn (mut c Channel) state() ChannelState {
+	c.mu.lock()
+	defer {
+		c.mu.unlock()
+	}
+	return c.state
+}
+
+// ordered reports whether the channel preserves message order.
+@[inline]
+pub fn (c &Channel) ordered() bool {
+	return c.channel_type.is_ordered()
+}
+
+// reliable reports whether every message is guaranteed to arrive.
+@[inline]
+pub fn (c &Channel) reliable() bool {
+	return c.channel_type.is_reliable()
+}
+
+// Config configures a manager.
+@[params]
+pub struct Config {
+pub:
+	// is_dtls_client decides which stream identifiers this end may use.
+	//
+	// RFC 8832 section 6 gives the DTLS client the even identifiers and the
+	// server the odd ones. Without that split both ends could pick the same
+	// stream for different channels and neither would notice until the messages
+	// interleaved.
+	is_dtls_client bool           = true
+	max_channels   int            = max_channels
+	logger         logging.Logger = logging.nop()
+}
