@@ -692,3 +692,31 @@ fn test_empty_message_round_trips() {
 	message := pair.server.recv(5 * time.second)!
 	assert message.payload_protocol_identifier == ppid_string_empty
 }
+
+fn test_delivery_survives_packet_loss() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	// Drop one datagram in four, in both directions.
+	client_pipe.drop_every = 4
+	server_pipe.drop_every = 4
+
+	mut client := Association.new(client_pipe, role: .client, rto_initial: 100 * time.millisecond)!
+	mut server := Association.new(server_pipe, role: .server, rto_initial: 100 * time.millisecond)!
+	defer {
+		client.close()
+		server.close()
+	}
+
+	server_thread := spawn fn (mut a Association) ! {
+		a.connect(20 * time.second)!
+	}(mut server)
+	client.connect(20 * time.second)!
+	server_thread.wait()!
+
+	for i in 0 .. 30 {
+		client.send(0, ppid_string, 'lossy ${i}'.bytes(), true)!
+	}
+	for i in 0 .. 30 {
+		message := server.recv(20 * time.second)!
+		assert message.data.bytestr() == 'lossy ${i}', 'out of order or corrupt at ${i}'
+	}
+}
