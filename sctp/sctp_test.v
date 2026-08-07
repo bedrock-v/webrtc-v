@@ -953,3 +953,20 @@ fn test_a_fragmented_message_is_abandoned_whole() {
 	message := pair.server.recv(10 * time.second)!
 	assert message.data == 'after'.bytes(), 'a partial reassembly leaked through'
 }
+
+fn test_the_stream_policy_can_be_read_back() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	assert pair.client.stream_reliability(3).is_reliable()
+
+	pair.client.set_stream_reliability(3, max_retransmits: 2)
+	policy := pair.client.stream_reliability(3)
+	assert !policy.is_reliable()
+	assert policy.max_retransmits? == 2
+
+	pair.client.set_stream_reliability(3, Reliability{})
+	assert pair.client.stream_reliability(3).is_reliable()
+}
