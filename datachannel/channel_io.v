@@ -116,3 +116,37 @@ pub fn (mut c Channel) close() {
 	c.mu.unlock()
 	c.inbound.close()
 }
+
+fn (mut c Channel) mark_open() {
+	c.mu.lock()
+	if c.state == .connecting {
+		c.state = .open
+	}
+	c.mu.unlock()
+}
+
+fn (mut c Channel) mark_closed() {
+	c.mu.lock()
+	if c.state == .closed {
+		c.mu.unlock()
+		return
+	}
+	c.state = .closed
+	c.mu.unlock()
+	c.inbound.close()
+}
+
+fn (mut c Channel) deliver(message Message) bool {
+	if c.state() != .open {
+		return false
+	}
+	select {
+		c.inbound <- message {
+			return true
+		}
+		else {
+			return false
+		}
+	}
+	return false
+}
