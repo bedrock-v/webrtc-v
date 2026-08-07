@@ -829,3 +829,10 @@ fn test_repeated_large_transfers() {
 		pair.server.close()
 	}
 }
+
+// quick_rto shortens the retransmission timer, so a test that has to wait for
+// one takes milliseconds rather than seconds.
+const quick_rto = Config{
+	rto_initial: 100 * time.millisecond
+	rto_min:     50 * time.millisecond
+}
