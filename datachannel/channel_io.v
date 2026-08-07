@@ -170,3 +170,38 @@ fn (mut m Manager) run() {
 		m.route(message)
 	}
 }
+
+// route dispatches one SCTP message.
+fn (mut m Manager) route(message sctp.Message) {
+	if message.payload_protocol_identifier == sctp.ppid_dcep {
+		m.handle_dcep(message)
+		return
+	}
+
+	m.mu.lock()
+	mut channel := m.channels[message.stream_identifier] or {
+		m.mu.unlock()
+		// Data for a stream with no channel. A peer that opens a channel and
+		// sends on it in the same flight can produce this legitimately when the
+		// OPEN is still being processed; there is nothing useful to do but drop
+		// it, and the channel's reliability guarantees do not extend to before
+		// it existed.
+		m.log.debug('dropped ${message.data.len} bytes for stream ${message.stream_identifier}, which has no channel')
+		return
+	}
+	m.mu.unlock()
+
+	is_string := message.payload_protocol_identifier == sctp.ppid_string
+		|| message.payload_protocol_identifier == sctp.ppid_string_empty
+		|| message.payload_protocol_identifier == sctp.ppid_string_partial
+	// An empty message is carried as one padding byte under its own identifier,
+	// so the byte is dropped here and the application sees the empty message it
+	// was sent.
+	empty := message.payload_protocol_identifier == sctp.ppid_string_empty
+		|| message.payload_protocol_identifier == sctp.ppid_binary_empty
+	data := if empty { []u8{} } else { message.data }
+
+	if !channel.deliver(Message{ is_string: is_string, data: data }) {
+		m.log.warn('channel on stream ${message.stream_identifier} is not accepting messages; dropped ${data.len} bytes')
+	}
+}
