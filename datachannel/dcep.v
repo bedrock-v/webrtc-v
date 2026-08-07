@@ -7,3 +7,9 @@
 // reliability; DCEP is the two-message exchange that says which of them this
 // channel wants, and gives it a label.
 module datachannel
+
+import webrtc.internal.codec
+
+// DCEP message types (RFC 8832 section 8.2.1).
+pub const message_type_ack = u8(0x02)
+pub const message_type_open = u8(0x03)
