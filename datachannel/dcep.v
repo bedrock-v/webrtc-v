@@ -132,3 +132,48 @@ pub fn (o Open) marshal() ![]u8 {
 	w.bytes(protocol)
 	return w.buf
 }
+
+// Open.decode parses an OPEN message.
+pub fn Open.decode(data []u8) !Open {
+	mut r := codec.Reader.new(data)
+	typ := r.u8('message type') or { return short() }
+	if typ != message_type_open {
+		return DcepError{
+			detail: 'message type 0x${typ.hex()} is not DATA_CHANNEL_OPEN'
+		}
+	}
+	raw_channel_type := r.u8('channel type') or { return short() }
+	channel_type := channel_type_from_value(raw_channel_type) or {
+		return DcepError{
+			detail: 'unknown channel type 0x${raw_channel_type.hex()}'
+		}
+	}
+	priority := r.u16('priority') or { return short() }
+	reliability := r.u32('reliability parameter') or { return short() }
+	label_length := int(r.u16('label length') or { return short() })
+	protocol_length := int(r.u16('protocol length') or { return short() })
+
+	if label_length > max_label_bytes || protocol_length > max_protocol_bytes {
+		return DcepError{
+			detail: 'OPEN declares a label of ${label_length} and a protocol of ${protocol_length} bytes, over the limits'
+		}
+	}
+	label := r.bytes(label_length, 'label') or {
+		return DcepError{
+			detail: 'OPEN declares a ${label_length}-byte label but only ${r.remaining()} bytes remain'
+		}
+	}
+	protocol := r.bytes(protocol_length, 'protocol') or {
+		return DcepError{
+			detail: 'OPEN declares a ${protocol_length}-byte protocol but only ${r.remaining()} bytes remain'
+		}
+	}
+
+	return Open{
+		channel_type:          channel_type
+		priority:              priority
+		reliability_parameter: reliability
+		label:                 label.bytestr()
+		protocol:              protocol.bytestr()
+	}
+}
