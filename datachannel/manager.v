@@ -16,3 +16,13 @@ import webrtc.sctp
 // max_channels bounds how many channels one association may carry. Each one is
 // state we hold on behalf of a peer that can open them unilaterally.
 pub const max_channels = 512
+
+// Message is what an application reads from a channel.
+pub struct Message {
+pub:
+	// is_string distinguishes a text message from a binary one. It is carried
+	// in the SCTP payload protocol identifier, not in the bytes, which is how
+	// an empty string stays distinguishable from empty binary data.
+	is_string bool
+	data      []u8
+}
