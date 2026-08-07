@@ -56,3 +56,9 @@ pub fn (t ChannelType) str() string {
 pub fn (t ChannelType) is_ordered() bool {
 	return u8(t) & 0x80 == 0
 }
+
+// is_reliable reports whether every message is guaranteed to arrive.
+@[inline]
+pub fn (t ChannelType) is_reliable() bool {
+	return u8(t) & 0x7F == 0
+}
