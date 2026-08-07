@@ -105,3 +105,30 @@ pub:
 	// protocol is a subprotocol name, in the sense the WebSocket API uses.
 	protocol string
 }
+
+// marshal serialises an OPEN message.
+pub fn (o Open) marshal() ![]u8 {
+	label := o.label.bytes()
+	protocol := o.protocol.bytes()
+	if label.len > max_label_bytes {
+		return DcepError{
+			detail: 'label of ${label.len} bytes exceeds the ${max_label_bytes}-byte limit'
+		}
+	}
+	if protocol.len > max_protocol_bytes {
+		return DcepError{
+			detail: 'protocol of ${protocol.len} bytes exceeds the ${max_protocol_bytes}-byte limit'
+		}
+	}
+
+	mut w := codec.Writer.with_capacity(12 + label.len + protocol.len)
+	w.u8(message_type_open)
+	w.u8(u8(o.channel_type))
+	w.u16(o.priority)
+	w.u32(o.reliability_parameter)
+	w.u16(u16(label.len))
+	w.u16(u16(protocol.len))
+	w.bytes(label)
+	w.bytes(protocol)
+	return w.buf
+}
