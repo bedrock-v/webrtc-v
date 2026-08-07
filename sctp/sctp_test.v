@@ -753,3 +753,19 @@ fn test_send_rejects_an_unknown_stream() {
 	}
 	assert false, 'a stream outside the negotiated count must be refused'
 }
+
+fn test_send_rejects_an_oversized_message() {
+	mut pair := connect_pair(max_message_size: 1000)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	pair.client.send(0, ppid_binary, []u8{len: 1001}, true) or {
+		assert err is AssociationError
+		if err is AssociationError {
+			assert err.reason == .too_large
+		}
+		return
+	}
+	assert false, 'a message over the negotiated maximum must be refused'
+}
