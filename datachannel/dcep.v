@@ -88,3 +88,20 @@ pub fn (e DcepError) msg() string {
 pub fn (e DcepError) code() int {
 	return 1
 }
+
+// Open is a DATA_CHANNEL_OPEN message.
+pub struct Open {
+pub:
+	channel_type ChannelType = .reliable
+	// priority is advisory. Nothing in this implementation acts on it, and
+	// browsers largely ignore it too, but it round-trips so a peer that does
+	// use it sees what was asked for.
+	priority u16
+	// reliability_parameter is the retransmission count or the lifetime in
+	// milliseconds, depending on the channel type. It is zero for a reliable
+	// channel.
+	reliability_parameter u32
+	label                 string
+	// protocol is a subprotocol name, in the sense the WebSocket API uses.
+	protocol string
+}
