@@ -622,3 +622,22 @@ fn test_ordering_is_preserved_within_a_stream() {
 		assert message.data.bytestr() == 'message ${i}', 'out of order at ${i}'
 	}
 }
+
+fn test_streams_are_independent() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.send(1, ppid_string, 'on one'.bytes(), true)!
+	pair.client.send(2, ppid_string, 'on two'.bytes(), true)!
+
+	mut seen := map[u16]string{}
+	for _ in 0 .. 2 {
+		message := pair.server.recv(5 * time.second)!
+		seen[message.stream_identifier] = message.data.bytestr()
+	}
+	assert seen[u16(1)] == 'on one'
+	assert seen[u16(2)] == 'on two'
+}
