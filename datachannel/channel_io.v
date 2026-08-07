@@ -205,3 +205,70 @@ fn (mut m Manager) route(message sctp.Message) {
 		m.log.warn('channel on stream ${message.stream_identifier} is not accepting messages; dropped ${data.len} bytes')
 	}
 }
+
+// handle_dcep processes a channel establishment message.
+fn (mut m Manager) handle_dcep(message sctp.Message) {
+	if is_ack(message.data) {
+		m.mu.lock()
+		mut channel := m.channels[message.stream_identifier] or {
+			m.mu.unlock()
+			m.log.debug('acknowledgement for stream ${message.stream_identifier}, which has no channel')
+			return
+		}
+		m.mu.unlock()
+		channel.mark_open()
+		return
+	}
+
+	open := Open.decode(message.data) or {
+		m.log.debug('malformed channel open on stream ${message.stream_identifier}: ${err.msg()}')
+		return
+	}
+
+	m.mu.lock()
+	if m.channels.len >= m.config.max_channels {
+		m.mu.unlock()
+		m.log.warn('refusing a channel on stream ${message.stream_identifier}: already carrying ${m.config.max_channels}')
+		return
+	}
+	if message.stream_identifier in m.channels {
+		m.mu.unlock()
+		// Both ends opened a channel on the same stream. That should not happen
+		// - the identifier parity keeps the two sides apart - so it is a peer
+		// bug, and taking the existing channel's stream would be worse.
+		m.log.warn('the peer opened a channel on stream ${message.stream_identifier}, which is already in use')
+		return
+	}
+	mut channel := &Channel{
+		manager:           m
+		state:             .open
+		stream_identifier: message.stream_identifier
+		label:             open.label
+		protocol:          open.protocol
+		channel_type:      open.channel_type
+	}
+	m.channels[message.stream_identifier] = channel
+	m.mu.unlock()
+
+	// A channel is one thing with one policy, so what the peer asked for
+	// applies to what we send on it too.
+	m.apply_negotiated_reliability(message.stream_identifier, open.channel_type,
+		open.reliability_parameter)
+
+	m.association.send(message.stream_identifier, sctp.ppid_dcep, ack_message(), true) or {
+		m.log.warn('could not acknowledge the channel on stream ${message.stream_identifier}: ${err.msg()}')
+		channel.mark_closed()
+		m.forget(message.stream_identifier)
+		return
+	}
+	m.log.debug('peer opened channel "${open.label}" on stream ${message.stream_identifier}')
+
+	select {
+		m.incoming <- channel {}
+		else {
+			m.log.warn('the incoming channel queue is full; channel "${open.label}" was dropped')
+			channel.mark_closed()
+			m.forget(message.stream_identifier)
+		}
+	}
+}
