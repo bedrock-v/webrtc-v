@@ -720,3 +720,19 @@ fn test_delivery_survives_packet_loss() {
 		assert message.data.bytestr() == 'lossy ${i}', 'out of order or corrupt at ${i}'
 	}
 }
+
+fn test_send_before_established_is_refused() {
+	mut pipe, mut unused_peer := new_pipe_pair()
+	mut association := Association.new(pipe, role: .client)!
+	defer {
+		association.close()
+	}
+	association.send(0, ppid_string, 'x'.bytes(), true) or {
+		assert err is AssociationError
+		if err is AssociationError {
+			assert err.reason == .wrong_state
+		}
+		return
+	}
+	assert false, 'sending before the association is established must fail'
+}
