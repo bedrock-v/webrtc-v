@@ -736,3 +736,20 @@ fn test_send_before_established_is_refused() {
 	}
 	assert false, 'sending before the association is established must fail'
 }
+
+fn test_send_rejects_an_unknown_stream() {
+	mut pair := connect_pair(streams: 4)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	pair.client.send(0, ppid_string, 'fine'.bytes(), true)!
+	pair.client.send(9, ppid_string, 'nope'.bytes(), true) or {
+		assert err is AssociationError
+		if err is AssociationError {
+			assert err.reason == .no_stream
+		}
+		return
+	}
+	assert false, 'a stream outside the negotiated count must be refused'
+}
