@@ -187,3 +187,35 @@ pub:
 	max_channels   int            = max_channels
 	logger         logging.Logger = logging.nop()
 }
+
+// Manager routes data channels over one SCTP association.
+pub struct Manager {
+mut:
+	association &sctp.Association
+	config      Config
+	log         logging.Logger
+	mu          &sync.Mutex = sync.new_mutex()
+
+	channels map[u16]&Channel
+	// next_stream is the next identifier to try, stepping by two so it stays on
+	// our side of the split.
+	next_stream u16
+
+	// incoming carries channels the peer opened.
+	incoming chan &Channel = chan &Channel{cap: 32}
+
+	closed  bool
+	threads []thread
+}
+
+// Manager.new starts routing over an established association.
+pub fn Manager.new(association &sctp.Association, config Config) &Manager {
+	mut manager := &Manager{
+		association: unsafe { association }
+		config:      config
+		log:         config.logger.with_scope('datachannel')
+		next_stream: if config.is_dtls_client { u16(0) } else { u16(1) }
+	}
+	manager.threads << spawn manager.run()
+	return manager
+}
