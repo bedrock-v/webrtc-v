@@ -303,3 +303,43 @@ pub fn (mut m Manager) create(label string, options ChannelOptions, timeout time
 		detail: 'the peer did not acknowledge the channel within ${timeout.milliseconds()}ms'
 	}
 }
+
+// create_negotiated registers a channel both applications already agreed on,
+// without any DCEP exchange.
+//
+// The stream identifier is the application's to choose and must match on both
+// sides. This is RTCDataChannelInit's `negotiated: true`, and it exists so a
+// channel can be used immediately without waiting a round trip.
+pub fn (mut m Manager) create_negotiated(stream_identifier u16, label string, options ChannelOptions) !&Channel {
+	channel_type := options.channel_type()!
+
+	m.mu.lock()
+	defer {
+		m.mu.unlock()
+	}
+	if m.closed {
+		return ChannelError{
+			reason: .closed
+			detail: 'the manager is closed'
+		}
+	}
+	if stream_identifier in m.channels {
+		return ChannelError{
+			reason: .wrong_state
+			detail: 'stream ${stream_identifier} already carries a channel'
+		}
+	}
+
+	mut channel := &Channel{
+		manager:           m
+		state:             .open
+		stream_identifier: stream_identifier
+		label:             label
+		protocol:          options.protocol
+		channel_type:      channel_type
+		negotiated:        true
+	}
+	m.channels[stream_identifier] = channel
+	m.apply_reliability(stream_identifier, options)
+	return channel
+}
