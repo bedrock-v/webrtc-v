@@ -187,3 +187,9 @@ pub fn ack_message() []u8 {
 pub fn is_ack(data []u8) bool {
 	return data.len == 1 && data[0] == message_type_ack
 }
+
+fn short() DcepError {
+	return DcepError{
+		detail: 'DCEP message is shorter than its fields require'
+	}
+}
