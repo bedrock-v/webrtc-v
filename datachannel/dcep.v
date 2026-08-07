@@ -177,3 +177,8 @@ pub fn Open.decode(data []u8) !Open {
 		protocol:              protocol.bytestr()
 	}
 }
+
+// ack_message is the whole of a DATA_CHANNEL_ACK.
+pub fn ack_message() []u8 {
+	return [message_type_ack]
+}
