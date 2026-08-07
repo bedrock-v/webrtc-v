@@ -658,3 +658,22 @@ fn test_large_message_is_fragmented_and_reassembled() {
 	assert message.data.len == payload.len
 	assert message.data == payload
 }
+
+fn test_unordered_messages_are_delivered() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	for i in 0 .. 10 {
+		pair.client.send(0, ppid_string, 'unordered ${i}'.bytes(), false)!
+	}
+	mut received := 0
+	for _ in 0 .. 10 {
+		message := pair.server.recv(5 * time.second)!
+		assert message.unordered
+		received++
+	}
+	assert received == 10
+}
