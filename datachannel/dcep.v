@@ -80,3 +80,11 @@ pub struct DcepError {
 pub:
 	detail string
 }
+
+pub fn (e DcepError) msg() string {
+	return 'datachannel: ${e.detail}'
+}
+
+pub fn (e DcepError) code() int {
+	return 1
+}
