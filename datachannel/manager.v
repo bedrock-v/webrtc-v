@@ -219,3 +219,87 @@ pub fn Manager.new(association &sctp.Association, config Config) &Manager {
 	manager.threads << spawn manager.run()
 	return manager
 }
+
+// create opens a channel and waits for the peer to acknowledge it.
+pub fn (mut m Manager) create(label string, options ChannelOptions, timeout time.Duration) !&Channel {
+	channel_type := options.channel_type()!
+
+	m.mu.lock()
+	if m.closed {
+		m.mu.unlock()
+		return ChannelError{
+			reason: .closed
+			detail: 'the manager is closed'
+		}
+	}
+	if m.channels.len >= m.config.max_channels {
+		m.mu.unlock()
+		return ChannelError{
+			reason: .exhausted
+			detail: 'already carrying ${m.channels.len} channels'
+		}
+	}
+	stream := m.allocate_stream() or {
+		m.mu.unlock()
+		return ChannelError{
+			reason: .exhausted
+			detail: 'no stream identifier is available'
+		}
+	}
+
+	mut channel := &Channel{
+		manager:           m
+		state:             .connecting
+		stream_identifier: stream
+		label:             label
+		protocol:          options.protocol
+		channel_type:      channel_type
+	}
+	m.channels[stream] = channel
+	m.mu.unlock()
+
+	// The stream's delivery policy has to be in place before any data goes out
+	// on it, or the first message would be sent reliably whatever the channel
+	// was asked for.
+	m.apply_reliability(stream, options)
+
+	open := Open{
+		channel_type:          channel_type
+		priority:              options.priority
+		reliability_parameter: options.reliability_parameter()
+		label:                 label
+		protocol:              options.protocol
+	}
+	// The OPEN always goes out ordered and reliable, whatever the channel will
+	// be: it has to arrive, and it has to arrive before the data that follows.
+	m.association.send(stream, sctp.ppid_dcep, open.marshal()!, true) or {
+		m.forget(stream)
+		return ChannelError{
+			reason: .closed
+			detail: 'sending the channel open: ${err.msg()}'
+		}
+	}
+
+	deadline := time.now().add(timeout)
+	for time.now() < deadline {
+		match channel.state() {
+			.open {
+				m.log.debug('channel "${label}" open on stream ${stream}')
+				return channel
+			}
+			.closed {
+				return ChannelError{
+					reason: .closed
+					detail: 'the channel closed while opening'
+				}
+			}
+			else {}
+		}
+		time.sleep(2 * time.millisecond)
+	}
+	m.forget(stream)
+	return ChannelError{
+		reason: .timed_out
+		detail: 'the peer did not acknowledge the channel within ${timeout.milliseconds()}ms'
+	}
+}
