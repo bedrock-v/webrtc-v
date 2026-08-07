@@ -50,3 +50,9 @@ pub fn (t ChannelType) str() string {
 		.partial_reliable_timed_unordered { 'partial-reliable unordered (timed)' }
 	}
 }
+
+// is_ordered reports whether the channel preserves message order.
+@[inline]
+pub fn (t ChannelType) is_ordered() bool {
+	return u8(t) & 0x80 == 0
+}
