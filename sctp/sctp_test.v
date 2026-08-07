@@ -836,3 +836,26 @@ const quick_rto = Config{
 	rto_initial: 100 * time.millisecond
 	rto_min:     50 * time.millisecond
 }
+
+fn test_a_message_is_abandoned_after_its_retransmission_limit() {
+	// A stream told to give up after zero retransmissions must not stall the
+	// association when its first attempt is lost: the message is dropped, the
+	// peer is told to skip it, and the reliable stream behind it still arrives.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut pair := connect_over(mut client_pipe, mut server_pipe, quick_rto)!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	pair.client.set_stream_reliability(0, max_retransmits: 0)
+	client_pipe.drop_next = 1
+	pair.client.send(0, ppid_string, 'lost'.bytes(), true)!
+	pair.client.send(2, ppid_string, 'kept'.bytes(), true)!
+
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == 'kept'.bytes(), 'the abandoned message should not arrive'
+	assert message.stream_identifier == 2
+	assert pair.client.state() == .established
+	assert pair.server.state() == .established
+}
