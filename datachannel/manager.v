@@ -133,3 +133,21 @@ pub fn (e ChannelError) msg() string {
 pub fn (e ChannelError) code() int {
 	return int(e.reason) + 10
 }
+
+// Channel is one data channel.
+pub struct Channel {
+mut:
+	manager &Manager    = unsafe { nil }
+	mu      &sync.Mutex = sync.new_mutex()
+	state   ChannelState
+	// inbound carries messages to the application.
+	inbound chan Message = chan Message{cap: 128}
+pub:
+	stream_identifier u16
+	label             string
+	protocol          string
+	channel_type      ChannelType
+	// negotiated marks a channel the application declared on both sides rather
+	// than opening through DCEP.
+	negotiated bool
+}
