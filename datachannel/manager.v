@@ -440,3 +440,27 @@ fn (mut m Manager) is_closed() bool {
 	}
 	return m.closed
 }
+
+// close shuts the manager down. The association is not closed: it belongs to
+// the caller, which may still be using it for something else.
+pub fn (mut m Manager) close() {
+	m.mu.lock()
+	if m.closed {
+		m.mu.unlock()
+		return
+	}
+	m.closed = true
+	mut channels := m.channels.values()
+	m.mu.unlock()
+
+	for mut channel in channels {
+		channel.mark_closed()
+	}
+	m.incoming.close()
+	for handle in m.threads {
+		handle.wait()
+	}
+	m.mu.lock()
+	m.threads.clear()
+	m.mu.unlock()
+}
