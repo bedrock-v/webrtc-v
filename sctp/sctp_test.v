@@ -641,3 +641,20 @@ fn test_streams_are_independent() {
 	assert seen[u16(1)] == 'on one'
 	assert seen[u16(2)] == 'on two'
 }
+
+fn test_large_message_is_fragmented_and_reassembled() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	// Well over the 1200-byte transport limit, so it must be split across many
+	// chunks and put back together.
+	payload := []u8{len: 40000, init: u8(index % 251)}
+	pair.client.send(0, ppid_binary, payload, true)!
+
+	message := pair.server.recv(20 * time.second)!
+	assert message.data.len == payload.len
+	assert message.data == payload
+}
