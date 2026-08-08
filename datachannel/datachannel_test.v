@@ -72,3 +72,27 @@ fn test_ack_message() {
 	assert !is_ack([u8(0x03)])
 	assert !is_ack([u8(0x02), 0x00])
 }
+
+fn test_channel_options_map_to_types() {
+	assert ChannelOptions{}.channel_type()! == .reliable
+	assert ChannelOptions{
+		ordered: false
+	}.channel_type()! == .reliable_unordered
+	assert ChannelOptions{
+		max_retransmits: u16(3)
+	}.channel_type()! == .partial_reliable_rexmit
+	assert ChannelOptions{
+		max_retransmits: u16(3)
+		ordered:         false
+	}.channel_type()! == .partial_reliable_rexmit_unordered
+	assert ChannelOptions{
+		max_packet_lifetime: u16(500)
+	}.channel_type()! == .partial_reliable_timed
+	assert ChannelOptions{
+		max_retransmits: u16(3)
+	}.reliability_parameter() == 3
+	assert ChannelOptions{
+		max_packet_lifetime: u16(500)
+	}.reliability_parameter() == 500
+	assert ChannelOptions{}.reliability_parameter() == 0
+}
