@@ -96,3 +96,35 @@ fn test_channel_options_map_to_types() {
 	}.reliability_parameter() == 500
 	assert ChannelOptions{}.reliability_parameter() == 0
 }
+
+fn test_channel_options_reject_both_limits() {
+	// RFC 8832 section 6.1: a channel is reliable, retransmit-limited or
+	// time-limited, never two of them.
+	options := ChannelOptions{
+		max_retransmits:     u16(3)
+		max_packet_lifetime: u16(500)
+	}
+	options.channel_type() or { return }
+	assert false, 'setting both reliability limits must be rejected'
+}
+
+// -- Over a real association -----------------------------------------------
+
+struct PipeTransport {
+mut:
+	inbound chan []u8      = chan []u8{cap: 512}
+	peer    &PipeTransport = unsafe { nil }
+	mu      &sync.Mutex    = sync.new_mutex()
+	closed  bool
+	// drop_next discards this many outgoing datagrams, which is how a lost
+	// message is arranged for.
+	drop_next int
+}
+
+fn new_pipe_pair() (&PipeTransport, &PipeTransport) {
+	mut a := &PipeTransport{}
+	mut b := &PipeTransport{}
+	a.peer = b
+	b.peer = a
+	return a, b
+}
