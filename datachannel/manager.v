@@ -108,3 +108,10 @@ fn (o ChannelOptions) reliability_parameter() u32 {
 	}
 	return 0
 }
+
+// ChannelError is returned when a channel cannot be created or used.
+pub struct ChannelError {
+pub:
+	reason ChannelErrorReason
+	detail string
+}
