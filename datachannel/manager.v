@@ -32,3 +32,12 @@ pub:
 pub fn (m Message) text() string {
 	return m.data.bytestr()
 }
+
+// ChannelState follows the RTCDataChannel readyState values.
+pub enum ChannelState {
+	// connecting: the OPEN has been sent and the ACK has not arrived.
+	connecting
+	open
+	closing
+	closed
+}
