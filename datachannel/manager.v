@@ -98,3 +98,13 @@ fn (o ChannelOptions) channel_type() !ChannelType {
 	}
 	return if o.ordered { ChannelType.reliable } else { ChannelType.reliable_unordered }
 }
+
+fn (o ChannelOptions) reliability_parameter() u32 {
+	if retransmits := o.max_retransmits {
+		return u32(retransmits)
+	}
+	if lifetime := o.max_packet_lifetime {
+		return u32(lifetime)
+	}
+	return 0
+}
