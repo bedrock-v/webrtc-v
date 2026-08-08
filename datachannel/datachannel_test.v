@@ -128,3 +128,35 @@ fn new_pipe_pair() (&PipeTransport, &PipeTransport) {
 	b.peer = a
 	return a, b
 }
+
+fn (mut p PipeTransport) write(data []u8) !int {
+	p.mu.lock()
+	closed := p.closed
+	p.mu.unlock()
+	if closed {
+		return error('pipe closed')
+	}
+	if data.len > p.max_write() {
+		return error('datagram of ${data.len} bytes exceeds the limit')
+	}
+	p.mu.lock()
+	mut drop := false
+	if p.drop_next > 0 {
+		p.drop_next--
+		drop = true
+	}
+	p.mu.unlock()
+	if drop {
+		return data.len
+	}
+
+	mut peer := p.peer
+	copy := data.clone()
+	select {
+		peer.inbound <- copy {}
+		else {
+			return error('peer queue full')
+		}
+	}
+	return data.len
+}
