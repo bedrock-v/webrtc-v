@@ -70,3 +70,31 @@ pub:
 	protocol string
 	priority u16
 }
+
+// channel_type derives the DCEP channel type from the options.
+fn (o ChannelOptions) channel_type() !ChannelType {
+	retransmits := o.max_retransmits
+	lifetime := o.max_packet_lifetime
+	if retransmits != none && lifetime != none {
+		// RFC 8832 section 6.1: a channel is reliable, retransmit-limited or
+		// time-limited, and the two limits cannot both apply.
+		return DcepError{
+			detail: 'max_retransmits and max_packet_lifetime cannot both be set'
+		}
+	}
+	if retransmits != none {
+		return if o.ordered {
+			ChannelType.partial_reliable_rexmit
+		} else {
+			ChannelType.partial_reliable_rexmit_unordered
+		}
+	}
+	if lifetime != none {
+		return if o.ordered {
+			ChannelType.partial_reliable_timed
+		} else {
+			ChannelType.partial_reliable_timed_unordered
+		}
+	}
+	return if o.ordered { ChannelType.reliable } else { ChannelType.reliable_unordered }
+}
