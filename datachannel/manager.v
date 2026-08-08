@@ -115,3 +115,13 @@ pub:
 	reason ChannelErrorReason
 	detail string
 }
+
+pub enum ChannelErrorReason {
+	closed
+	wrong_state
+	timed_out
+	too_large
+	// exhausted: no stream identifier is available.
+	exhausted
+	protocol
+}
