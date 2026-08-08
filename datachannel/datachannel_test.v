@@ -43,3 +43,32 @@ fn test_channel_type_properties() {
 	assert !ChannelType.partial_reliable_timed_unordered.is_ordered()
 	assert !ChannelType.partial_reliable_timed_unordered.is_reliable()
 }
+
+fn test_open_rejects_malformed_input() {
+	cases := [
+		[]u8{}, // empty
+		[u8(0x02)], // an ACK, not an OPEN
+		[u8(0x03), 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // unknown channel type
+		[u8(0x03), 0x00, 0, 0, 0, 0, 0, 0], // truncated header
+		[u8(0x03), 0x00, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0], // label longer than the body
+	]
+	for encoded in cases {
+		Open.decode(encoded) or { continue }
+		assert false, 'expected ${encoded.hex()} to be rejected'
+	}
+}
+
+fn test_open_enforces_label_limit() {
+	long := Open{
+		label: 'x'.repeat(max_label_bytes + 1)
+	}
+	long.marshal() or { return }
+	assert false, 'an over-long label must be rejected'
+}
+
+fn test_ack_message() {
+	assert is_ack(ack_message())
+	assert !is_ack([]u8{})
+	assert !is_ack([u8(0x03)])
+	assert !is_ack([u8(0x02), 0x00])
+}
