@@ -41,3 +41,12 @@ pub enum ChannelState {
 	closing
 	closed
 }
+
+pub fn (s ChannelState) str() string {
+	return match s {
+		.connecting { 'connecting' }
+		.open { 'open' }
+		.closing { 'closing' }
+		.closed { 'closed' }
+	}
+}
