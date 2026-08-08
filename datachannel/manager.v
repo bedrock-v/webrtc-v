@@ -26,3 +26,9 @@ pub:
 	is_string bool
 	data      []u8
 }
+
+// text returns the message as a string. It is only meaningful when is_string
+// is set.
+pub fn (m Message) text() string {
+	return m.data.bytestr()
+}
