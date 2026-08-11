@@ -377,3 +377,24 @@ pub fn (mut m Manager) accept(timeout time.Duration) !&Channel {
 		detail: 'the manager is closed'
 	}
 }
+
+// allocate_stream picks the next free identifier on our side of the split. The
+// caller must hold the mutex.
+fn (mut m Manager) allocate_stream() ?u16 {
+	// Two is the step, because the parity is what keeps the two ends from
+	// choosing the same stream.
+	for _ in 0 .. 32768 {
+		candidate := m.next_stream
+		// Wrapping would collide with an identifier already in use, so the
+		// space is treated as exhausted instead.
+		if int(m.next_stream) + 2 > 65535 {
+			m.next_stream = 65535
+		} else {
+			m.next_stream += 2
+		}
+		if candidate !in m.channels {
+			return candidate
+		}
+	}
+	return none
+}
