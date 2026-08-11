@@ -191,3 +191,34 @@ fn connect_endpoints() !Endpoints {
 	mut client_pipe, mut server_pipe := new_pipe_pair()
 	return connect_endpoints_over(mut client_pipe, mut server_pipe)!
 }
+
+fn connect_endpoints_over(mut client_pipe PipeTransport, mut server_pipe PipeTransport) !Endpoints {
+	mut client_association := sctp.Association.new(client_pipe,
+		role:        .client
+		rto_initial: 100 * time.millisecond
+		rto_min:     50 * time.millisecond
+	)!
+	mut server_association := sctp.Association.new(server_pipe,
+		role:        .server
+		rto_initial: 100 * time.millisecond
+		rto_min:     50 * time.millisecond
+	)!
+
+	server_thread := spawn fn (mut a sctp.Association) ! {
+		a.connect(10 * time.second)!
+	}(mut server_association)
+	client_association.connect(10 * time.second)!
+	server_thread.wait()!
+
+	// The identifier parity follows the DTLS role: the client takes the even
+	// stream identifiers and the server the odd ones.
+	client := Manager.new(client_association, is_dtls_client: true)
+	server := Manager.new(server_association, is_dtls_client: false)
+
+	return Endpoints{
+		client_association: client_association
+		server_association: server_association
+		client:             client
+		server:             server
+	}
+}
