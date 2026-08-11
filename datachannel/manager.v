@@ -398,3 +398,15 @@ fn (mut m Manager) allocate_stream() ?u16 {
 	}
 	return none
 }
+
+// apply_reliability tells the association how hard to try on this stream.
+fn (mut m Manager) apply_reliability(stream u16, options ChannelOptions) {
+	mut lifetime := ?time.Duration(none)
+	if milliseconds := options.max_packet_lifetime {
+		lifetime = time.Duration(i64(milliseconds) * time.millisecond)
+	}
+	m.association.set_stream_reliability(stream,
+		max_retransmits:     options.max_retransmits
+		max_packet_lifetime: lifetime
+	)
+}
