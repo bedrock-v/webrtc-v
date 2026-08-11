@@ -222,3 +222,30 @@ fn connect_endpoints_over(mut client_pipe PipeTransport, mut server_pipe PipeTra
 		server:             server
 	}
 }
+
+fn (mut e Endpoints) shutdown() {
+	e.client.close()
+	e.server.close()
+	e.client_association.close()
+	e.server_association.close()
+}
+
+fn test_channel_opens_and_is_accepted() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut opened := endpoints.client.create('chat', ChannelOptions{}, 5 * time.second)!
+	assert opened.state() == .open
+	assert opened.label == 'chat'
+	// The DTLS client uses even stream identifiers.
+	assert opened.stream_identifier % 2 == 0
+
+	mut accepted := endpoints.server.accept(5 * time.second)!
+	assert accepted.label == 'chat'
+	assert accepted.stream_identifier == opened.stream_identifier
+	assert accepted.state() == .open
+	assert accepted.ordered()
+	assert accepted.reliable()
+}
