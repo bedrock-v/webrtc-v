@@ -207,3 +207,15 @@ mut:
 	closed  bool
 	threads []thread
 }
+
+// Manager.new starts routing over an established association.
+pub fn Manager.new(association &sctp.Association, config Config) &Manager {
+	mut manager := &Manager{
+		association: unsafe { association }
+		config:      config
+		log:         config.logger.with_scope('datachannel')
+		next_stream: if config.is_dtls_client { u16(0) } else { u16(1) }
+	}
+	manager.threads << spawn manager.run()
+	return manager
+}
