@@ -86,3 +86,16 @@ pub fn (mut c Channel) recv(timeout time.Duration) !Message {
 		detail: 'the channel is closed'
 	}
 }
+
+// try_recv returns a message if one is already queued.
+pub fn (mut c Channel) try_recv() ?Message {
+	select {
+		message := <-c.inbound {
+			return message
+		}
+		else {
+			return none
+		}
+	}
+	return none
+}
