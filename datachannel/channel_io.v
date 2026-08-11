@@ -124,3 +124,14 @@ fn (mut c Channel) mark_open() {
 	}
 	c.mu.unlock()
 }
+
+fn (mut c Channel) mark_closed() {
+	c.mu.lock()
+	if c.state == .closed {
+		c.mu.unlock()
+		return
+	}
+	c.state = .closed
+	c.mu.unlock()
+	c.inbound.close()
+}
