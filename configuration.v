@@ -35,3 +35,34 @@ pub:
 fn is_turn_url(url string) bool {
 	return url.starts_with('turn:') || url.starts_with('turns:')
 }
+
+// Configuration configures a peer connection, mirroring RTCConfiguration.
+@[params]
+pub struct Configuration {
+pub:
+	ice_servers []IceServer
+	// certificate is the DTLS identity. One is generated if none is given.
+	// Supplying one lets an application keep a stable fingerprint across
+	// connections, which is what a caller that has already published it needs.
+	certificate ?dtls.Certificate
+	// interfaces filters which local addresses become ICE candidates. It is a
+	// privacy control as much as a connectivity one - every address gathered is
+	// disclosed to the peer.
+	interfaces ice.InterfaceOptions
+	// ice_gather_policy limits which candidate types are gathered, mirroring
+	// RTCIceTransportPolicy. `relay_only` needs TURN and is refused until it
+	// exists, rather than quietly falling back to disclosing host addresses.
+	ice_gather_policy ice.GatherPolicy = .all
+	// srtp_profiles are the SRTP protection profiles to offer, most preferred
+	// first.
+	srtp_profiles []srtp.Profile = [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]
+	// max_message_size is the largest data channel message this end will accept.
+	max_message_size int = sctp.default_max_message_size
+	// ice_timeout bounds how long connectivity checks may run.
+	ice_timeout time.Duration = 30 * time.second
+	// dtls_timeout bounds the DTLS handshake.
+	dtls_timeout time.Duration = 30 * time.second
+	// sctp_timeout bounds the SCTP association handshake.
+	sctp_timeout time.Duration  = 20 * time.second
+	logger       logging.Logger = logging.nop()
+}
