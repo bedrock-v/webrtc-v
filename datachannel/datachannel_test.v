@@ -388,3 +388,33 @@ fn test_negotiated_channel_needs_no_handshake() {
 	client_side.send_text('no handshake needed')!
 	assert server_side.recv(5 * time.second)!.text() == 'no handshake needed'
 }
+
+fn test_negotiated_channel_rejects_a_used_stream() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	endpoints.client.create_negotiated(100, 'first', ChannelOptions{})!
+	endpoints.client.create_negotiated(100, 'second', ChannelOptions{}) or {
+		assert err is ChannelError
+		return
+	}
+	assert false, 'reusing a stream identifier must be refused'
+}
+
+fn test_stream_identifiers_do_not_collide_between_ends() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut from_client := endpoints.client.create('from client', ChannelOptions{}, 5 * time.second)!
+	endpoints.server.accept(5 * time.second)!
+	mut from_server := endpoints.server.create('from server', ChannelOptions{}, 5 * time.second)!
+	endpoints.client.accept(5 * time.second)!
+
+	// The parity split is what keeps both ends from choosing the same stream.
+	assert from_client.stream_identifier % 2 == 0
+	assert from_server.stream_identifier % 2 == 1
+}
