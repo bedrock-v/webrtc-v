@@ -99,3 +99,20 @@ pub fn (mut c Channel) try_recv() ?Message {
 	}
 	return none
 }
+
+// close marks the channel closed and releases its stream identifier.
+//
+// It does not tear down the SCTP stream: doing that properly needs the stream
+// reset of RFC 6525, which is on the roadmap. Until then the identifier is not
+// reused within the association, which is what keeps a closed channel's late
+// messages from being delivered to a new one.
+pub fn (mut c Channel) close() {
+	c.mu.lock()
+	if c.state == .closed {
+		c.mu.unlock()
+		return
+	}
+	c.state = .closed
+	c.mu.unlock()
+	c.inbound.close()
+}
