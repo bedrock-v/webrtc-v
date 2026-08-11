@@ -432,3 +432,11 @@ fn (mut m Manager) forget(stream u16) {
 	m.channels.delete(stream)
 	m.mu.unlock()
 }
+
+fn (mut m Manager) is_closed() bool {
+	m.mu.lock()
+	defer {
+		m.mu.unlock()
+	}
+	return m.closed
+}
