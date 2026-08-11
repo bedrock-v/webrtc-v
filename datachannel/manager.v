@@ -343,3 +343,37 @@ pub fn (mut m Manager) create_negotiated(stream_identifier u16, label string, op
 	m.apply_reliability(stream_identifier, options)
 	return channel
 }
+
+// accept returns the next channel the peer opened.
+pub fn (mut m Manager) accept(timeout time.Duration) !&Channel {
+	if m.is_closed() {
+		return ChannelError{
+			reason: .closed
+			detail: 'the manager is closed'
+		}
+	}
+	select {
+		channel := <-m.incoming {
+			if channel == unsafe { nil } {
+				// A receive on a closed channel succeeds with the zero value in
+				// V 0.5.2, so a nil here means the manager was closed while we
+				// were waiting, not that a channel arrived.
+				return ChannelError{
+					reason: .closed
+					detail: 'the manager was closed'
+				}
+			}
+			return channel
+		}
+		timeout {
+			return ChannelError{
+				reason: .timed_out
+				detail: 'no channel opened within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return ChannelError{
+		reason: .closed
+		detail: 'the manager is closed'
+	}
+}
