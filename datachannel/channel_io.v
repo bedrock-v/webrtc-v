@@ -116,3 +116,11 @@ pub fn (mut c Channel) close() {
 	c.mu.unlock()
 	c.inbound.close()
 }
+
+fn (mut c Channel) mark_open() {
+	c.mu.lock()
+	if c.state == .connecting {
+		c.state = .open
+	}
+	c.mu.unlock()
+}
