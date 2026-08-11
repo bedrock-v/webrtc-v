@@ -151,3 +151,12 @@ pub:
 	// than opening through DCEP.
 	negotiated bool
 }
+
+// state returns the channel's ready state.
+pub fn (mut c Channel) state() ChannelState {
+	c.mu.lock()
+	defer {
+		c.mu.unlock()
+	}
+	return c.state
+}
