@@ -9,3 +9,8 @@ import webrtc.sctp
 pub fn (mut c Channel) send_text(text string) ! {
 	c.send(text.bytes(), true)!
 }
+
+// send_binary sends a binary message.
+pub fn (mut c Channel) send_binary(data []u8) ! {
+	c.send(data, false)!
+}
