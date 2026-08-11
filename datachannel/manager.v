@@ -172,3 +172,18 @@ pub fn (c &Channel) ordered() bool {
 pub fn (c &Channel) reliable() bool {
 	return c.channel_type.is_reliable()
 }
+
+// Config configures a manager.
+@[params]
+pub struct Config {
+pub:
+	// is_dtls_client decides which stream identifiers this end may use.
+	//
+	// RFC 8832 section 6 gives the DTLS client the even identifiers and the
+	// server the odd ones. Without that split both ends could pick the same
+	// stream for different channels and neither would notice until the messages
+	// interleaved.
+	is_dtls_client bool           = true
+	max_channels   int            = max_channels
+	logger         logging.Logger = logging.nop()
+}
