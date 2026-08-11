@@ -160,3 +160,9 @@ pub fn (mut c Channel) state() ChannelState {
 	}
 	return c.state
 }
+
+// ordered reports whether the channel preserves message order.
+@[inline]
+pub fn (c &Channel) ordered() bool {
+	return c.channel_type.is_ordered()
+}
