@@ -418,3 +418,24 @@ fn test_stream_identifiers_do_not_collide_between_ends() {
 	assert from_client.stream_identifier % 2 == 0
 	assert from_server.stream_identifier % 2 == 1
 }
+
+fn test_send_on_a_closed_channel_is_refused() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut channel := endpoints.client.create('closing', ChannelOptions{}, 5 * time.second)!
+	endpoints.server.accept(5 * time.second)!
+
+	channel.close()
+	assert channel.state() == .closed
+	channel.send_text('too late') or {
+		assert err is ChannelError
+		if err is ChannelError {
+			assert err.reason == .wrong_state
+		}
+		return
+	}
+	assert false, 'sending on a closed channel must be refused'
+}
