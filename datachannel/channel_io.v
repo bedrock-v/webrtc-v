@@ -61,3 +61,28 @@ pub fn (mut c Channel) send(data []u8, is_string bool) ! {
 		}
 	}
 }
+
+// recv returns the next message, waiting up to timeout.
+pub fn (mut c Channel) recv(timeout time.Duration) !Message {
+	select {
+		message := <-c.inbound {
+			return message
+		}
+		timeout {
+			if c.state() == .closed {
+				return ChannelError{
+					reason: .closed
+					detail: 'the channel is closed'
+				}
+			}
+			return ChannelError{
+				reason: .timed_out
+				detail: 'no message within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return ChannelError{
+		reason: .closed
+		detail: 'the channel is closed'
+	}
+}
