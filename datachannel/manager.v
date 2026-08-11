@@ -410,3 +410,19 @@ fn (mut m Manager) apply_reliability(stream u16, options ChannelOptions) {
 		max_packet_lifetime: lifetime
 	)
 }
+
+// apply_negotiated_reliability does the same from a peer's OPEN, where the
+// policy arrives as a channel type and one number whose meaning depends on it.
+fn (mut m Manager) apply_negotiated_reliability(stream u16, channel_type ChannelType, parameter u32) {
+	match channel_type {
+		.partial_reliable_rexmit, .partial_reliable_rexmit_unordered {
+			m.association.set_stream_reliability(stream, max_retransmits: u16(parameter))
+		}
+		.partial_reliable_timed, .partial_reliable_timed_unordered {
+			m.association.set_stream_reliability(stream,
+				max_packet_lifetime: time.Duration(i64(parameter) * time.millisecond)
+			)
+		}
+		else {}
+	}
+}
