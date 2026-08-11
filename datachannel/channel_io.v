@@ -272,3 +272,13 @@ fn (mut m Manager) handle_dcep(message sctp.Message) {
 		}
 	}
 }
+
+// shut_all_channels closes every channel, for when the association ends.
+fn (mut m Manager) shut_all_channels() {
+	m.mu.lock()
+	mut channels := m.channels.values()
+	m.mu.unlock()
+	for mut channel in channels {
+		channel.mark_closed()
+	}
+}
