@@ -125,3 +125,11 @@ pub enum ChannelErrorReason {
 	exhausted
 	protocol
 }
+
+pub fn (e ChannelError) msg() string {
+	return 'datachannel: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e ChannelError) code() int {
+	return int(e.reason) + 10
+}
