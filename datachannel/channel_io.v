@@ -150,3 +150,23 @@ fn (mut c Channel) deliver(message Message) bool {
 	}
 	return false
 }
+
+// run is the routing loop: it reads the association and dispatches what
+// arrives to the right channel.
+fn (mut m Manager) run() {
+	for {
+		if m.is_closed() {
+			return
+		}
+		message := m.association.recv(50 * time.millisecond) or {
+			if err is sctp.AssociationError && err.reason == .timed_out {
+				continue
+			}
+			// The association is gone. Every channel on it is finished.
+			m.log.debug('association ended: ${err.msg()}')
+			m.shut_all_channels()
+			return
+		}
+		m.route(message)
+	}
+}
