@@ -84,3 +84,25 @@ pub fn (s SignalingState) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// ConnectionState aggregates the transports, following
+// RTCPeerConnectionState.
+pub enum ConnectionState {
+	new
+	connecting
+	connected
+	disconnected
+	failed
+	closed
+}
+
+pub fn (s ConnectionState) str() string {
+	return match s {
+		.new { 'new' }
+		.connecting { 'connecting' }
+		.connected { 'connected' }
+		.disconnected { 'disconnected' }
+		.failed { 'failed' }
+		.closed { 'closed' }
+	}
+}
