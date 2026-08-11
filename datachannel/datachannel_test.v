@@ -504,3 +504,20 @@ fn test_an_unreliable_channel_drops_a_lost_message() {
 	assert message.text() == 'sentinel'
 	assert receiver.try_recv() == none, 'the abandoned message should not have arrived'
 }
+
+fn test_a_reliable_channel_still_delivers_a_lost_message() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut endpoints := connect_endpoints_over(mut client_pipe, mut server_pipe)!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('reliable', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+	assert receiver.reliable()
+
+	client_pipe.drop_next = 1
+	sender.send_text('must arrive')!
+	message := receiver.recv(5 * time.second)!
+	assert message.text() == 'must arrive'
+}
