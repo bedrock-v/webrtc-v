@@ -166,3 +166,9 @@ pub fn (mut c Channel) state() ChannelState {
 pub fn (c &Channel) ordered() bool {
 	return c.channel_type.is_ordered()
 }
+
+// reliable reports whether every message is guaranteed to arrive.
+@[inline]
+pub fn (c &Channel) reliable() bool {
+	return c.channel_type.is_reliable()
+}
