@@ -336,3 +336,36 @@ fn test_unordered_channel_reports_its_properties() {
 	sender.send_text('unordered')!
 	assert receiver.recv(5 * time.second)!.text() == 'unordered'
 }
+
+fn test_large_message_crosses_a_channel() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('bulk', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+
+	payload := []u8{len: 50000, init: u8(index % 251)}
+	sender.send_binary(payload)!
+	message := receiver.recv(20 * time.second)!
+	assert message.data.len == payload.len
+	assert message.data == payload
+}
+
+fn test_ordering_is_preserved_on_a_channel() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('ordered', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+
+	for i in 0 .. 25 {
+		sender.send_text('message ${i}')!
+	}
+	for i in 0 .. 25 {
+		assert receiver.recv(5 * time.second)!.text() == 'message ${i}', 'out of order at ${i}'
+	}
+}
