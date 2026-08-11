@@ -269,3 +269,26 @@ fn test_messages_flow_both_ways() {
 	assert !reply.is_string
 	assert reply.data == [u8(1), 2, 3, 4]
 }
+
+fn test_string_and_binary_stay_distinguishable_when_empty() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('empties', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+
+	// An empty message cannot be an empty SCTP chunk, so it travels as one
+	// padding byte under a protocol identifier of its own. The receiver must
+	// see an empty message of the right kind, not the padding.
+	sender.send_text('')!
+	first := receiver.recv(5 * time.second)!
+	assert first.is_string
+	assert first.data.len == 0
+
+	sender.send_binary([]u8{})!
+	second := receiver.recv(5 * time.second)!
+	assert !second.is_string
+	assert second.data.len == 0
+}
