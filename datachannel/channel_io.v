@@ -135,3 +135,18 @@ fn (mut c Channel) mark_closed() {
 	c.mu.unlock()
 	c.inbound.close()
 }
+
+fn (mut c Channel) deliver(message Message) bool {
+	if c.state() != .open {
+		return false
+	}
+	select {
+		c.inbound <- message {
+			return true
+		}
+		else {
+			return false
+		}
+	}
+	return false
+}
