@@ -160,3 +160,34 @@ fn (mut p PipeTransport) write(data []u8) !int {
 	}
 	return data.len
 }
+
+fn (mut p PipeTransport) read(timeout time.Duration) ![]u8 {
+	select {
+		data := <-p.inbound {
+			return data
+		}
+		timeout {
+			return error('timeout')
+		}
+	}
+	return error('closed')
+}
+
+fn (mut p PipeTransport) max_write() int {
+	// Not a multiple of four, matching what a DTLS transport reports, so a
+	// chunk-padding miscalculation shows up here rather than end to end.
+	return 1163
+}
+
+struct Endpoints {
+mut:
+	client_association &sctp.Association
+	server_association &sctp.Association
+	client             &Manager
+	server             &Manager
+}
+
+fn connect_endpoints() !Endpoints {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	return connect_endpoints_over(mut client_pipe, mut server_pipe)!
+}
