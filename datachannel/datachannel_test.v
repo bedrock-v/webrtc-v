@@ -249,3 +249,23 @@ fn test_channel_opens_and_is_accepted() {
 	assert accepted.ordered()
 	assert accepted.reliable()
 }
+
+fn test_messages_flow_both_ways() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('chat', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+
+	sender.send_text('hello over a data channel')!
+	message := receiver.recv(5 * time.second)!
+	assert message.is_string
+	assert message.text() == 'hello over a data channel'
+
+	receiver.send_binary([u8(1), 2, 3, 4])!
+	reply := sender.recv(5 * time.second)!
+	assert !reply.is_string
+	assert reply.data == [u8(1), 2, 3, 4]
+}
