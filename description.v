@@ -79,3 +79,110 @@ fn build_description(sections []Section, parameters TransportParameters, session
 	}
 	return description.marshal()
 }
+
+fn build_section(section Section, parameters TransportParameters, max_message_size int) !sdp.MediaDescription {
+	mut media := sdp.MediaDescription{
+		media: section.kind.str()
+		// Port 9 is the discard port. The real address comes from ICE, and a
+		// section is offered with a placeholder; zero is reserved for rejecting
+		// it, which is why it cannot double as "not applicable".
+		port: if section.rejected { 0 } else { 9 }
+	}
+	media.connection = sdp.ConnectionData{
+		network_type: 'IN'
+		address_type: 'IP4'
+		address:      '0.0.0.0'
+	}
+
+	if section.kind == .application {
+		media.protos = ['UDP', 'DTLS', 'SCTP']
+		media.formats = ['webrtc-datachannel']
+	} else {
+		media.protos = ['UDP', 'TLS', 'RTP', 'SAVPF']
+		for codec in section.codecs {
+			media.formats << codec.payload_type.str()
+		}
+	}
+
+	if section.rejected {
+		// A rejected section keeps its mid so the two sides' section lists stay
+		// aligned, and carries nothing else.
+		media.attributes << sdp.Attribute{
+			key:   'mid'
+			value: section.mid
+		}
+		return media
+	}
+
+	media.attributes << sdp.Attribute{
+		key:   'ice-ufrag'
+		value: parameters.ice_ufrag
+	}
+	media.attributes << sdp.Attribute{
+		key:   'ice-pwd'
+		value: parameters.ice_pwd
+	}
+	media.attributes << sdp.Attribute{
+		key:   'ice-options'
+		value: 'trickle'
+	}
+	media.attributes << sdp.Attribute{
+		key:   'fingerprint'
+		value: parameters.fingerprint.str()
+	}
+	media.attributes << sdp.Attribute{
+		key:   'setup'
+		value: parameters.setup.str()
+	}
+	media.attributes << sdp.Attribute{
+		key:   'mid'
+		value: section.mid
+	}
+
+	if section.kind == .application {
+		media.attributes << sdp.Attribute{
+			key:   'sctp-port'
+			value: sctp.webrtc_port.str()
+		}
+		media.attributes << sdp.Attribute{
+			key:   'max-message-size'
+			value: max_message_size.str()
+		}
+		return media
+	}
+
+	if section.direction != .unspecified {
+		media.attributes << sdp.Attribute{
+			key: section.direction.str()
+		}
+	}
+	// RTP and RTCP share one port. Every WebRTC endpoint does this, and the
+	// alternative would need a second ICE component.
+	media.attributes << sdp.Attribute{
+		key: 'rtcp-mux'
+	}
+
+	for codec in section.codecs {
+		mut rtpmap := '${codec.payload_type} ${codec.name}/${codec.clock_rate}'
+		if codec.channels > 0 {
+			rtpmap += '/${codec.channels}'
+		}
+		media.attributes << sdp.Attribute{
+			key:   'rtpmap'
+			value: rtpmap
+		}
+		for feedback in codec.rtcp_feedback {
+			media.attributes << sdp.Attribute{
+				key:   'rtcp-fb'
+				value: '${codec.payload_type} ${feedback}'
+			}
+		}
+		if codec.fmtp != '' {
+			media.attributes << sdp.Attribute{
+				key:   'fmtp'
+				value: '${codec.payload_type} ${codec.fmtp}'
+			}
+		}
+	}
+	return media
+}
