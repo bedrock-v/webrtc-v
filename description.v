@@ -211,3 +211,112 @@ mut:
 	codecs    []Codec
 	rejected  bool
 }
+
+// parse_remote_description reads a peer's SDP into the values the transports
+// need.
+//
+// The transport parameters are taken from the first section that carries them:
+// with BUNDLE they are identical everywhere, and a description that disagrees
+// between sections is describing something this implementation does not do.
+fn parse_remote_description(text string) !RemoteDescription {
+	parsed := sdp.parse(text) or {
+		return PeerError{
+			reason: .bad_description
+			detail: err.msg()
+		}
+	}
+	if parsed.media_descriptions.len == 0 {
+		return PeerError{
+			reason: .bad_description
+			detail: 'the description has no media sections'
+		}
+	}
+
+	mut remote := RemoteDescription{
+		parsed: parsed
+	}
+
+	for index, media in parsed.media_descriptions {
+		mid := media.mid() or { index.str() }
+		kind := match media.media {
+			'audio' {
+				MediaKind.audio
+			}
+			'video' {
+				MediaKind.video
+			}
+			'application' {
+				MediaKind.application
+			}
+			else {
+				return PeerError{
+					reason: .unsupported
+					detail: 'media type "${media.media}" is not supported'
+				}
+			}
+		}
+
+		mut section := RemoteSection{
+			kind:      kind
+			mid:       mid
+			direction: media.direction()
+			rejected:  media.is_rejected()
+		}
+		for codec in media.rtpmaps() {
+			section.codecs << Codec{
+				payload_type:  codec.payload_type
+				name:          codec.encoding_name
+				clock_rate:    codec.clock_rate
+				channels:      if codec.encoding_params != '' {
+					codec.encoding_params.int()
+				} else {
+					0
+				}
+				fmtp:          media.fmtp(codec.payload_type) or { '' }
+				rtcp_feedback: feedback_for(media, codec.payload_type)
+			}
+		}
+		remote.sections << section
+
+		if media.is_rejected() {
+			continue
+		}
+		for line in media.candidates() {
+			remote.candidates << line
+		}
+		if size := media.max_message_size() {
+			remote.max_message_size = int(size)
+		}
+		if remote.ice_ufrag == '' {
+			if ufrag := parsed.ice_ufrag(media) {
+				remote.ice_ufrag = ufrag
+			}
+			if pwd := parsed.ice_pwd(media) {
+				remote.ice_pwd = pwd
+			}
+			for fingerprint in parsed.fingerprints(media) {
+				// A hash this end cannot compute is skipped rather than
+				// refused: a peer may list several, and one it shares with us
+				// is enough to authenticate the certificate.
+				remote.fingerprints << dtls.Fingerprint.parse(fingerprint.str()) or { continue }
+			}
+			remote.setup = parsed.setup(media)
+		}
+	}
+
+	if remote.ice_ufrag == '' || remote.ice_pwd == '' {
+		return PeerError{
+			reason: .bad_description
+			detail: 'the description carries no ICE credentials'
+		}
+	}
+	if remote.fingerprints.len == 0 {
+		// Without a fingerprint there is nothing to authenticate the peer
+		// against, and the DTLS handshake would be with whoever answered.
+		return PeerError{
+			reason: .bad_description
+			detail: 'the description carries no DTLS fingerprint'
+		}
+	}
+	return remote
+}
