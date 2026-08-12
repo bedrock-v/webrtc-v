@@ -292,3 +292,25 @@ fn test_string_and_binary_stay_distinguishable_when_empty() {
 	assert !second.is_string
 	assert second.data.len == 0
 }
+
+fn test_several_channels_are_independent() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut first := endpoints.client.create('first', ChannelOptions{}, 5 * time.second)!
+	mut accepted_first := endpoints.server.accept(5 * time.second)!
+	mut second := endpoints.client.create('second', ChannelOptions{}, 5 * time.second)!
+	mut accepted_second := endpoints.server.accept(5 * time.second)!
+
+	assert first.stream_identifier != second.stream_identifier
+	assert accepted_first.label == 'first'
+	assert accepted_second.label == 'second'
+
+	first.send_text('on the first')!
+	second.send_text('on the second')!
+
+	assert accepted_first.recv(5 * time.second)!.text() == 'on the first'
+	assert accepted_second.recv(5 * time.second)!.text() == 'on the second'
+}
