@@ -314,3 +314,25 @@ fn test_several_channels_are_independent() {
 	assert accepted_first.recv(5 * time.second)!.text() == 'on the first'
 	assert accepted_second.recv(5 * time.second)!.text() == 'on the second'
 }
+
+fn test_unordered_channel_reports_its_properties() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('fast', ChannelOptions{
+		ordered:         false
+		max_retransmits: u16(0)
+	}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+
+	assert !sender.ordered()
+	assert !sender.reliable()
+	// The peer learns the channel's properties from the OPEN message.
+	assert !receiver.ordered()
+	assert !receiver.reliable()
+
+	sender.send_text('unordered')!
+	assert receiver.recv(5 * time.second)!.text() == 'unordered'
+}
