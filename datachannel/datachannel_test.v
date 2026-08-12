@@ -65,3 +65,10 @@ fn test_open_enforces_label_limit() {
 	long.marshal() or { return }
 	assert false, 'an over-long label must be rejected'
 }
+
+fn test_ack_message() {
+	assert is_ack(ack_message())
+	assert !is_ack([]u8{})
+	assert !is_ack([u8(0x03)])
+	assert !is_ack([u8(0x02), 0x00])
+}
