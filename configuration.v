@@ -209,3 +209,34 @@ pub enum PeerErrorReason {
 	// no_media: the operation needs a negotiated media section and there is none.
 	no_media
 }
+
+pub fn (e PeerError) msg() string {
+	return 'webrtc: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e PeerError) code() int {
+	return int(e.reason) + 1
+}
+
+// DataChannelOptions configures a data channel, mirroring RTCDataChannelInit.
+@[params]
+pub struct DataChannelOptions {
+pub:
+	ordered             bool = true
+	max_retransmits     ?u16
+	max_packet_lifetime ?u16
+	protocol            string
+	// negotiated declares a channel both applications already agreed on. The
+	// identifier must then be supplied and must match on both sides.
+	negotiated bool
+	id         ?u16
+}
+
+fn (o DataChannelOptions) to_channel_options() datachannel.ChannelOptions {
+	return datachannel.ChannelOptions{
+		ordered:             o.ordered
+		max_retransmits:     o.max_retransmits
+		max_packet_lifetime: o.max_packet_lifetime
+		protocol:            o.protocol
+	}
+}
