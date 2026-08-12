@@ -127,3 +127,26 @@ pub fn sdp_type_from_string(s string) ?SdpType {
 		else { none }
 	}
 }
+
+// SessionDescription is an offer or an answer, in the shape the browser API
+// uses: a type and the SDP text.
+pub struct SessionDescription {
+pub:
+	typ SdpType
+	sdp string
+}
+
+// MediaKind is what a media section carries.
+pub enum MediaKind {
+	audio
+	video
+	application
+}
+
+pub fn (k MediaKind) str() string {
+	return match k {
+		.audio { 'audio' }
+		.video { 'video' }
+		.application { 'application' }
+	}
+}
