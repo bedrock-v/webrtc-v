@@ -166,3 +166,28 @@ pub:
 	// rtcp_feedback are the `a=rtcp-fb` values, without the payload type.
 	rtcp_feedback []string
 }
+
+// opus_48000_2 and vp8_90000 are the two codecs almost every session starts
+// from. They are here so a caller does not have to remember the numbers.
+pub const opus_48000_2 = Codec{
+	payload_type:  111
+	name:          'opus'
+	clock_rate:    48000
+	channels:      2
+	fmtp:          'minptime=10;useinbandfec=1'
+	rtcp_feedback: ['transport-cc']
+}
+
+pub const vp8_90000 = Codec{
+	payload_type:  96
+	name:          'VP8'
+	clock_rate:    90000
+	rtcp_feedback: ['goog-remb', 'transport-cc', 'ccm fir', 'nack', 'nack pli']
+}
+
+// PeerError is returned when a connection cannot be configured or driven.
+pub struct PeerError {
+pub:
+	reason PeerErrorReason
+	detail string
+}
