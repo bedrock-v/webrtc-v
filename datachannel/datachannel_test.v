@@ -172,3 +172,9 @@ fn (mut p PipeTransport) read(timeout time.Duration) ![]u8 {
 	}
 	return error('closed')
 }
+
+fn (mut p PipeTransport) max_write() int {
+	// Not a multiple of four, matching what a DTLS transport reports, so a
+	// chunk-padding miscalculation shows up here rather than end to end.
+	return 1163
+}
