@@ -57,3 +57,11 @@ fn test_open_rejects_malformed_input() {
 		assert false, 'expected ${encoded.hex()} to be rejected'
 	}
 }
+
+fn test_open_enforces_label_limit() {
+	long := Open{
+		label: 'x'.repeat(max_label_bytes + 1)
+	}
+	long.marshal() or { return }
+	assert false, 'an over-long label must be rejected'
+}
