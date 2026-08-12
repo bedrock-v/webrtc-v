@@ -107,3 +107,16 @@ fn test_channel_options_reject_both_limits() {
 	options.channel_type() or { return }
 	assert false, 'setting both reliability limits must be rejected'
 }
+
+// -- Over a real association -----------------------------------------------
+
+struct PipeTransport {
+mut:
+	inbound chan []u8      = chan []u8{cap: 512}
+	peer    &PipeTransport = unsafe { nil }
+	mu      &sync.Mutex    = sync.new_mutex()
+	closed  bool
+	// drop_next discards this many outgoing datagrams, which is how a lost
+	// message is arranged for.
+	drop_next int
+}
