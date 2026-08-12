@@ -22,3 +22,11 @@ fn test_open_round_trip() {
 	assert decoded.label == 'chat'
 	assert decoded.protocol == 'json'
 }
+
+fn test_open_with_empty_label_and_protocol() {
+	open := Open{}
+	decoded := Open.decode(open.marshal()!)!
+	assert decoded.label == ''
+	assert decoded.protocol == ''
+	assert decoded.channel_type == .reliable
+}
