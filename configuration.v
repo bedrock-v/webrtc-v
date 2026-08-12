@@ -150,3 +150,19 @@ pub fn (k MediaKind) str() string {
 		.application { 'application' }
 	}
 }
+
+// Codec describes one payload type in a media section.
+pub struct Codec {
+pub:
+	payload_type u8
+	// name is the encoding name, such as "opus" or "VP8".
+	name       string
+	clock_rate u32
+	// channels is the audio channel count; zero omits it, which is what video
+	// requires.
+	channels int
+	// fmtp is the format parameter string, without the payload type.
+	fmtp string
+	// rtcp_feedback are the `a=rtcp-fb` values, without the payload type.
+	rtcp_feedback []string
+}
