@@ -320,3 +320,18 @@ fn parse_remote_description(text string) !RemoteDescription {
 	}
 	return remote
 }
+
+fn feedback_for(media sdp.MediaDescription, payload_type u8) []string {
+	mut out := []string{}
+	for feedback in media.rtcp_feedback() {
+		if !feedback.wildcard && feedback.payload_type != payload_type {
+			continue
+		}
+		if feedback.parameter == '' {
+			out << feedback.typ
+		} else {
+			out << '${feedback.typ} ${feedback.parameter}'
+		}
+	}
+	return out
+}
