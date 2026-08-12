@@ -222,3 +222,10 @@ fn connect_endpoints_over(mut client_pipe PipeTransport, mut server_pipe PipeTra
 		server:             server
 	}
 }
+
+fn (mut e Endpoints) shutdown() {
+	e.client.close()
+	e.server.close()
+	e.client_association.close()
+	e.server_association.close()
+}
