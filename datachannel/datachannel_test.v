@@ -178,3 +178,11 @@ fn (mut p PipeTransport) max_write() int {
 	// chunk-padding miscalculation shows up here rather than end to end.
 	return 1163
 }
+
+struct Endpoints {
+mut:
+	client_association &sctp.Association
+	server_association &sctp.Association
+	client             &Manager
+	server             &Manager
+}
