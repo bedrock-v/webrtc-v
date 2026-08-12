@@ -186,3 +186,8 @@ mut:
 	client             &Manager
 	server             &Manager
 }
+
+fn connect_endpoints() !Endpoints {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	return connect_endpoints_over(mut client_pipe, mut server_pipe)!
+}
