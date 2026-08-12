@@ -106,3 +106,24 @@ pub fn (s ConnectionState) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// SdpType is whether a description is an offer or an answer.
+pub enum SdpType {
+	offer
+	answer
+}
+
+pub fn (t SdpType) str() string {
+	return match t {
+		.offer { 'offer' }
+		.answer { 'answer' }
+	}
+}
+
+pub fn sdp_type_from_string(s string) ?SdpType {
+	return match s.to_lower() {
+		'offer' { SdpType.offer }
+		'answer' { SdpType.answer }
+		else { none }
+	}
+}
