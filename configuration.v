@@ -191,3 +191,21 @@ pub:
 	reason PeerErrorReason
 	detail string
 }
+
+pub enum PeerErrorReason {
+	// closed: the connection has been closed.
+	closed
+	// wrong_state: the operation is not valid in the current signalling state.
+	wrong_state
+	// bad_description: the offer or answer could not be parsed, or is missing
+	// something required.
+	bad_description
+	// unsupported: the peer asked for something this implementation does not do.
+	unsupported
+	// timed_out: a transport did not come up in time.
+	timed_out
+	// transport: a transport failed.
+	transport
+	// no_media: the operation needs a negotiated media section and there is none.
+	no_media
+}
