@@ -352,3 +352,20 @@ fn test_large_message_crosses_a_channel() {
 	assert message.data.len == payload.len
 	assert message.data == payload
 }
+
+fn test_ordering_is_preserved_on_a_channel() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('ordered', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+
+	for i in 0 .. 25 {
+		sender.send_text('message ${i}')!
+	}
+	for i in 0 .. 25 {
+		assert receiver.recv(5 * time.second)!.text() == 'message ${i}', 'out of order at ${i}'
+	}
+}
