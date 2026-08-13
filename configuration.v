@@ -75,3 +75,12 @@ pub enum SignalingState {
 	have_remote_offer
 	closed
 }
+
+pub fn (s SignalingState) str() string {
+	return match s {
+		.stable { 'stable' }
+		.have_local_offer { 'have-local-offer' }
+		.have_remote_offer { 'have-remote-offer' }
+		.closed { 'closed' }
+	}
+}
