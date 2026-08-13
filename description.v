@@ -186,3 +186,19 @@ fn build_section(section Section, parameters TransportParameters, max_message_si
 	}
 	return media
 }
+
+// RemoteDescription is what a peer's offer or answer told us.
+struct RemoteDescription {
+mut:
+	ice_ufrag    string
+	ice_pwd      string
+	fingerprints []dtls.Fingerprint
+	setup        ?sdp.Setup
+	sections     []RemoteSection
+	// candidates are any `a=candidate` lines carried in the description itself,
+	// which is how a non-trickling peer sends them.
+	candidates []string
+	// max_message_size is what the peer will accept on a data channel.
+	max_message_size ?int
+	parsed           sdp.SessionDescription
+}
