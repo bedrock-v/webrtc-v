@@ -217,3 +217,17 @@ pub fn (e PeerError) msg() string {
 pub fn (e PeerError) code() int {
 	return int(e.reason) + 1
 }
+
+// DataChannelOptions configures a data channel, mirroring RTCDataChannelInit.
+@[params]
+pub struct DataChannelOptions {
+pub:
+	ordered             bool = true
+	max_retransmits     ?u16
+	max_packet_lifetime ?u16
+	protocol            string
+	// negotiated declares a channel both applications already agreed on. The
+	// identifier must then be supplied and must match on both sides.
+	negotiated bool
+	id         ?u16
+}
