@@ -95,3 +95,14 @@ pub enum ConnectionState {
 	failed
 	closed
 }
+
+pub fn (s ConnectionState) str() string {
+	return match s {
+		.new { 'new' }
+		.connecting { 'connecting' }
+		.connected { 'connected' }
+		.disconnected { 'disconnected' }
+		.failed { 'failed' }
+		.closed { 'closed' }
+	}
+}
