@@ -142,3 +142,11 @@ pub enum MediaKind {
 	video
 	application
 }
+
+pub fn (k MediaKind) str() string {
+	return match k {
+		.audio { 'audio' }
+		.video { 'video' }
+		.application { 'application' }
+	}
+}
