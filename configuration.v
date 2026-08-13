@@ -15,3 +15,18 @@ import webrtc.ice
 import webrtc.logging
 import webrtc.sctp
 import webrtc.srtp
+
+// IceServer is a STUN or TURN server to gather candidates from.
+pub struct IceServer {
+pub:
+	// urls are "stun:host:port" or "turn:host:port" entries, or a plain
+	// "host:port" which is taken as STUN.
+	//
+	// A "turns:" URL is accepted and treated as "turn:": TURN over TLS is not
+	// implemented, and the credentials would go out in the clear, so it is
+	// refused rather than silently downgraded.
+	urls []string
+	// username and credential are the long-term credentials a relay requires.
+	username   string
+	credential string
+}
