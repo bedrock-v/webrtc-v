@@ -693,3 +693,47 @@ fn (mut pc PeerConnection) set_state(state ConnectionState) {
 	}
 	pc.mu.unlock()
 }
+
+// close tears the connection down. It is safe to call more than once.
+pub fn (mut pc PeerConnection) close() {
+	pc.mu.lock()
+	if pc.closed {
+		pc.mu.unlock()
+		return
+	}
+	pc.closed = true
+	pc.state = .closed
+	pc.signaling = .closed
+	mut channels := pc.channels
+	mut association := pc.association
+	mut agent := pc.agent
+	mut media := pc.media_transport
+	mut open := pc.open_channels.clone()
+	pc.mu.unlock()
+
+	for mut channel in open {
+		channel.mark_closed()
+	}
+	if channels != unsafe { nil } {
+		channels.close()
+	}
+	if association != unsafe { nil } {
+		association.close()
+	}
+	if media != unsafe { nil } {
+		// Before the agent, so the pump stops reading a socket that is about to
+		// go away rather than logging its way through the shutdown.
+		media.close()
+	}
+	if agent != unsafe { nil } {
+		agent.close()
+	}
+	pc.incoming.close()
+
+	for handle in pc.threads {
+		handle.wait()
+	}
+	pc.mu.lock()
+	pc.threads.clear()
+	pc.mu.unlock()
+}
