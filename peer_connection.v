@@ -255,3 +255,36 @@ fn (mut pc PeerConnection) ensure_application_section() {
 		mid:  pc.sections.len.str()
 	}
 }
+
+// accept_data_channel returns the next channel the peer opened.
+pub fn (mut pc PeerConnection) accept_data_channel(timeout time.Duration) !&DataChannel {
+	if pc.is_closed() {
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	select {
+		channel := <-pc.incoming {
+			if channel == unsafe { nil } {
+				// V 0.5.2 completes a receive on a closed channel with the zero
+				// value, so nil means the connection was closed while waiting.
+				return PeerError{
+					reason: .closed
+					detail: 'the connection was closed'
+				}
+			}
+			return channel
+		}
+		timeout {
+			return PeerError{
+				reason: .timed_out
+				detail: 'no data channel opened within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return PeerError{
+		reason: .closed
+		detail: 'the connection is closed'
+	}
+}
