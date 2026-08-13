@@ -202,3 +202,42 @@ pub fn (mut pc PeerConnection) add_media(kind MediaKind, direction sdp.Direction
 	}
 	return
 }
+
+// create_data_channel asks for a data channel.
+//
+// Before the transports are up this records the request and adds the data
+// section to the next offer; the channel itself opens once SCTP is established.
+// After that it opens immediately.
+pub fn (mut pc PeerConnection) create_data_channel(label string, options DataChannelOptions) !&DataChannel {
+	pc.mu.lock()
+	if pc.closed {
+		pc.mu.unlock()
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	mut manager := pc.channels
+	pc.ensure_application_section()
+	pc.mu.unlock()
+
+	if manager != unsafe { nil } {
+		return pc.open_channel(label, options)
+	}
+
+	// The handle is returned unopened. Its state is `connecting` until the
+	// transports come up, which is what the browser API does for a channel
+	// created before negotiation.
+	mut handle := &DataChannel{
+		connection: pc
+		label:      label
+		options:    options
+	}
+	pc.mu.lock()
+	pc.pending_channels << PendingChannel{
+		handle: handle
+	}
+	pc.open_channels << handle
+	pc.mu.unlock()
+	return handle
+}
