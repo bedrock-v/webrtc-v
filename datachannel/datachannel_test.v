@@ -439,3 +439,25 @@ fn test_send_on_a_closed_channel_is_refused() {
 	}
 	assert false, 'sending on a closed channel must be refused'
 }
+
+fn test_channels_close_when_the_association_ends() {
+	mut endpoints := connect_endpoints()!
+	mut channel := endpoints.client.create('doomed', ChannelOptions{}, 5 * time.second)!
+	endpoints.server.accept(5 * time.second)!
+	assert channel.state() == .open
+
+	endpoints.client_association.close()
+
+	deadline := time.now().add(5 * time.second)
+	for time.now() < deadline {
+		if channel.state() == .closed {
+			break
+		}
+		time.sleep(10 * time.millisecond)
+	}
+	assert channel.state() == .closed, 'a channel must close when its association ends'
+
+	endpoints.client.close()
+	endpoints.server.close()
+	endpoints.server_association.close()
+}
