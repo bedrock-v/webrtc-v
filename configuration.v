@@ -127,3 +127,11 @@ pub fn sdp_type_from_string(s string) ?SdpType {
 		else { none }
 	}
 }
+
+// SessionDescription is an offer or an answer, in the shape the browser API
+// uses: a type and the SDP text.
+pub struct SessionDescription {
+pub:
+	typ SdpType
+	sdp string
+}
