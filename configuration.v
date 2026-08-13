@@ -166,3 +166,14 @@ pub:
 	// rtcp_feedback are the `a=rtcp-fb` values, without the payload type.
 	rtcp_feedback []string
 }
+
+// opus_48000_2 and vp8_90000 are the two codecs almost every session starts
+// from. They are here so a caller does not have to remember the numbers.
+pub const opus_48000_2 = Codec{
+	payload_type:  111
+	name:          'opus'
+	clock_rate:    48000
+	channels:      2
+	fmtp:          'minptime=10;useinbandfec=1'
+	rtcp_feedback: ['transport-cc']
+}
