@@ -335,3 +335,33 @@ fn feedback_for(media sdp.MediaDescription, payload_type u8) []string {
 	}
 	return out
 }
+
+// intersect_codecs keeps the offered codecs this end also has, in the offerer's
+// order.
+//
+// The answerer must reuse the offerer's payload type numbers: they are the
+// offerer's to assign, and renumbering them would leave the two ends decoding
+// different things under the same number.
+fn intersect_codecs(offered []Codec, supported []Codec) []Codec {
+	mut out := []Codec{}
+	for candidate in offered {
+		for local in supported {
+			if candidate.name.to_lower() != local.name.to_lower() {
+				continue
+			}
+			if candidate.clock_rate != local.clock_rate {
+				continue
+			}
+			out << Codec{
+				payload_type:  candidate.payload_type
+				name:          candidate.name
+				clock_rate:    candidate.clock_rate
+				channels:      candidate.channels
+				fmtp:          candidate.fmtp
+				rtcp_feedback: candidate.rtcp_feedback
+			}
+			break
+		}
+	}
+	return out
+}
