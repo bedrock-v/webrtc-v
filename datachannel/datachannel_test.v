@@ -402,3 +402,19 @@ fn test_negotiated_channel_rejects_a_used_stream() {
 	}
 	assert false, 'reusing a stream identifier must be refused'
 }
+
+fn test_stream_identifiers_do_not_collide_between_ends() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut from_client := endpoints.client.create('from client', ChannelOptions{}, 5 * time.second)!
+	endpoints.server.accept(5 * time.second)!
+	mut from_server := endpoints.server.create('from server', ChannelOptions{}, 5 * time.second)!
+	endpoints.client.accept(5 * time.second)!
+
+	// The parity split is what keeps both ends from choosing the same stream.
+	assert from_client.stream_identifier % 2 == 0
+	assert from_server.stream_identifier % 2 == 1
+}
