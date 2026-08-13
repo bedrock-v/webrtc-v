@@ -25,3 +25,11 @@ mut:
 	// line up between the offer and the answer.
 	rejected bool
 }
+
+// local_transport_parameters are the values every section repeats.
+struct TransportParameters {
+	ice_ufrag   string
+	ice_pwd     string
+	fingerprint dtls.Fingerprint
+	setup       sdp.Setup
+}
