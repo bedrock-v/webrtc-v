@@ -177,3 +177,10 @@ pub const opus_48000_2 = Codec{
 	fmtp:          'minptime=10;useinbandfec=1'
 	rtcp_feedback: ['transport-cc']
 }
+
+pub const vp8_90000 = Codec{
+	payload_type:  96
+	name:          'VP8'
+	clock_rate:    90000
+	rtcp_feedback: ['goog-remb', 'transport-cc', 'ccm fir', 'nack', 'nack pli']
+}
