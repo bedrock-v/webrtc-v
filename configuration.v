@@ -135,3 +135,10 @@ pub:
 	typ SdpType
 	sdp string
 }
+
+// MediaKind is what a media section carries.
+pub enum MediaKind {
+	audio
+	video
+	application
+}
