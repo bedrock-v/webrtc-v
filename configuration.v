@@ -231,3 +231,12 @@ pub:
 	negotiated bool
 	id         ?u16
 }
+
+fn (o DataChannelOptions) to_channel_options() datachannel.ChannelOptions {
+	return datachannel.ChannelOptions{
+		ordered:             o.ordered
+		max_retransmits:     o.max_retransmits
+		max_packet_lifetime: o.max_packet_lifetime
+		protocol:            o.protocol
+	}
+}
