@@ -105,3 +105,26 @@ pub fn PeerConnection.new(config Configuration) !&PeerConnection {
 		version:     1
 	}
 }
+
+// local_fingerprint is the certificate fingerprint this connection publishes.
+pub fn (pc &PeerConnection) local_fingerprint() dtls.Fingerprint {
+	return pc.certificate.fingerprint(.sha256)
+}
+
+// signaling_state returns the current offer/answer state.
+pub fn (mut pc PeerConnection) signaling_state() SignalingState {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	return pc.signaling
+}
+
+// connection_state returns the aggregate transport state.
+pub fn (mut pc PeerConnection) connection_state() ConnectionState {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	return pc.state
+}
