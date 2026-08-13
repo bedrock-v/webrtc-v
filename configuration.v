@@ -119,3 +119,11 @@ pub fn (t SdpType) str() string {
 		.answer { 'answer' }
 	}
 }
+
+pub fn sdp_type_from_string(s string) ?SdpType {
+	return match s.to_lower() {
+		'offer' { SdpType.offer }
+		'answer' { SdpType.answer }
+		else { none }
+	}
+}
