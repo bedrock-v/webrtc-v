@@ -565,3 +565,26 @@ fn (mut pc PeerConnection) answer_sections(remote RemoteDescription) ! {
 
 	pc.sections = answered
 }
+
+// apply_answer narrows our offered sections to what the peer accepted. The
+// caller must hold the mutex.
+fn (mut pc PeerConnection) apply_answer(remote RemoteDescription) ! {
+	if remote.sections.len != pc.sections.len {
+		return PeerError{
+			reason: .bad_description
+			detail: 'the answer has ${remote.sections.len} sections, the offer had ${pc.sections.len}'
+		}
+	}
+	for index, answered in remote.sections {
+		if answered.rejected {
+			pc.sections[index].rejected = true
+			continue
+		}
+		if pc.sections[index].kind == .application {
+			continue
+		}
+		pc.sections[index].codecs = intersect_codecs(answered.codecs, pc.sections[index].codecs)
+		// The answerer's direction is what it will do; ours is the mirror.
+		pc.sections[index].direction = answered.direction.reverse()
+	}
+}
