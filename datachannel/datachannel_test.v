@@ -461,3 +461,18 @@ fn test_channels_close_when_the_association_ends() {
 	endpoints.server.close()
 	endpoints.server_association.close()
 }
+
+fn test_accept_times_out_without_a_channel() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+	endpoints.server.accept(50 * time.millisecond) or {
+		assert err is ChannelError
+		if err is ChannelError {
+			assert err.reason == .timed_out
+		}
+		return
+	}
+	assert false, 'accept must time out when no channel is opened'
+}
