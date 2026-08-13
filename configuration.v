@@ -66,3 +66,12 @@ pub:
 	sctp_timeout time.Duration  = 20 * time.second
 	logger       logging.Logger = logging.nop()
 }
+
+// SignalingState follows the RTCSignalingState values that apply without
+// renegotiation.
+pub enum SignalingState {
+	stable
+	have_local_offer
+	have_remote_offer
+	closed
+}
