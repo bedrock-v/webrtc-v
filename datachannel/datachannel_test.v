@@ -369,3 +369,22 @@ fn test_ordering_is_preserved_on_a_channel() {
 		assert receiver.recv(5 * time.second)!.text() == 'message ${i}', 'out of order at ${i}'
 	}
 }
+
+fn test_negotiated_channel_needs_no_handshake() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	// Both applications already agreed on stream 100, so neither waits a round
+	// trip for DCEP.
+	mut client_side := endpoints.client.create_negotiated(100, 'agreed', ChannelOptions{})!
+	mut server_side := endpoints.server.create_negotiated(100, 'agreed', ChannelOptions{})!
+
+	assert client_side.state() == .open
+	assert server_side.state() == .open
+	assert client_side.negotiated
+
+	client_side.send_text('no handshake needed')!
+	assert server_side.recv(5 * time.second)!.text() == 'no handshake needed'
+}
