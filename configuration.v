@@ -209,3 +209,11 @@ pub enum PeerErrorReason {
 	// no_media: the operation needs a negotiated media section and there is none.
 	no_media
 }
+
+pub fn (e PeerError) msg() string {
+	return 'webrtc: ${e.reason}: ${e.detail}'
+}
+
+pub fn (e PeerError) code() int {
+	return int(e.reason) + 1
+}
