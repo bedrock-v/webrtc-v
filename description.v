@@ -365,3 +365,11 @@ fn intersect_codecs(offered []Codec, supported []Codec) []Codec {
 	}
 	return out
 }
+
+// new_session_id returns the random identifier for the `o=` line.
+fn new_session_id() !u64 {
+	// RFC 8866 wants a value unlikely to collide with any other session. The
+	// top bit is cleared because the field is written as a decimal integer and
+	// several stacks read it into a signed 64-bit type.
+	return randutil.next_u64()! >> 1
+}
