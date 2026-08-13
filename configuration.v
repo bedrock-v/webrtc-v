@@ -184,3 +184,10 @@ pub const vp8_90000 = Codec{
 	clock_rate:    90000
 	rtcp_feedback: ['goog-remb', 'transport-cc', 'ccm fir', 'nack', 'nack pli']
 }
+
+// PeerError is returned when a connection cannot be configured or driven.
+pub struct PeerError {
+pub:
+	reason PeerErrorReason
+	detail string
+}
