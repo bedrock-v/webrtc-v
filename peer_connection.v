@@ -588,3 +588,30 @@ fn (mut pc PeerConnection) apply_answer(remote RemoteDescription) ! {
 		pc.sections[index].direction = answered.direction.reverse()
 	}
 }
+
+// add_ice_candidate applies a candidate the peer trickled.
+pub fn (mut pc PeerConnection) add_ice_candidate(line string) ! {
+	pc.mu.lock()
+	mut agent := pc.agent
+	closed := pc.closed
+	pc.mu.unlock()
+
+	if closed {
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	if agent == unsafe { nil } {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'no local description has been set, so there is nothing to add the candidate to'
+		}
+	}
+	agent.add_remote_candidate_string(line) or {
+		return PeerError{
+			reason: .bad_description
+			detail: err.msg()
+		}
+	}
+}
