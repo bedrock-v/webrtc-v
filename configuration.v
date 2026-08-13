@@ -112,3 +112,10 @@ pub enum SdpType {
 	offer
 	answer
 }
+
+pub fn (t SdpType) str() string {
+	return match t {
+		.offer { 'offer' }
+		.answer { 'answer' }
+	}
+}
