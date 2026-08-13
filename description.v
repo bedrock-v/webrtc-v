@@ -202,3 +202,12 @@ mut:
 	max_message_size ?int
 	parsed           sdp.SessionDescription
 }
+
+struct RemoteSection {
+mut:
+	kind      MediaKind
+	mid       string
+	direction sdp.Direction
+	codecs    []Codec
+	rejected  bool
+}
