@@ -71,3 +71,37 @@ struct PendingChannel {
 mut:
 	handle &DataChannel = unsafe { nil }
 }
+
+// PeerConnection.new creates a connection. Nothing is opened until an offer or
+// an answer is applied.
+pub fn PeerConnection.new(config Configuration) !&PeerConnection {
+	for server in config.ice_servers {
+		for url in server.urls {
+			if url.starts_with('turns:') {
+				// TURN over TLS would need the credentials to travel inside a
+				// TLS connection this stack does not open. Downgrading to plain
+				// TURN would put them on the wire in the clear, which is worse
+				// than refusing.
+				return PeerError{
+					reason: .unsupported
+					detail: 'TURN over TLS is not implemented; use "turn:" for "${url}"'
+				}
+			}
+			if is_turn_url(url) && (server.username == '' || server.credential == '') {
+				return PeerError{
+					reason: .unsupported
+					detail: 'the relay "${url}" needs a username and a credential'
+				}
+			}
+		}
+	}
+
+	certificate := config.certificate or { dtls.Certificate.generate()! }
+	return &PeerConnection{
+		config:      config
+		log:         config.logger.with_scope('webrtc')
+		certificate: certificate
+		session_id:  new_session_id()!
+		version:     1
+	}
+}
