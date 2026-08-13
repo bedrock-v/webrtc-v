@@ -388,3 +388,17 @@ fn test_negotiated_channel_needs_no_handshake() {
 	client_side.send_text('no handshake needed')!
 	assert server_side.recv(5 * time.second)!.text() == 'no handshake needed'
 }
+
+fn test_negotiated_channel_rejects_a_used_stream() {
+	mut endpoints := connect_endpoints()!
+	defer {
+		endpoints.shutdown()
+	}
+
+	endpoints.client.create_negotiated(100, 'first', ChannelOptions{})!
+	endpoints.client.create_negotiated(100, 'second', ChannelOptions{}) or {
+		assert err is ChannelError
+		return
+	}
+	assert false, 'reusing a stream identifier must be refused'
+}
