@@ -30,3 +30,8 @@ pub:
 	username   string
 	credential string
 }
+
+// is_turn reports whether a URL names a relay rather than a STUN server.
+fn is_turn_url(url string) bool {
+	return url.starts_with('turn:') || url.starts_with('turns:')
+}
