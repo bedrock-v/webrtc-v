@@ -476,3 +476,31 @@ fn test_accept_times_out_without_a_channel() {
 	}
 	assert false, 'accept must time out when no channel is opened'
 }
+
+fn test_an_unreliable_channel_drops_a_lost_message() {
+	// max_retransmits: 0 has to reach the association, or the channel is only
+	// unreliable in the SDP: the message would be retransmitted and arrive late
+	// instead of being abandoned.
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	mut endpoints := connect_endpoints_over(mut client_pipe, mut server_pipe)!
+	defer {
+		endpoints.shutdown()
+	}
+
+	mut sender := endpoints.client.create('unreliable', ChannelOptions{ max_retransmits: 0 },
+		5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+	assert !receiver.reliable()
+
+	client_pipe.drop_next = 1
+	sender.send_text('dropped')!
+	// A second channel carries the sentinel, so it is not subject to the same
+	// policy and must arrive however the first message ends up.
+	mut reliable := endpoints.client.create('reliable', ChannelOptions{}, 5 * time.second)!
+	mut reliable_receiver := endpoints.server.accept(5 * time.second)!
+	reliable.send_text('sentinel')!
+
+	message := reliable_receiver.recv(5 * time.second)!
+	assert message.text() == 'sentinel'
+	assert receiver.try_recv() == none, 'the abandoned message should not have arrived'
+}
