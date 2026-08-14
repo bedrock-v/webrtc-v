@@ -73,3 +73,16 @@ fn (mut pc PeerConnection) bring_up() {
 	pc.set_state(.connected)
 	pc.watch()
 }
+
+fn (mut pc PeerConnection) connect_ice() ! {
+	pc.mu.lock()
+	mut agent := pc.agent
+	timeout := pc.config.ice_timeout
+	pc.mu.unlock()
+
+	agent.connect(timeout) or { return PeerError{
+		reason: .timed_out
+		detail: err.msg()
+	} }
+	pc.log.debug('ICE connected')
+}
