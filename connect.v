@@ -86,3 +86,65 @@ fn (mut pc PeerConnection) connect_ice() ! {
 	} }
 	pc.log.debug('ICE connected')
 }
+
+fn (mut pc PeerConnection) connect_dtls() ! {
+	pc.mu.lock()
+	mut agent := pc.agent
+	role := pc.role
+	certificate := pc.certificate
+	remote := pc.remote or {
+		pc.mu.unlock()
+		return PeerError{
+			reason: .wrong_state
+			detail: 'no remote description'
+		}
+	}
+
+	config := pc.config
+	pc.mu.unlock()
+
+	// With a media section the socket carries DTLS and SRTP together, so the
+	// handshake reads through the demultiplexer rather than from the agent -
+	// otherwise the DTLS layer would consume RTP packets and drop them.
+	transport := if pc.has_media_section() {
+		media := MediaTransport.new(mut agent, config.logger)
+		pc.mu.lock()
+		pc.media_transport = media
+		pc.mu.unlock()
+		dtls.Transport(media)
+	} else {
+		dtls.Transport(agent)
+	}
+
+	mut conn := dtls.Conn.new(transport,
+		role:                role
+		certificate:         certificate
+		remote_fingerprints: remote.fingerprints
+		srtp_profiles:       config.srtp_profiles
+		handshake_timeout:   config.dtls_timeout
+		logger:              config.logger
+	) or {
+		return PeerError{
+			reason: .transport
+			detail: 'creating the DTLS transport: ${err.msg()}'
+		}
+	}
+
+	pc.mu.lock()
+	pc.dtls_conn = conn
+	pc.mu.unlock()
+
+	conn.handshake() or {
+		return PeerError{
+			reason: .transport
+			detail: 'DTLS handshake: ${err.msg()}'
+		}
+	}
+	pc.log.debug('DTLS connected as ${role}')
+
+	// Media, if any section survived negotiation, is protected with the keys
+	// this handshake exported.
+	if pc.has_media_section() {
+		pc.attach_media(mut conn) or { pc.log.warn('media transport unavailable: ${err.msg()}') }
+	}
+}
