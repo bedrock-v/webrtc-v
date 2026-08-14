@@ -748,3 +748,14 @@ pub fn (mut pc PeerConnection) selected_candidate_pair() ?ice.CandidatePair {
 	}
 	return agent.selected_pair()
 }
+
+// selected_srtp_profile returns the SRTP profile the DTLS handshake agreed.
+pub fn (mut pc PeerConnection) selected_srtp_profile() ?srtp.Profile {
+	pc.mu.lock()
+	mut conn := pc.dtls_conn
+	pc.mu.unlock()
+	if conn == unsafe { nil } {
+		return none
+	}
+	return conn.selected_srtp_profile()
+}
