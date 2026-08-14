@@ -333,3 +333,39 @@ pub fn (mut pc PeerConnection) create_offer() !SessionDescription {
 		sdp: text
 	}
 }
+
+// create_answer builds an answer to the offer that was applied.
+pub fn (mut pc PeerConnection) create_answer() !SessionDescription {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	if pc.closed {
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	if pc.signaling != .have_remote_offer {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'an answer needs a remote offer; the state is ${pc.signaling}'
+		}
+	}
+
+	agent := pc.ensure_agent()!
+	ufrag, pwd := agent.local_credentials()
+	setup := if pc.role == .client { sdp.Setup.active } else { sdp.Setup.passive }
+
+	text := build_description(pc.sections, TransportParameters{
+		ice_ufrag:   ufrag
+		ice_pwd:     pwd
+		fingerprint: pc.certificate.fingerprint(.sha256)
+		setup:       setup
+	}, pc.session_id, pc.version, pc.config.max_message_size)!
+
+	return SessionDescription{
+		typ: .answer
+		sdp: text
+	}
+}
