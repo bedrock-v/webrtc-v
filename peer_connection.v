@@ -369,3 +369,47 @@ pub fn (mut pc PeerConnection) create_answer() !SessionDescription {
 		sdp: text
 	}
 }
+
+// set_local_description applies a description this end created.
+pub fn (mut pc PeerConnection) set_local_description(description SessionDescription) ! {
+	pc.mu.lock()
+	if pc.closed {
+		pc.mu.unlock()
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	match description.typ {
+		.offer {
+			if pc.signaling != .stable {
+				pc.mu.unlock()
+				return PeerError{
+					reason: .wrong_state
+					detail: 'a local offer needs the stable state, not ${pc.signaling}'
+				}
+			}
+			pc.is_offerer = true
+			pc.signaling = .have_local_offer
+		}
+		.answer {
+			if pc.signaling != .have_remote_offer {
+				pc.mu.unlock()
+				return PeerError{
+					reason: .wrong_state
+					detail: 'a local answer needs a remote offer, not ${pc.signaling}'
+				}
+			}
+			pc.signaling = .stable
+		}
+	}
+	pc.local_sdp = description.sdp
+	pc.mu.unlock()
+
+	// Gathering starts here rather than at construction: the credentials in the
+	// description have to be the ones the sockets will use, and the application
+	// has now committed to them.
+	pc.start_gathering()!
+	pc.maybe_start()
+	return
+}
