@@ -676,3 +676,11 @@ fn (mut pc PeerConnection) ensure_agent() !&ice.Agent {
 	pc.agent = agent
 	return agent
 }
+
+fn (mut pc PeerConnection) is_closed() bool {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	return pc.closed
+}
