@@ -302,3 +302,36 @@ fn (mut pc PeerConnection) watch() {
 		time.sleep(200 * time.millisecond)
 	}
 }
+
+// wait_connected blocks until the transports are up.
+//
+// It exists because the bring-up is asynchronous and most callers, having
+// exchanged an offer and an answer, simply want to wait for the result.
+pub fn (mut pc PeerConnection) wait_connected(timeout time.Duration) ! {
+	deadline := time.now().add(timeout)
+	for time.now() < deadline {
+		match pc.connection_state() {
+			.connected {
+				return
+			}
+			.failed {
+				return PeerError{
+					reason: .transport
+					detail: 'the connection failed'
+				}
+			}
+			.closed {
+				return PeerError{
+					reason: .closed
+					detail: 'the connection was closed'
+				}
+			}
+			else {}
+		}
+		time.sleep(5 * time.millisecond)
+	}
+	return PeerError{
+		reason: .timed_out
+		detail: 'not connected within ${timeout.milliseconds()}ms'
+	}
+}
