@@ -206,3 +206,23 @@ fn (mut pc PeerConnection) connect_sctp() ! {
 	pc.threads << spawn pc.accept_channels()
 	pc.log.debug('SCTP associated, data channels ready')
 }
+
+// open_pending_channels opens the channels asked for before the transports were
+// up.
+fn (mut pc PeerConnection) open_pending_channels() {
+	pc.mu.lock()
+	pending := pc.pending_channels.clone()
+	pc.pending_channels.clear()
+	pc.mu.unlock()
+
+	for request in pending {
+		mut handle := request.handle
+		if handle == unsafe { nil } {
+			continue
+		}
+		pc.bind_channel(mut handle) or {
+			pc.log.warn('could not open the channel "${handle.label}": ${err.msg()}')
+			continue
+		}
+	}
+}
