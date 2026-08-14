@@ -128,3 +128,18 @@ pub fn (mut pc PeerConnection) connection_state() ConnectionState {
 	}
 	return pc.state
 }
+
+// current_local_description returns the SDP this end last applied.
+pub fn (mut pc PeerConnection) current_local_description() ?SessionDescription {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	if pc.local_sdp == '' {
+		return none
+	}
+	return SessionDescription{
+		typ: if pc.is_offerer { SdpType.offer } else { SdpType.answer }
+		sdp: pc.local_sdp
+	}
+}
