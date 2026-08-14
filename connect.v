@@ -335,3 +335,29 @@ pub fn (mut pc PeerConnection) wait_connected(timeout time.Duration) ! {
 		detail: 'not connected within ${timeout.milliseconds()}ms'
 	}
 }
+
+fn (mut pc PeerConnection) has_application_section() bool {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	for section in pc.sections {
+		if section.kind == .application && !section.rejected {
+			return true
+		}
+	}
+	return false
+}
+
+fn (mut pc PeerConnection) has_media_section() bool {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	for section in pc.sections {
+		if section.kind != .application && !section.rejected && section.codecs.len > 0 {
+			return true
+		}
+	}
+	return false
+}
