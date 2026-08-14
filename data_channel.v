@@ -198,3 +198,30 @@ pub fn (mut d DataChannel) close() {
 fn (mut d DataChannel) mark_closed() {
 	d.closed = true
 }
+
+// open_channel opens a channel on the live transports.
+fn (mut pc PeerConnection) open_channel(label string, options DataChannelOptions) !&DataChannel {
+	mut channel := pc.start_channel(label, options)!
+	mut wrapper := &DataChannel{
+		connection: pc
+		channel:    channel
+		label:      label
+		options:    options
+	}
+	pc.mu.lock()
+	pc.open_channels << wrapper
+	pc.mu.unlock()
+	return wrapper
+}
+
+// bind_channel opens a channel for a handle the application already holds.
+//
+// A channel created before the transports existed was handed back unopened, so
+// the handle has to become usable in place - the application kept a reference
+// to it and would otherwise be left holding one that never opens.
+fn (mut pc PeerConnection) bind_channel(mut handle DataChannel) ! {
+	mut channel := pc.start_channel(handle.label, handle.options)!
+	pc.mu.lock()
+	handle.channel = channel
+	pc.mu.unlock()
+}
