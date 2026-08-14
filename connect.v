@@ -46,3 +46,30 @@ fn (mut pc PeerConnection) maybe_start() {
 
 	pc.threads << spawn pc.bring_up()
 }
+
+// bring_up runs the transports in sequence.
+fn (mut pc PeerConnection) bring_up() {
+	pc.connect_ice() or {
+		pc.log.warn('ICE failed: ${err.msg()}')
+		pc.set_state(.failed)
+		return
+	}
+	pc.connect_dtls() or {
+		pc.log.warn('DTLS failed: ${err.msg()}')
+		pc.set_state(.failed)
+		return
+	}
+	if pc.has_application_section() {
+		pc.connect_sctp() or {
+			pc.log.warn('SCTP failed: ${err.msg()}')
+			pc.set_state(.failed)
+			return
+		}
+	}
+	// The channels asked for before negotiation are opened before the state is
+	// announced, so that a caller waiting on wait_connected can send as soon as
+	// it returns rather than racing the DCEP exchange.
+	pc.open_pending_channels()
+	pc.set_state(.connected)
+	pc.watch()
+}
