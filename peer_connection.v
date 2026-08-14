@@ -63,3 +63,11 @@ mut:
 	closed  bool
 	threads []thread
 }
+
+// PendingChannel is a channel requested before the transports were ready. The
+// handle is the one the application is already holding, which is what has to
+// become usable once SCTP is up.
+struct PendingChannel {
+mut:
+	handle &DataChannel = unsafe { nil }
+}
