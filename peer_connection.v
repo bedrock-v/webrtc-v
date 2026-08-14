@@ -288,3 +288,48 @@ pub fn (mut pc PeerConnection) accept_data_channel(timeout time.Duration) !&Data
 		detail: 'the connection is closed'
 	}
 }
+
+// create_offer builds an offer describing what this end wants.
+//
+// The offer is not applied by creating it; set_local_description does that, and
+// the split is what lets an application inspect or adjust the SDP first.
+pub fn (mut pc PeerConnection) create_offer() !SessionDescription {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	if pc.closed {
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	if pc.signaling != .stable {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'an offer can only be created in the stable state, not ${pc.signaling}'
+		}
+	}
+	if pc.sections.len == 0 {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'there is nothing to offer; add media or create a data channel first'
+		}
+	}
+
+	agent := pc.ensure_agent()!
+	ufrag, pwd := agent.local_credentials()
+	text := build_description(pc.sections, TransportParameters{
+		ice_ufrag:   ufrag
+		ice_pwd:     pwd
+		fingerprint: pc.certificate.fingerprint(.sha256)
+		// An offer says actpass: the answerer picks, which avoids both ends
+		// trying to be the DTLS client.
+		setup: .actpass
+	}, pc.session_id, pc.version, pc.config.max_message_size)!
+
+	return SessionDescription{
+		typ: .offer
+		sdp: text
+	}
+}
