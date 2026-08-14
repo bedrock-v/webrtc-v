@@ -225,3 +225,39 @@ fn (mut pc PeerConnection) bind_channel(mut handle DataChannel) ! {
 	handle.channel = channel
 	pc.mu.unlock()
 }
+
+// start_channel does the manager work both paths need.
+fn (mut pc PeerConnection) start_channel(label string, options DataChannelOptions) !&datachannel.Channel {
+	pc.mu.lock()
+	mut manager := pc.channels
+	pc.mu.unlock()
+	if manager == unsafe { nil } {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'the data transport is not up'
+		}
+	}
+
+	return if options.negotiated {
+		identifier := options.id or {
+			return PeerError{
+				reason: .wrong_state
+				detail: 'a negotiated channel needs an id, which must match on both sides'
+			}
+		}
+
+		manager.create_negotiated(identifier, label, options.to_channel_options()) or {
+			return PeerError{
+				reason: .transport
+				detail: err.msg()
+			}
+		}
+	} else {
+		manager.create(label, options.to_channel_options(), 15 * time.second) or {
+			return PeerError{
+				reason: .transport
+				detail: err.msg()
+			}
+		}
+	}
+}
