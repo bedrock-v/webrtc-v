@@ -264,3 +264,41 @@ fn (mut pc PeerConnection) accept_channels() {
 		}
 	}
 }
+
+// watch follows the transports after the connection is up, so that a path that
+// dies is reported rather than silently stopping.
+fn (mut pc PeerConnection) watch() {
+	for {
+		if pc.is_closed() {
+			return
+		}
+		pc.mu.lock()
+		mut agent := pc.agent
+		mut association := pc.association
+		needs_sctp := pc.association != unsafe { nil }
+		pc.mu.unlock()
+
+		if agent == unsafe { nil } {
+			return
+		}
+		ice_state := agent.state()
+		mut next := ConnectionState.connected
+		match ice_state {
+			.failed, .closed { next = .failed }
+			.disconnected { next = .disconnected }
+			else {}
+		}
+		if next == .connected && needs_sctp {
+			match association.state() {
+				.aborted { next = .failed }
+				.closed { next = .disconnected }
+				else {}
+			}
+		}
+		pc.set_state(next)
+		if next == .failed {
+			return
+		}
+		time.sleep(200 * time.millisecond)
+	}
+}
