@@ -143,3 +143,18 @@ pub fn (mut pc PeerConnection) current_local_description() ?SessionDescription {
 		sdp: pc.local_sdp
 	}
 }
+
+// current_remote_description returns the SDP the peer last sent.
+pub fn (mut pc PeerConnection) current_remote_description() ?SessionDescription {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	if pc.remote_sdp == '' {
+		return none
+	}
+	return SessionDescription{
+		typ: if pc.is_offerer { SdpType.answer } else { SdpType.offer }
+		sdp: pc.remote_sdp
+	}
+}
