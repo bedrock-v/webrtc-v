@@ -72,3 +72,21 @@ pub fn (mut d DataChannel) state() DataChannelState {
 		.closed { DataChannelState.closed }
 	}
 }
+
+// id returns the SCTP stream identifier once the channel is open.
+pub fn (mut d DataChannel) id() ?u16 {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return none
+	}
+	return channel.stream_identifier
+}
+
+// ordered reports whether the channel preserves message order.
+pub fn (mut d DataChannel) ordered() bool {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return d.options.ordered
+	}
+	return channel.ordered()
+}
