@@ -631,3 +631,48 @@ pub fn (mut pc PeerConnection) local_candidates() []string {
 	}
 	return out
 }
+
+// ensure_agent creates the ICE agent if it does not exist. The caller must hold
+// the mutex.
+fn (mut pc PeerConnection) ensure_agent() !&ice.Agent {
+	if pc.agent != unsafe { nil } {
+		return pc.agent
+	}
+	mut servers := []string{}
+	mut relays := []ice.TurnServer{}
+	for server in pc.config.ice_servers {
+		for url in server.urls {
+			if is_turn_url(url) {
+				relays << ice.TurnServer{
+					url:      url
+					username: server.username
+					password: server.credential
+				}
+				continue
+			}
+			servers << url.replace('stun:', '')
+		}
+	}
+	// The offerer takes the controlling role. It is only a tiebreak - a role
+	// conflict is resolved on the wire - but starting from the right one saves
+	// the exchange.
+	agent := ice.Agent.new(
+		role:          if pc.is_offerer || pc.signaling != .have_remote_offer {
+			ice.Role.controlling
+		} else {
+			ice.Role.controlled
+		}
+		stun_servers:  servers
+		turn_servers:  relays
+		interfaces:    pc.config.interfaces
+		gather_policy: pc.config.ice_gather_policy
+		logger:        pc.config.logger
+	) or {
+		return PeerError{
+			reason: .transport
+			detail: 'creating the ICE agent: ${err.msg()}'
+		}
+	}
+	pc.agent = agent
+	return agent
+}
