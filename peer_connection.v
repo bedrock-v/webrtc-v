@@ -615,3 +615,19 @@ pub fn (mut pc PeerConnection) add_ice_candidate(line string) ! {
 		}
 	}
 }
+
+// local_candidates returns the candidates gathered so far, as SDP attribute
+// values ready to signal.
+pub fn (mut pc PeerConnection) local_candidates() []string {
+	pc.mu.lock()
+	mut agent := pc.agent
+	pc.mu.unlock()
+	if agent == unsafe { nil } {
+		return []string{}
+	}
+	mut out := []string{}
+	for candidate in agent.local_candidates() {
+		out << 'candidate:${candidate}'
+	}
+	return out
+}
