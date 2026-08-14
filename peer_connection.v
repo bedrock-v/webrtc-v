@@ -110,3 +110,12 @@ pub fn PeerConnection.new(config Configuration) !&PeerConnection {
 pub fn (pc &PeerConnection) local_fingerprint() dtls.Fingerprint {
 	return pc.certificate.fingerprint(.sha256)
 }
+
+// signaling_state returns the current offer/answer state.
+pub fn (mut pc PeerConnection) signaling_state() SignalingState {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	return pc.signaling
+}
