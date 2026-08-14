@@ -413,3 +413,99 @@ pub fn (mut pc PeerConnection) set_local_description(description SessionDescript
 	pc.maybe_start()
 	return
 }
+
+// set_remote_description applies the peer's offer or answer.
+pub fn (mut pc PeerConnection) set_remote_description(description SessionDescription) ! {
+	remote := parse_remote_description(description.sdp)!
+
+	pc.mu.lock()
+	if pc.closed {
+		pc.mu.unlock()
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+
+	match description.typ {
+		.offer {
+			if pc.signaling != .stable {
+				pc.mu.unlock()
+				return PeerError{
+					reason: .wrong_state
+					detail: 'a remote offer needs the stable state, not ${pc.signaling}'
+				}
+			}
+			pc.is_offerer = false
+			pc.signaling = .have_remote_offer
+			pc.answer_sections(remote)!
+			// RFC 5763: the answerer chooses, and choosing active means it
+			// starts the handshake, which saves a round trip.
+			offered := remote.setup or { sdp.Setup.actpass }
+			pc.role = if offered.answer() == .active { dtls.Role.client } else { dtls.Role.server }
+		}
+		.answer {
+			if pc.signaling != .have_local_offer {
+				pc.mu.unlock()
+				return PeerError{
+					reason: .wrong_state
+					detail: 'a remote answer needs a local offer, not ${pc.signaling}'
+				}
+			}
+			pc.signaling = .stable
+			pc.apply_answer(remote)!
+			answered := remote.setup or {
+				pc.mu.unlock()
+				return PeerError{
+					reason: .bad_description
+					detail: 'the answer carries no setup role'
+				}
+			}
+
+			if answered == .actpass {
+				// An answer may not leave the roles undetermined; both ends
+				// would then wait for the other to start the handshake.
+				pc.mu.unlock()
+				return PeerError{
+					reason: .bad_description
+					detail: 'the answer says actpass, which leaves the DTLS roles undetermined'
+				}
+			}
+			// The answerer named its own role, so ours is the opposite.
+			pc.role = if answered == .active { dtls.Role.server } else { dtls.Role.client }
+		}
+	}
+
+	pc.remote = remote
+	pc.remote_sdp = description.sdp
+	candidates := remote.candidates.clone()
+	mut agent := pc.agent
+	ufrag := remote.ice_ufrag
+	pwd := remote.ice_pwd
+	pc.mu.unlock()
+
+	if agent == unsafe { nil } {
+		pc.mu.lock()
+		agent = pc.ensure_agent() or {
+			pc.mu.unlock()
+			return err
+		}
+		pc.mu.unlock()
+	}
+	agent.set_remote_credentials(ufrag, pwd) or {
+		return PeerError{
+			reason: .bad_description
+			detail: 'the peer ICE credentials were refused: ${err.msg()}'
+		}
+	}
+	// Candidates carried in the description itself, for a peer that does not
+	// trickle.
+	for line in candidates {
+		agent.add_remote_candidate_string(line) or {
+			pc.log.debug('ignoring a candidate we cannot use: ${err.msg()}')
+		}
+	}
+
+	pc.maybe_start()
+	return
+}
