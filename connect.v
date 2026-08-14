@@ -226,3 +226,41 @@ fn (mut pc PeerConnection) open_pending_channels() {
 		}
 	}
 }
+
+// accept_channels forwards channels the peer opens.
+fn (mut pc PeerConnection) accept_channels() {
+	for {
+		if pc.is_closed() {
+			return
+		}
+		pc.mu.lock()
+		mut manager := pc.channels
+		pc.mu.unlock()
+		if manager == unsafe { nil } {
+			return
+		}
+
+		channel := manager.accept(200 * time.millisecond) or {
+			if err is datachannel.ChannelError && err.reason == .timed_out {
+				continue
+			}
+			return
+		}
+		mut wrapper := &DataChannel{
+			connection: pc
+			label:      channel.label
+			channel:    channel
+		}
+		pc.mu.lock()
+		pc.open_channels << wrapper
+		pc.mu.unlock()
+
+		select {
+			pc.incoming <- wrapper {}
+			else {
+				pc.log.warn('the incoming channel queue is full; "${channel.label}" was dropped')
+				wrapper.close()
+			}
+		}
+	}
+}
