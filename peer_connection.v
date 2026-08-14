@@ -241,3 +241,17 @@ pub fn (mut pc PeerConnection) create_data_channel(label string, options DataCha
 	pc.mu.unlock()
 	return handle
 }
+
+// ensure_application_section adds the data section if there is not one already.
+// The caller must hold the mutex.
+fn (mut pc PeerConnection) ensure_application_section() {
+	for section in pc.sections {
+		if section.kind == .application {
+			return
+		}
+	}
+	pc.sections << Section{
+		kind: .application
+		mid:  pc.sections.len.str()
+	}
+}
