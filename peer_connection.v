@@ -737,3 +737,14 @@ pub fn (mut pc PeerConnection) close() {
 	pc.threads.clear()
 	pc.mu.unlock()
 }
+
+// selected_candidate_pair returns the ICE pair carrying traffic.
+pub fn (mut pc PeerConnection) selected_candidate_pair() ?ice.CandidatePair {
+	pc.mu.lock()
+	mut agent := pc.agent
+	pc.mu.unlock()
+	if agent == unsafe { nil } {
+		return none
+	}
+	return agent.selected_pair()
+}
