@@ -31,3 +31,18 @@ fn (mut pc PeerConnection) start_gathering() ! {
 		}
 	}
 }
+
+// maybe_start launches the bring-up once both descriptions are in place.
+fn (mut pc PeerConnection) maybe_start() {
+	pc.mu.lock()
+	ready := !pc.closed && pc.signaling == .stable && pc.local_sdp != '' && pc.remote_sdp != ''
+		&& pc.threads.len == 0 && pc.agent != unsafe { nil }
+	if !ready {
+		pc.mu.unlock()
+		return
+	}
+	pc.state = .connecting
+	pc.mu.unlock()
+
+	pc.threads << spawn pc.bring_up()
+}
