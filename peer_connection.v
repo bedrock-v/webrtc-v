@@ -119,3 +119,12 @@ pub fn (mut pc PeerConnection) signaling_state() SignalingState {
 	}
 	return pc.signaling
 }
+
+// connection_state returns the aggregate transport state.
+pub fn (mut pc PeerConnection) connection_state() ConnectionState {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	return pc.state
+}
