@@ -684,3 +684,12 @@ fn (mut pc PeerConnection) is_closed() bool {
 	}
 	return pc.closed
 }
+
+fn (mut pc PeerConnection) set_state(state ConnectionState) {
+	pc.mu.lock()
+	if pc.state != state && pc.state != .closed {
+		pc.log.info('connection state ${pc.state} -> ${state}')
+		pc.state = state
+	}
+	pc.mu.unlock()
+}
