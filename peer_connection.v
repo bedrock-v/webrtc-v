@@ -158,3 +158,47 @@ pub fn (mut pc PeerConnection) current_remote_description() ?SessionDescription 
 		sdp: pc.remote_sdp
 	}
 }
+
+// add_media declares a media section to offer.
+//
+// It must be called before create_offer. Renegotiation is not implemented, so a
+// section added after the first offer would never reach the peer; saying so is
+// better than adding it to a description nobody will see.
+pub fn (mut pc PeerConnection) add_media(kind MediaKind, direction sdp.Direction, codecs []Codec) ! {
+	if kind == .application {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'use create_data_channel for the data section'
+		}
+	}
+	if codecs.len == 0 {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'a media section needs at least one codec'
+		}
+	}
+
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	if pc.closed {
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	if pc.signaling != .stable || pc.local_sdp != '' {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'media must be added before the first offer; renegotiation is not implemented'
+		}
+	}
+	pc.sections << Section{
+		kind:      kind
+		mid:       pc.sections.len.str()
+		direction: direction
+		codecs:    codecs.clone()
+	}
+	return
+}
