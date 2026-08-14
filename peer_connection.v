@@ -509,3 +509,59 @@ pub fn (mut pc PeerConnection) set_remote_description(description SessionDescrip
 	pc.maybe_start()
 	return
 }
+
+// answer_sections mirrors the offered sections into our own list, keeping only
+// what we can carry. The caller must hold the mutex.
+fn (mut pc PeerConnection) answer_sections(remote RemoteDescription) ! {
+	// The answer must have the same sections, in the same order, as the offer.
+	// A section we cannot use is rejected with a zero port rather than left
+	// out, so the two lists stay index-aligned.
+	mut wanted := pc.sections.clone()
+	mut answered := []Section{cap: remote.sections.len}
+
+	for offered in remote.sections {
+		if offered.rejected {
+			answered << Section{
+				kind:     offered.kind
+				mid:      offered.mid
+				rejected: true
+			}
+			continue
+		}
+		if offered.kind == .application {
+			answered << Section{
+				kind: .application
+				mid:  offered.mid
+			}
+			continue
+		}
+
+		mut local_codecs := []Codec{}
+		for index, candidate in wanted {
+			if candidate.kind != offered.kind {
+				continue
+			}
+			local_codecs = intersect_codecs(offered.codecs, candidate.codecs)
+			wanted.delete(index)
+			break
+		}
+		if local_codecs.len == 0 {
+			// Nothing in common, or no local section of this kind. Rejecting is
+			// the correct answer and keeps the section indices aligned.
+			answered << Section{
+				kind:     offered.kind
+				mid:      offered.mid
+				rejected: true
+			}
+			continue
+		}
+		answered << Section{
+			kind:      offered.kind
+			mid:       offered.mid
+			direction: offered.direction.reverse()
+			codecs:    local_codecs
+		}
+	}
+
+	pc.sections = answered
+}
