@@ -737,3 +737,37 @@ pub fn (mut pc PeerConnection) close() {
 	pc.threads.clear()
 	pc.mu.unlock()
 }
+
+// selected_candidate_pair returns the ICE pair carrying traffic.
+pub fn (mut pc PeerConnection) selected_candidate_pair() ?ice.CandidatePair {
+	pc.mu.lock()
+	mut agent := pc.agent
+	pc.mu.unlock()
+	if agent == unsafe { nil } {
+		return none
+	}
+	return agent.selected_pair()
+}
+
+// selected_srtp_profile returns the SRTP profile the DTLS handshake agreed.
+pub fn (mut pc PeerConnection) selected_srtp_profile() ?srtp.Profile {
+	pc.mu.lock()
+	mut conn := pc.dtls_conn
+	pc.mu.unlock()
+	if conn == unsafe { nil } {
+		return none
+	}
+	return conn.selected_srtp_profile()
+}
+
+// remote_certificate returns the peer's certificate, once the handshake has
+// reached it.
+pub fn (mut pc PeerConnection) remote_certificate() ?dtls.ParsedCertificate {
+	pc.mu.lock()
+	mut conn := pc.dtls_conn
+	pc.mu.unlock()
+	if conn == unsafe { nil } {
+		return none
+	}
+	return conn.remote_certificate()
+}
