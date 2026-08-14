@@ -759,3 +759,15 @@ pub fn (mut pc PeerConnection) selected_srtp_profile() ?srtp.Profile {
 	}
 	return conn.selected_srtp_profile()
 }
+
+// remote_certificate returns the peer's certificate, once the handshake has
+// reached it.
+pub fn (mut pc PeerConnection) remote_certificate() ?dtls.ParsedCertificate {
+	pc.mu.lock()
+	mut conn := pc.dtls_conn
+	pc.mu.unlock()
+	if conn == unsafe { nil } {
+		return none
+	}
+	return conn.remote_certificate()
+}
