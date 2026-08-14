@@ -126,3 +126,46 @@ pub fn (mut d DataChannel) send(data []u8, is_string bool) ! {
 		}
 	}
 }
+
+// recv returns the next message, waiting up to timeout.
+pub fn (mut d DataChannel) recv(timeout time.Duration) !DataChannelMessage {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		// Wait for the transports rather than failing outright: a channel
+		// created before negotiation is legitimately used this way.
+		deadline := time.now().add(timeout)
+		for time.now() < deadline {
+			if d.closed {
+				break
+			}
+			channel = d.channel
+			if channel != unsafe { nil } {
+				break
+			}
+			time.sleep(5 * time.millisecond)
+		}
+	}
+	if d.closed || channel == unsafe { nil } {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'the channel "${d.label}" is not open'
+		}
+	}
+
+	message := channel.recv(timeout) or {
+		if err is datachannel.ChannelError && err.reason == .timed_out {
+			return PeerError{
+				reason: .timed_out
+				detail: 'no message on "${d.label}" within ${timeout.milliseconds()}ms'
+			}
+		}
+		return PeerError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+	return DataChannelMessage{
+		is_string: message.is_string
+		data:      message.data
+	}
+}
