@@ -42,3 +42,33 @@ pub:
 pub fn (m DataChannelMessage) text() string {
 	return m.data.bytestr()
 }
+
+// DataChannel is a channel on a peer connection.
+pub struct DataChannel {
+mut:
+	connection &PeerConnection      = unsafe { nil }
+	channel    &datachannel.Channel = unsafe { nil }
+	closed     bool
+	options    DataChannelOptions
+pub:
+	label string
+}
+
+// state returns the channel's ready state.
+pub fn (mut d DataChannel) state() DataChannelState {
+	if d.closed {
+		return .closed
+	}
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		// Created before the transports came up; it is not open yet, which is
+		// exactly what connecting means.
+		return .connecting
+	}
+	return match channel.state() {
+		.connecting { DataChannelState.connecting }
+		.open { DataChannelState.open }
+		.closing { DataChannelState.closing }
+		.closed { DataChannelState.closed }
+	}
+}
