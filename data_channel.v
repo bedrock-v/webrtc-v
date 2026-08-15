@@ -53,3 +53,22 @@ mut:
 pub:
 	label string
 }
+
+// state returns the channel's ready state.
+pub fn (mut d DataChannel) state() DataChannelState {
+	if d.closed {
+		return .closed
+	}
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		// Created before the transports came up; it is not open yet, which is
+		// exactly what connecting means.
+		return .connecting
+	}
+	return match channel.state() {
+		.connecting { DataChannelState.connecting }
+		.open { DataChannelState.open }
+		.closing { DataChannelState.closing }
+		.closed { DataChannelState.closed }
+	}
+}
