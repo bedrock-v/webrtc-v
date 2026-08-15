@@ -265,3 +265,28 @@ fn (mut m MediaTransport) recv_rtp(timeout time.Duration) !rtp.Packet {
 		detail: 'the media transport is closed'
 	}
 }
+
+// recv_rtcp returns the next RTCP compound packet, decrypted and parsed.
+fn (mut m MediaTransport) recv_rtcp(timeout time.Duration) ![]rtcp.Packet {
+	deadline := time.now().add(timeout)
+	for {
+		remaining := deadline - time.now()
+		if remaining <= 0 {
+			return PeerError{
+				reason: .timed_out
+				detail: 'no RTCP packet within ${timeout.milliseconds()}ms'
+			}
+		}
+		raw := m.next(m.rtcp_packets, remaining)!
+		plaintext := m.unprotect_rtcp(raw) or { continue }
+		packets := rtcp.unmarshal(plaintext) or {
+			m.log.debug('dropped an undecodable RTCP packet: ${err.msg()}')
+			continue
+		}
+		return packets
+	}
+	return PeerError{
+		reason: .closed
+		detail: 'the media transport is closed'
+	}
+}
