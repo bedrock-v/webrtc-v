@@ -169,3 +169,16 @@ pub fn (mut d DataChannel) recv(timeout time.Duration) !DataChannelMessage {
 		data:      message.data
 	}
 }
+
+// try_recv returns a message if one is already queued.
+pub fn (mut d DataChannel) try_recv() ?DataChannelMessage {
+	mut channel := d.channel
+	if d.closed || channel == unsafe { nil } {
+		return none
+	}
+	message := channel.try_recv()?
+	return DataChannelMessage{
+		is_string: message.is_string
+		data:      message.data
+	}
+}
