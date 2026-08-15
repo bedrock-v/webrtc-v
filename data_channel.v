@@ -182,3 +182,15 @@ pub fn (mut d DataChannel) try_recv() ?DataChannelMessage {
 		data:      message.data
 	}
 }
+
+// close shuts the channel down.
+pub fn (mut d DataChannel) close() {
+	if d.closed {
+		return
+	}
+	d.closed = true
+	mut channel := d.channel
+	if channel != unsafe { nil } {
+		channel.close()
+	}
+}
