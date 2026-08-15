@@ -42,3 +42,14 @@ pub:
 pub fn (m DataChannelMessage) text() string {
 	return m.data.bytestr()
 }
+
+// DataChannel is a channel on a peer connection.
+pub struct DataChannel {
+mut:
+	connection &PeerConnection      = unsafe { nil }
+	channel    &datachannel.Channel = unsafe { nil }
+	closed     bool
+	options    DataChannelOptions
+pub:
+	label string
+}
