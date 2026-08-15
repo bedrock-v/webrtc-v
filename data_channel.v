@@ -27,3 +27,13 @@ pub fn (s DataChannelState) str() string {
 		.closed { 'closed' }
 	}
 }
+
+// DataChannelMessage is one message read from a channel.
+pub struct DataChannelMessage {
+pub:
+	// is_string distinguishes text from binary. It travels in the SCTP payload
+	// protocol identifier rather than in the bytes, which is how an empty string
+	// stays distinguishable from empty binary data.
+	is_string bool
+	data      []u8
+}
