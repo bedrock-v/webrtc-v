@@ -90,3 +90,12 @@ pub fn (mut d DataChannel) ordered() bool {
 	}
 	return channel.ordered()
 }
+
+// reliable reports whether every message is guaranteed to arrive.
+pub fn (mut d DataChannel) reliable() bool {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return d.options.max_retransmits == none && d.options.max_packet_lifetime == none
+	}
+	return channel.reliable()
+}
