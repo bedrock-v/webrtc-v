@@ -37,3 +37,8 @@ pub:
 	is_string bool
 	data      []u8
 }
+
+// text returns the message as a string.
+pub fn (m DataChannelMessage) text() string {
+	return m.data.bytestr()
+}
