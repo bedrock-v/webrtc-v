@@ -81,3 +81,12 @@ pub fn (mut d DataChannel) id() ?u16 {
 	}
 	return channel.stream_identifier
 }
+
+// ordered reports whether the channel preserves message order.
+pub fn (mut d DataChannel) ordered() bool {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return d.options.ordered
+	}
+	return channel.ordered()
+}
