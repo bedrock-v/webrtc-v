@@ -109,3 +109,20 @@ pub fn (mut d DataChannel) send_text(text string) ! {
 pub fn (mut d DataChannel) send_binary(data []u8) ! {
 	d.send(data, false)!
 }
+
+// send delivers a message.
+pub fn (mut d DataChannel) send(data []u8, is_string bool) ! {
+	mut channel := d.channel
+	if d.closed || channel == unsafe { nil } {
+		return PeerError{
+			reason: .wrong_state
+			detail: 'the channel "${d.label}" is ${d.state()}'
+		}
+	}
+	channel.send(data, is_string) or {
+		return PeerError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
+}
