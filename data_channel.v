@@ -99,3 +99,8 @@ pub fn (mut d DataChannel) reliable() bool {
 	}
 	return channel.reliable()
 }
+
+// send_text sends a string message.
+pub fn (mut d DataChannel) send_text(text string) ! {
+	d.send(text.bytes(), true)!
+}
