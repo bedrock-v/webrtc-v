@@ -18,3 +18,12 @@ pub enum DataChannelState {
 	closing
 	closed
 }
+
+pub fn (s DataChannelState) str() string {
+	return match s {
+		.connecting { 'connecting' }
+		.open { 'open' }
+		.closing { 'closing' }
+		.closed { 'closed' }
+	}
+}
