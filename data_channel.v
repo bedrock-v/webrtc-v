@@ -104,3 +104,8 @@ pub fn (mut d DataChannel) reliable() bool {
 pub fn (mut d DataChannel) send_text(text string) ! {
 	d.send(text.bytes(), true)!
 }
+
+// send_binary sends a binary message.
+pub fn (mut d DataChannel) send_binary(data []u8) ! {
+	d.send(data, false)!
+}
