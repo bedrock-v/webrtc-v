@@ -348,3 +348,16 @@ fn (mut pc PeerConnection) has_application_section() bool {
 	}
 	return false
 }
+
+fn (mut pc PeerConnection) has_media_section() bool {
+	pc.mu.lock()
+	defer {
+		pc.mu.unlock()
+	}
+	for section in pc.sections {
+		if section.kind != .application && !section.rejected && section.codecs.len > 0 {
+			return true
+		}
+	}
+	return false
+}
