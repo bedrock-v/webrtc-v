@@ -120,3 +120,26 @@ fn (mut m MediaTransport) run() {
 		}
 	}
 }
+
+// offer_to queues a datagram, dropping the oldest if the reader has fallen
+// behind.
+fn (mut m MediaTransport) offer_to(queue chan []u8, datagram []u8) {
+	select {
+		queue <- datagram {
+			return
+		}
+		else {}
+	}
+	// The queue is full. Discard one packet from the front and try once more;
+	// if that also fails the reader is gone and the packet is dropped.
+	select {
+		_ := <-queue {}
+		else {
+			return
+		}
+	}
+	select {
+		queue <- datagram {}
+		else {}
+	}
+}
