@@ -320,3 +320,29 @@ fn (mut m MediaTransport) unprotect_rtcp(raw []u8) ?[]u8 {
 		none
 	}
 }
+
+fn (mut m MediaTransport) next(queue chan []u8, timeout time.Duration) ![]u8 {
+	select {
+		datagram := <-queue {
+			if datagram.len == 0 && m.is_closed() {
+				// A receive on a closed channel succeeds with the zero value in
+				// V 0.5.2, and an empty datagram is never a real packet.
+				return PeerError{
+					reason: .closed
+					detail: 'the media transport is closed'
+				}
+			}
+			return datagram
+		}
+		timeout {
+			return PeerError{
+				reason: .timed_out
+				detail: 'nothing to read within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return PeerError{
+		reason: .closed
+		detail: 'the media transport is closed'
+	}
+}
