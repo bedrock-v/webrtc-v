@@ -23,3 +23,25 @@ import webrtc.srtp
 // oldest packet is dropped instead - which is also the right thing for
 // real-time media, where a late packet is worth less than a fresh one.
 const media_queue_depth = 256
+
+// MediaTransport carries RTP and RTCP for a connection.
+pub struct MediaTransport {
+mut:
+	agent &ice.Agent = unsafe { nil }
+	log   logging.Logger
+
+	dtls_datagrams chan []u8 = chan []u8{cap: 64}
+	rtp_packets    chan []u8 = chan []u8{cap: media_queue_depth}
+	rtcp_packets   chan []u8 = chan []u8{cap: media_queue_depth}
+
+	// keys_mu guards the two contexts. An srtp.Context is not safe for
+	// concurrent use, and the application may send from any thread while the
+	// pump receives.
+	keys_mu  &sync.Mutex   = sync.new_mutex()
+	outbound &srtp.Context = unsafe { nil }
+	inbound  &srtp.Context = unsafe { nil }
+
+	closed_mu &sync.Mutex = sync.new_mutex()
+	closed    bool
+	pump      ?thread
+}
