@@ -61,3 +61,22 @@ fn (mut m MediaTransport) send(data []u8) !int {
 	mut agent := m.agent
 	return agent.send(data)
 }
+
+// recv returns the next DTLS datagram, satisfying dtls.Transport.
+fn (mut m MediaTransport) recv(timeout time.Duration) ![]u8 {
+	select {
+		datagram := <-m.dtls_datagrams {
+			return datagram
+		}
+		timeout {
+			return PeerError{
+				reason: .timed_out
+				detail: 'no DTLS datagram within ${timeout.milliseconds()}ms'
+			}
+		}
+	}
+	return PeerError{
+		reason: .closed
+		detail: 'the media transport is closed'
+	}
+}
