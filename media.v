@@ -395,3 +395,27 @@ fn (mut pc PeerConnection) attach_media(mut conn dtls.Conn) ! {
 	transport.attach(mut outbound, mut inbound)
 	pc.log.debug('SRTP keyed with ${outbound.profile()}')
 }
+
+// send_rtp sends one RTP packet to the peer.
+pub fn (mut pc PeerConnection) send_rtp(packet rtp.Packet) ! {
+	mut transport := pc.media()!
+	transport.send_rtp(packet)!
+}
+
+// send_rtcp sends a compound RTCP packet to the peer.
+pub fn (mut pc PeerConnection) send_rtcp(packets []rtcp.Packet) ! {
+	mut transport := pc.media()!
+	transport.send_rtcp(packets)!
+}
+
+// recv_rtp returns the next RTP packet from the peer.
+pub fn (mut pc PeerConnection) recv_rtp(timeout time.Duration) !rtp.Packet {
+	mut transport := pc.media()!
+	return transport.recv_rtp(timeout)
+}
+
+// recv_rtcp returns the next RTCP compound packet from the peer.
+pub fn (mut pc PeerConnection) recv_rtcp(timeout time.Duration) ![]rtcp.Packet {
+	mut transport := pc.media()!
+	return transport.recv_rtcp(timeout)
+}
