@@ -23,3 +23,34 @@ fn test_a_connection_starts_stable_and_new() {
 	assert pc.current_remote_description() == none
 	assert pc.local_fingerprint().algorithm == .sha256
 }
+
+fn test_an_offer_needs_something_to_offer() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	if _ := pc.create_offer() {
+		assert false, 'an empty connection should not produce an offer'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .wrong_state
+		}
+	}
+}
+
+fn test_turn_servers_are_refused_rather_than_ignored() {
+	if _ := PeerConnection.new(
+		ice_servers: [IceServer{
+			urls: ['turn:relay.example:3478']
+		}]
+	)
+	{
+		assert false, 'a TURN server should be refused while TURN is unimplemented'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .unsupported
+		}
+	}
+}
