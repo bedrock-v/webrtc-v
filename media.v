@@ -45,3 +45,13 @@ mut:
 	closed    bool
 	pump      ?thread
 }
+
+// MediaTransport.new starts demultiplexing the agent's datagrams.
+fn MediaTransport.new(mut agent ice.Agent, log logging.Logger) &MediaTransport {
+	mut transport := &MediaTransport{
+		agent: agent
+		log:   log.with_scope('media')
+	}
+	transport.pump = spawn transport.run()
+	return transport
+}
