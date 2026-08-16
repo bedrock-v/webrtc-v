@@ -199,3 +199,40 @@ fn (mut m MediaTransport) send_rtp_raw(raw []u8) ! {
 		detail: err.msg()
 	} }
 }
+
+// send_rtcp protects and sends a compound RTCP packet.
+fn (mut m MediaTransport) send_rtcp(packets []rtcp.Packet) ! {
+	raw := rtcp.marshal(packets) or {
+		return PeerError{
+			reason: .transport
+			detail: 'encoding the RTCP packet: ${err.msg()}'
+		}
+	}
+
+	m.keys_mu.lock()
+	mut context := m.outbound
+	protected := if context == unsafe { nil } {
+		[]u8{}
+	} else {
+		context.protect_rtcp(raw) or {
+			m.keys_mu.unlock()
+			return PeerError{
+				reason: .transport
+				detail: 'protecting the RTCP packet: ${err.msg()}'
+			}
+		}
+	}
+	m.keys_mu.unlock()
+
+	if protected.len == 0 {
+		return PeerError{
+			reason: .no_media
+			detail: 'the SRTP keys are not established yet'
+		}
+	}
+	mut agent := m.agent
+	agent.send(protected) or { return PeerError{
+		reason: .transport
+		detail: err.msg()
+	} }
+}
