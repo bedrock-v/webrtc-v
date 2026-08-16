@@ -151,3 +151,11 @@ fn (mut m MediaTransport) attach(mut outbound srtp.Context, mut inbound srtp.Con
 	m.inbound = inbound
 	m.keys_mu.unlock()
 }
+
+fn (mut m MediaTransport) is_keyed() bool {
+	m.keys_mu.lock()
+	defer {
+		m.keys_mu.unlock()
+	}
+	return m.outbound != unsafe { nil }
+}
