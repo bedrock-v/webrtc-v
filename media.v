@@ -55,3 +55,9 @@ fn MediaTransport.new(mut agent ice.Agent, log logging.Logger) &MediaTransport {
 	transport.pump = spawn transport.run()
 	return transport
 }
+
+// send passes a DTLS record through untouched, satisfying dtls.Transport.
+fn (mut m MediaTransport) send(data []u8) !int {
+	mut agent := m.agent
+	return agent.send(data)
+}
