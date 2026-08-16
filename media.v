@@ -159,3 +159,14 @@ fn (mut m MediaTransport) is_keyed() bool {
 	}
 	return m.outbound != unsafe { nil }
 }
+
+// send_rtp protects and sends one RTP packet.
+fn (mut m MediaTransport) send_rtp(packet rtp.Packet) ! {
+	raw := packet.marshal() or {
+		return PeerError{
+			reason: .transport
+			detail: 'encoding the RTP packet: ${err.msg()}'
+		}
+	}
+	m.send_rtp_raw(raw)!
+}
