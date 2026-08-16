@@ -80,3 +80,43 @@ fn (mut m MediaTransport) recv(timeout time.Duration) ![]u8 {
 		detail: 'the media transport is closed'
 	}
 }
+
+// run reads the socket and sorts what arrives.
+fn (mut m MediaTransport) run() {
+	for {
+		if m.is_closed() {
+			return
+		}
+		mut agent := m.agent
+		datagram := agent.recv(100 * time.millisecond) or {
+			if err is ice.AgentError && err.reason == .closed {
+				return
+			}
+			continue
+		}
+		if datagram.len == 0 {
+			continue
+		}
+
+		first := datagram[0]
+		match true {
+			// RFC 7983: DTLS occupies 20-63, which is where the record content
+			// types live.
+			first >= 20 && first <= 63 {
+				m.offer_to(m.dtls_datagrams, datagram)
+			}
+			first >= 128 && first <= 191 {
+				if rtp.is_rtcp_payload_type(datagram) {
+					m.offer_to(m.rtcp_packets, datagram)
+				} else {
+					m.offer_to(m.rtp_packets, datagram)
+				}
+			}
+			else {
+				// STUN is handled inside the agent, and 64-127 is unassigned.
+				// Anything here is not ours.
+				m.log.debug('dropped a datagram with a first byte of ${first}')
+			}
+		}
+	}
+}
