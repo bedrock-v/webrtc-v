@@ -236,3 +236,32 @@ fn (mut m MediaTransport) send_rtcp(packets []rtcp.Packet) ! {
 		detail: err.msg()
 	} }
 }
+
+// recv_rtp returns the next RTP packet, decrypted.
+//
+// A packet that fails authentication is dropped and the wait continues: over a
+// public transport anyone can inject bytes, and letting that surface as an
+// error would let them stop a receiver from reading.
+fn (mut m MediaTransport) recv_rtp(timeout time.Duration) !rtp.Packet {
+	deadline := time.now().add(timeout)
+	for {
+		remaining := deadline - time.now()
+		if remaining <= 0 {
+			return PeerError{
+				reason: .timed_out
+				detail: 'no RTP packet within ${timeout.milliseconds()}ms'
+			}
+		}
+		raw := m.next(m.rtp_packets, remaining)!
+		plaintext := m.unprotect_rtp(raw) or { continue }
+		packet := rtp.Packet.decode(plaintext) or {
+			m.log.debug('dropped an undecodable RTP packet: ${err.msg()}')
+			continue
+		}
+		return packet
+	}
+	return PeerError{
+		reason: .closed
+		detail: 'the media transport is closed'
+	}
+}
