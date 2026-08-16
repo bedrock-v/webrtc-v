@@ -198,3 +198,18 @@ pub fn (mut d DataChannel) close() {
 fn (mut d DataChannel) mark_closed() {
 	d.closed = true
 }
+
+// open_channel opens a channel on the live transports.
+fn (mut pc PeerConnection) open_channel(label string, options DataChannelOptions) !&DataChannel {
+	mut channel := pc.start_channel(label, options)!
+	mut wrapper := &DataChannel{
+		connection: pc
+		channel:    channel
+		label:      label
+		options:    options
+	}
+	pc.mu.lock()
+	pc.open_channels << wrapper
+	pc.mu.unlock()
+	return wrapper
+}
