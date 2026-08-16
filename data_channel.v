@@ -194,3 +194,7 @@ pub fn (mut d DataChannel) close() {
 		channel.close()
 	}
 }
+
+fn (mut d DataChannel) mark_closed() {
+	d.closed = true
+}
