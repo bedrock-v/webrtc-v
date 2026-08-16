@@ -305,3 +305,18 @@ fn (mut m MediaTransport) unprotect_rtp(raw []u8) ?[]u8 {
 		none
 	}
 }
+
+fn (mut m MediaTransport) unprotect_rtcp(raw []u8) ?[]u8 {
+	m.keys_mu.lock()
+	defer {
+		m.keys_mu.unlock()
+	}
+	mut context := m.inbound
+	if context == unsafe { nil } {
+		return none
+	}
+	return context.unprotect_rtcp(raw) or {
+		m.log.debug('dropped an unauthenticated RTCP packet: ${err.msg()}')
+		none
+	}
+}
