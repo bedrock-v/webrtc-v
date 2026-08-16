@@ -92,3 +92,24 @@ pub fn (mut pc PeerConnection) statistics() Statistics {
 		media_ready:      media != unsafe { nil } && media.is_keyed()
 	}
 }
+
+// str renders the snapshot as one readable line, which is what a log or a
+// bug report wants.
+pub fn (s Statistics) str() string {
+	mut parts := ['state=${s.connection_state}', 'signaling=${s.signaling_state}',
+		'ice=${s.ice.state}', 'role=${s.dtls_role}']
+	if state := s.dtls_state {
+		parts << 'dtls=${state}'
+	}
+	if state := s.sctp_state {
+		parts << 'sctp=${state}'
+	}
+	if profile := s.srtp_profile {
+		parts << 'srtp=${profile}'
+	}
+	parts << 'channels=${s.data_channels}'
+	if pair := s.ice.selected {
+		parts << 'pair=${pair.local.address}->${pair.remote.address}'
+	}
+	return parts.join(' ')
+}
