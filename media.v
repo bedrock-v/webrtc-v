@@ -290,3 +290,18 @@ fn (mut m MediaTransport) recv_rtcp(timeout time.Duration) ![]rtcp.Packet {
 		detail: 'the media transport is closed'
 	}
 }
+
+fn (mut m MediaTransport) unprotect_rtp(raw []u8) ?[]u8 {
+	m.keys_mu.lock()
+	defer {
+		m.keys_mu.unlock()
+	}
+	mut context := m.inbound
+	if context == unsafe { nil } {
+		return none
+	}
+	return context.unprotect_rtp(raw) or {
+		m.log.debug('dropped an unauthenticated RTP packet: ${err.msg()}')
+		none
+	}
+}
