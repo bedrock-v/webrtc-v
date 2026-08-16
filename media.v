@@ -143,3 +143,11 @@ fn (mut m MediaTransport) offer_to(queue chan []u8, datagram []u8) {
 		else {}
 	}
 }
+
+// attach installs the keys the DTLS handshake exported.
+fn (mut m MediaTransport) attach(mut outbound srtp.Context, mut inbound srtp.Context) {
+	m.keys_mu.lock()
+	m.outbound = outbound
+	m.inbound = inbound
+	m.keys_mu.unlock()
+}
