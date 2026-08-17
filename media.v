@@ -407,3 +407,9 @@ pub fn (mut pc PeerConnection) send_rtcp(packets []rtcp.Packet) ! {
 	mut transport := pc.media()!
 	transport.send_rtcp(packets)!
 }
+
+// recv_rtp returns the next RTP packet from the peer.
+pub fn (mut pc PeerConnection) recv_rtp(timeout time.Duration) !rtp.Packet {
+	mut transport := pc.media()!
+	return transport.recv_rtp(timeout)
+}
