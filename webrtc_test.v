@@ -72,3 +72,40 @@ fn test_an_offer_describes_the_data_channel_section() {
 	assert offer.sdp.contains('a=ice-ufrag:')
 	assert offer.sdp.contains('a=max-message-size:')
 }
+
+fn test_an_offer_describes_media_sections() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	pc.add_media(.audio, .sendrecv, [opus_48000_2])!
+	pc.add_media(.video, .sendonly, [vp8_90000])!
+
+	offer := pc.create_offer()!
+	assert offer.sdp.contains('m=audio 9 UDP/TLS/RTP/SAVPF 111')
+	assert offer.sdp.contains('a=rtpmap:111 opus/48000/2')
+	assert offer.sdp.contains('a=fmtp:111 minptime=10;useinbandfec=1')
+	assert offer.sdp.contains('a=sendrecv')
+	assert offer.sdp.contains('m=video 9 UDP/TLS/RTP/SAVPF 96')
+	assert offer.sdp.contains('a=rtpmap:96 VP8/90000')
+	assert offer.sdp.contains('a=rtcp-fb:96 nack pli')
+	assert offer.sdp.contains('a=sendonly')
+	assert offer.sdp.contains('a=rtcp-mux')
+	assert offer.sdp.contains('a=group:BUNDLE 0 1')
+}
+
+fn test_media_cannot_be_added_after_the_offer() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	pc.add_media(.audio, .sendrecv, [opus_48000_2])!
+	offer := pc.create_offer()!
+	pc.set_local_description(offer)!
+
+	if _ := pc.add_media(.video, .sendrecv, [vp8_90000]) {
+		assert false, 'renegotiation is not implemented and should be refused'
+	} else {
+		assert err is PeerError
+	}
+}
