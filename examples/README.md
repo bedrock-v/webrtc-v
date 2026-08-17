@@ -12,3 +12,28 @@ build them all with `make examples`.
 | [`datachannel`](datachannel) | loopback only | The whole stack assembled by hand: ICE, DTLS, SCTP and a data channel |
 | [`peer-connection`](peer-connection) | loopback only | The same connection through the top-level API: an offer, an answer and a data channel |
 | [`stun-discover`](stun-discover) | internet | Asking a STUN server for your public address |
+
+## `sdp-parse`
+
+```sh
+v run examples/sdp-parse
+```
+
+Parses a representative offer - one audio section and one data channel section,
+bundled - and prints the codecs, ICE credentials, DTLS fingerprint, setup role
+and SCTP parameters. Finishes by re-serialising it and confirming the output is
+byte for byte identical to the input, including the attributes the program never
+looked at.
+
+## `rtp-roundtrip`
+
+```sh
+v run examples/rtp-roundtrip
+```
+
+Builds RTP packets with an RFC 8285 header extension, protects them with
+AES-GCM SRTP, and unprotects them again. Shows that the header stays readable
+while the payload does not, and demonstrates the two ways a packet is rejected:
+as a replay, and as a failed authentication.
+
+The keys are made up. In a real connection they come from the DTLS handshake.
