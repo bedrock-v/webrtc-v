@@ -346,3 +346,11 @@ fn (mut m MediaTransport) next(queue chan []u8, timeout time.Duration) ![]u8 {
 		detail: 'the media transport is closed'
 	}
 }
+
+fn (mut m MediaTransport) is_closed() bool {
+	m.closed_mu.lock()
+	defer {
+		m.closed_mu.unlock()
+	}
+	return m.closed
+}
