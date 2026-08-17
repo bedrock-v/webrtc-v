@@ -419,3 +419,23 @@ fn test_media_keys_are_established_over_real_sockets() {
 	assert received.header.sequence_number == packet.header.sequence_number
 	assert received.payload == packet.payload
 }
+
+// negotiate runs a complete offer/answer exchange, including candidates.
+fn negotiate(mut caller PeerConnection, mut callee PeerConnection) ! {
+	offer := caller.create_offer()!
+	caller.set_local_description(offer)!
+	callee.set_remote_description(offer)!
+
+	answer := callee.create_answer()!
+	callee.set_local_description(answer)!
+	caller.set_remote_description(answer)!
+
+	// Candidates are signalled after both descriptions are in place, which is
+	// what a trickling application does.
+	for line in caller.local_candidates() {
+		callee.add_ice_candidate(line) or {}
+	}
+	for line in callee.local_candidates() {
+		caller.add_ice_candidate(line) or {}
+	}
+}
