@@ -109,3 +109,28 @@ fn test_media_cannot_be_added_after_the_offer() {
 		assert err is PeerError
 	}
 }
+
+fn test_the_answerer_mirrors_the_sections() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.add_media(.audio, .sendrecv, [opus_48000_2])!
+	offerer.create_data_channel('chat')!
+	answerer.add_media(.audio, .sendrecv, [opus_48000_2])!
+
+	offer := offerer.create_offer()!
+	answerer.set_remote_description(offer)!
+	assert answerer.signaling_state() == .have_remote_offer
+
+	answer := answerer.create_answer()!
+	assert answer.typ == .answer
+	// The offer said actpass, so the answerer picks active and starts the
+	// handshake itself.
+	assert answer.sdp.contains('a=setup:active')
+	assert answer.sdp.contains('m=audio 9 UDP/TLS/RTP/SAVPF 111')
+	assert answer.sdp.contains('m=application 9 UDP/DTLS/SCTP webrtc-datachannel')
+	assert answer.sdp.contains('a=group:BUNDLE 0 1')
+}
