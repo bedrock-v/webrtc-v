@@ -227,3 +227,20 @@ fn test_an_answer_may_not_leave_the_roles_undetermined() {
 		}
 	}
 }
+
+fn test_an_answer_cannot_be_applied_without_an_offer() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	pc.create_data_channel('chat')!
+	offer := pc.create_offer()!
+	if _ := pc.set_remote_description(SessionDescription{ typ: .answer, sdp: offer.sdp }) {
+		assert false, 'an answer needs a local offer first'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .wrong_state
+		}
+	}
+}
