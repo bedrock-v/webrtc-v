@@ -134,3 +134,22 @@ fn test_the_answerer_mirrors_the_sections() {
 	assert answer.sdp.contains('m=application 9 UDP/DTLS/SCTP webrtc-datachannel')
 	assert answer.sdp.contains('a=group:BUNDLE 0 1')
 }
+
+fn test_a_section_with_no_common_codec_is_rejected() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.add_media(.video, .sendrecv, [vp8_90000])!
+	// The answerer only does audio, so the video section has to come back with a
+	// port of zero rather than be left out.
+	answerer.add_media(.audio, .sendrecv, [opus_48000_2])!
+
+	offer := offerer.create_offer()!
+	answerer.set_remote_description(offer)!
+	answer := answerer.create_answer()!
+	assert answer.sdp.contains('m=video 0 ')
+	assert !answer.sdp.contains('a=rtpmap:96')
+}
