@@ -395,3 +395,9 @@ fn (mut pc PeerConnection) attach_media(mut conn dtls.Conn) ! {
 	transport.attach(mut outbound, mut inbound)
 	pc.log.debug('SRTP keyed with ${outbound.profile()}')
 }
+
+// send_rtp sends one RTP packet to the peer.
+pub fn (mut pc PeerConnection) send_rtp(packet rtp.Packet) ! {
+	mut transport := pc.media()!
+	transport.send_rtp(packet)!
+}
