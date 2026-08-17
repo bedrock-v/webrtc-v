@@ -381,3 +381,41 @@ fn test_a_data_channel_carries_messages_over_real_sockets() {
 	assert caller.current_local_description()!.typ == .offer
 	assert callee.current_local_description()!.typ == .answer
 }
+
+fn test_media_keys_are_established_over_real_sockets() {
+	mut caller := PeerConnection.new(logger: quiet_logger())!
+	mut callee := PeerConnection.new(logger: quiet_logger())!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	caller.add_media(.audio, .sendrecv, [opus_48000_2])!
+	callee.add_media(.audio, .sendrecv, [opus_48000_2])!
+	negotiate(mut caller, mut callee)!
+
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+
+	caller_profile := caller.selected_srtp_profile() or { panic('no SRTP profile on the caller') }
+	callee_profile := callee.selected_srtp_profile() or { panic('no SRTP profile on the callee') }
+	assert caller_profile == callee_profile
+
+	// Both ends must have keyed SRTP before either sends, so the handshake is
+	// given a moment to finish on the receiving side.
+	mut receiver := callee.media()!
+	for _ in 0 .. 100 {
+		if receiver.is_keyed() {
+			break
+		}
+		time.sleep(20 * time.millisecond)
+	}
+	assert receiver.is_keyed()
+
+	packet := rtp_test_packet()
+	caller.send_rtp(packet)!
+	received := callee.recv_rtp(5 * time.second)!
+	assert received.header.ssrc == packet.header.ssrc
+	assert received.header.sequence_number == packet.header.sequence_number
+	assert received.payload == packet.payload
+}
