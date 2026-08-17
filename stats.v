@@ -37,3 +37,58 @@ pub:
 	// media reports whether SRTP keys are installed and media may flow.
 	media_ready bool
 }
+
+// statistics returns a snapshot of the connection.
+pub fn (mut pc PeerConnection) statistics() Statistics {
+	pc.mu.lock()
+	connection_state := pc.state
+	signaling_state := pc.signaling
+	role := pc.role
+	mut agent := pc.agent
+	mut conn := pc.dtls_conn
+	mut association := pc.association
+	mut media := pc.media_transport
+	mut open := pc.open_channels.clone()
+	pc.mu.unlock()
+
+	mut counted := 0
+	for mut channel in open {
+		if channel.state() == .open {
+			counted++
+		}
+	}
+
+	mut ice_stats := ice.Statistics{}
+	if agent != unsafe { nil } {
+		ice_stats = agent.statistics()
+	}
+
+	mut dtls_state := ?dtls.State(none)
+	mut srtp_profile := ?srtp.Profile(none)
+	if conn != unsafe { nil } {
+		dtls_state = conn.state()
+		if profile := conn.selected_srtp_profile() {
+			srtp_profile = profile
+		}
+	}
+
+	mut sctp_state := ?sctp.State(none)
+	mut max_message_size := pc.config.max_message_size
+	if association != unsafe { nil } {
+		sctp_state = association.state()
+		max_message_size = association.max_message_size()
+	}
+
+	return Statistics{
+		connection_state: connection_state
+		signaling_state:  signaling_state
+		dtls_role:        role
+		ice:              ice_stats
+		dtls_state:       dtls_state
+		srtp_profile:     srtp_profile
+		sctp_state:       sctp_state
+		max_message_size: max_message_size
+		data_channels:    counted
+		media_ready:      media != unsafe { nil } && media.is_keyed()
+	}
+}
