@@ -259,3 +259,37 @@ fn test_a_candidate_cannot_be_added_before_a_local_description() {
 		}
 	}
 }
+
+fn test_a_closed_connection_refuses_work() {
+	mut pc := PeerConnection.new()!
+	pc.create_data_channel('chat')!
+	pc.close()
+
+	assert pc.connection_state() == .closed
+	assert pc.signaling_state() == .closed
+	if _ := pc.create_offer() {
+		assert false, 'a closed connection should not produce an offer'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .closed
+		}
+	}
+	// Closing twice is what a deferred close plus an explicit one does.
+	pc.close()
+}
+
+fn test_media_calls_fail_without_a_media_section() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	if _ := pc.recv_rtp(10 * time.millisecond) {
+		assert false, 'there is no media section to receive on'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .no_media
+		}
+	}
+}
