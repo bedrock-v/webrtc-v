@@ -37,3 +37,35 @@ while the payload does not, and demonstrates the two ways a packet is rejected:
 as a replay, and as a failed authentication.
 
 The keys are made up. In a real connection they come from the DTLS handshake.
+
+## `ice-loopback`
+
+```sh
+v run examples/ice-loopback
+WEBRTC_LOG_LEVEL=debug v run examples/ice-loopback   # to watch the checks
+```
+
+Runs two ICE agents in one process. Everything they exchange - credentials and
+candidates - is what a real deployment would send through its signalling
+channel; the media path itself is negotiated over real UDP sockets. Prints the
+candidates each side gathered, the pair that won, its round-trip time, and the
+data that crossed it.
+
+Uses loopback candidates, which are off by default because they can only ever
+pair with the same machine.
+
+## `ice-dtls`
+
+```sh
+v run examples/ice-dtls
+WEBRTC_LOG_LEVEL=debug v run examples/ice-dtls   # to watch both layers
+```
+
+The complete secure path, end to end in one process. Two ICE agents connect over
+real UDP; a DTLS handshake runs over the pair ICE selected, with each side
+checking the other's certificate against the fingerprint that was "signalled";
+and the handshake exports the keying material that SRTP then uses to protect an
+RTP packet in both directions.
+
+Prints the timings for each stage, and finishes by showing that a tampered
+packet is rejected.
