@@ -329,3 +329,55 @@ fn test_the_setup_role_decides_which_end_is_the_dtls_client() {
 	// never starts.
 	assert answerer.role == dtls.Role.client
 }
+
+fn test_a_data_channel_carries_messages_over_real_sockets() {
+	mut caller := PeerConnection.new(logger: quiet_logger())!
+	mut callee := PeerConnection.new(logger: quiet_logger())!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	mut sender := caller.create_data_channel('chat')!
+	negotiate(mut caller, mut callee)!
+
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+
+	mut receiver := callee.accept_data_channel(10 * time.second)!
+	assert receiver.label == 'chat'
+
+	for index in 0 .. 5 {
+		sender.send_text('message ${index}')!
+	}
+	for index in 0 .. 5 {
+		message := receiver.recv(5 * time.second)!
+		assert message.is_string
+		assert message.text() == 'message ${index}'
+	}
+
+	// Binary and text are distinguished by the payload protocol identifier, not
+	// by the bytes, so an empty message of each kind must survive.
+	sender.send_binary([]u8{len: 4096, init: u8(index & 0xff)})!
+	binary := receiver.recv(5 * time.second)!
+	assert !binary.is_string
+	assert binary.data.len == 4096
+	assert binary.data[100] == 100
+
+	// The reply direction uses the same association from the other end.
+	receiver.send_text('ack')!
+	reply := sender.recv(5 * time.second)!
+	assert reply.text() == 'ack'
+
+	assert sender.state() == .open
+	if _ := caller.selected_candidate_pair() {
+	} else {
+		assert false, 'a connected agent must have a selected pair'
+	}
+	if _ := caller.remote_certificate() {
+	} else {
+		assert false, 'a finished handshake must have the peer certificate'
+	}
+	assert caller.current_local_description()!.typ == .offer
+	assert callee.current_local_description()!.typ == .answer
+}
