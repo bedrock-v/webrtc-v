@@ -69,3 +69,30 @@ RTP packet in both directions.
 
 Prints the timings for each stage, and finishes by showing that a tampered
 packet is rejected.
+
+## `datachannel`
+
+```sh
+v run examples/datachannel
+WEBRTC_LOG_LEVEL=debug v run examples/datachannel   # to watch every layer
+```
+
+The complete WebRTC data channel path in one process: ICE finds a route, DTLS
+authenticates the peers over it, SCTP runs inside the DTLS connection, and a data
+channel is one SCTP stream pair. Prints the time each layer took, then exchanges
+messages, checks that ordering held across ten of them, transfers 60 KB through
+SCTP's fragmentation, and opens a second unordered channel.
+
+## `stun-discover`
+
+```sh
+v run examples/stun-discover
+v run examples/stun-discover stun.cloudflare.com:3478
+```
+
+Sends one Binding request and prints the reflexive address the server saw. Needs
+outbound UDP to the server.
+
+The address belongs to the socket that asked: a NAT mapping is created for a
+source port, so this answer is only usable from that socket. That is why the ICE
+agent runs the same exchange on each of its own sockets rather than calling this.
