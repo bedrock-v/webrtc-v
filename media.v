@@ -419,3 +419,23 @@ pub fn (mut pc PeerConnection) recv_rtcp(timeout time.Duration) ![]rtcp.Packet {
 	mut transport := pc.media()!
 	return transport.recv_rtcp(timeout)
 }
+
+fn (mut pc PeerConnection) media() !&MediaTransport {
+	pc.mu.lock()
+	mut transport := pc.media_transport
+	closed := pc.closed
+	pc.mu.unlock()
+	if closed {
+		return PeerError{
+			reason: .closed
+			detail: 'the connection is closed'
+		}
+	}
+	if transport == unsafe { nil } {
+		return PeerError{
+			reason: .no_media
+			detail: 'no media section was negotiated'
+		}
+	}
+	return transport
+}
