@@ -93,3 +93,19 @@ fn test_an_offer_describes_media_sections() {
 	assert offer.sdp.contains('a=rtcp-mux')
 	assert offer.sdp.contains('a=group:BUNDLE 0 1')
 }
+
+fn test_media_cannot_be_added_after_the_offer() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	pc.add_media(.audio, .sendrecv, [opus_48000_2])!
+	offer := pc.create_offer()!
+	pc.set_local_description(offer)!
+
+	if _ := pc.add_media(.video, .sendrecv, [vp8_90000]) {
+		assert false, 'renegotiation is not implemented and should be refused'
+	} else {
+		assert err is PeerError
+	}
+}
