@@ -134,3 +134,39 @@ fn test_the_answerer_mirrors_the_sections() {
 	assert answer.sdp.contains('m=application 9 UDP/DTLS/SCTP webrtc-datachannel')
 	assert answer.sdp.contains('a=group:BUNDLE 0 1')
 }
+
+fn test_a_section_with_no_common_codec_is_rejected() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.add_media(.video, .sendrecv, [vp8_90000])!
+	// The answerer only does audio, so the video section has to come back with a
+	// port of zero rather than be left out.
+	answerer.add_media(.audio, .sendrecv, [opus_48000_2])!
+
+	offer := offerer.create_offer()!
+	answerer.set_remote_description(offer)!
+	answer := answerer.create_answer()!
+	assert answer.sdp.contains('m=video 0 ')
+	assert !answer.sdp.contains('a=rtpmap:96')
+}
+
+fn test_the_answerer_keeps_the_offered_payload_types() {
+	// A peer that numbers opus 100 must get 100 back: the payload types are the
+	// offerer's to assign.
+	offered := [
+		Codec{
+			payload_type: 100
+			name:         'opus'
+			clock_rate:   48000
+			channels:     2
+		},
+	]
+	supported := [opus_48000_2]
+	intersection := intersect_codecs(offered, supported)
+	assert intersection.len == 1
+	assert intersection[0].payload_type == 100
+}
