@@ -183,3 +183,19 @@ fn test_a_description_without_ice_credentials_is_refused() {
 		}
 	}
 }
+
+fn test_a_description_without_a_fingerprint_is_refused() {
+	// Without a fingerprint there is nothing to bind the DTLS handshake to, so
+	// the peer could be anyone who answered.
+	text := 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\n' +
+		'a=ice-ufrag:abcd\r\na=ice-pwd:0123456789012345678901\r\na=mid:0\r\n'
+	if _ := parse_remote_description(text) {
+		assert false, 'a description with no fingerprint should be refused'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .bad_description
+		}
+	}
+}
