@@ -153,3 +153,20 @@ fn test_a_section_with_no_common_codec_is_rejected() {
 	assert answer.sdp.contains('m=video 0 ')
 	assert !answer.sdp.contains('a=rtpmap:96')
 }
+
+fn test_the_answerer_keeps_the_offered_payload_types() {
+	// A peer that numbers opus 100 must get 100 back: the payload types are the
+	// offerer's to assign.
+	offered := [
+		Codec{
+			payload_type: 100
+			name:         'opus'
+			clock_rate:   48000
+			channels:     2
+		},
+	]
+	supported := [opus_48000_2]
+	intersection := intersect_codecs(offered, supported)
+	assert intersection.len == 1
+	assert intersection[0].payload_type == 100
+}
