@@ -38,3 +38,19 @@ fn test_an_offer_needs_something_to_offer() {
 		}
 	}
 }
+
+fn test_turn_servers_are_refused_rather_than_ignored() {
+	if _ := PeerConnection.new(
+		ice_servers: [IceServer{
+			urls: ['turn:relay.example:3478']
+		}]
+	)
+	{
+		assert false, 'a TURN server should be refused while TURN is unimplemented'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .unsupported
+		}
+	}
+}
