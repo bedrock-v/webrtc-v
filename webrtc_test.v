@@ -278,3 +278,18 @@ fn test_a_closed_connection_refuses_work() {
 	// Closing twice is what a deferred close plus an explicit one does.
 	pc.close()
 }
+
+fn test_media_calls_fail_without_a_media_section() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	if _ := pc.recv_rtp(10 * time.millisecond) {
+		assert false, 'there is no media section to receive on'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .no_media
+		}
+	}
+}
