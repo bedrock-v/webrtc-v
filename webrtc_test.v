@@ -199,3 +199,31 @@ fn test_a_description_without_a_fingerprint_is_refused() {
 		}
 	}
 }
+
+fn test_an_answer_may_not_leave_the_roles_undetermined() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.create_data_channel('chat')!
+	offer := offerer.create_offer()!
+	offerer.set_local_description(offer)!
+
+	answerer.set_remote_description(offer)!
+	answer := answerer.create_answer()!
+	// Both ends would wait for the other to start the handshake.
+	broken := SessionDescription{
+		typ: .answer
+		sdp: answer.sdp.replace('a=setup:active', 'a=setup:actpass')
+	}
+	if _ := offerer.set_remote_description(broken) {
+		assert false, 'an actpass answer should be refused'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .bad_description
+		}
+	}
+}
