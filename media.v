@@ -401,3 +401,9 @@ pub fn (mut pc PeerConnection) send_rtp(packet rtp.Packet) ! {
 	mut transport := pc.media()!
 	transport.send_rtp(packet)!
 }
+
+// send_rtcp sends a compound RTCP packet to the peer.
+pub fn (mut pc PeerConnection) send_rtcp(packets []rtcp.Packet) ! {
+	mut transport := pc.media()!
+	transport.send_rtcp(packets)!
+}
