@@ -54,3 +54,21 @@ fn test_turn_servers_are_refused_rather_than_ignored() {
 		}
 	}
 }
+
+fn test_an_offer_describes_the_data_channel_section() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	pc.create_data_channel('chat')!
+
+	offer := pc.create_offer()!
+	assert offer.typ == .offer
+	assert offer.sdp.contains('m=application 9 UDP/DTLS/SCTP webrtc-datachannel')
+	assert offer.sdp.contains('a=group:BUNDLE 0')
+	assert offer.sdp.contains('a=setup:actpass')
+	assert offer.sdp.contains('a=sctp-port:5000')
+	assert offer.sdp.contains('a=fingerprint:sha-256 ')
+	assert offer.sdp.contains('a=ice-ufrag:')
+	assert offer.sdp.contains('a=max-message-size:')
+}
