@@ -312,3 +312,20 @@ fn test_a_channel_created_before_negotiation_is_connecting() {
 		assert err is PeerError
 	}
 }
+
+fn test_the_setup_role_decides_which_end_is_the_dtls_client() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.create_data_channel('chat')!
+	offer := offerer.create_offer()!
+	answerer.set_remote_description(offer)!
+
+	// The answerer chose active, so it is the DTLS client and the offerer is
+	// the server. Both ends must reach the same conclusion or the handshake
+	// never starts.
+	assert answerer.role == dtls.Role.client
+}
