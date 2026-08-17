@@ -413,3 +413,9 @@ pub fn (mut pc PeerConnection) recv_rtp(timeout time.Duration) !rtp.Packet {
 	mut transport := pc.media()!
 	return transport.recv_rtp(timeout)
 }
+
+// recv_rtcp returns the next RTCP compound packet from the peer.
+pub fn (mut pc PeerConnection) recv_rtcp(timeout time.Duration) ![]rtcp.Packet {
+	mut transport := pc.media()!
+	return transport.recv_rtcp(timeout)
+}
