@@ -373,3 +373,25 @@ fn (mut m MediaTransport) close() {
 		m.pump = none
 	}
 }
+
+// attach_media keys the media transport from the finished handshake.
+fn (mut pc PeerConnection) attach_media(mut conn dtls.Conn) ! {
+	pc.mu.lock()
+	mut transport := pc.media_transport
+	pc.mu.unlock()
+	if transport == unsafe { nil } {
+		return PeerError{
+			reason: .no_media
+			detail: 'there is no media transport on this connection'
+		}
+	}
+
+	mut outbound, mut inbound := conn.srtp_contexts() or {
+		return PeerError{
+			reason: .no_media
+			detail: 'no SRTP keys: ${err.msg()}'
+		}
+	}
+	transport.attach(mut outbound, mut inbound)
+	pc.log.debug('SRTP keyed with ${outbound.profile()}')
+}
