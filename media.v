@@ -354,3 +354,22 @@ fn (mut m MediaTransport) is_closed() bool {
 	}
 	return m.closed
 }
+
+// close stops the pump and releases the queues.
+fn (mut m MediaTransport) close() {
+	m.closed_mu.lock()
+	if m.closed {
+		m.closed_mu.unlock()
+		return
+	}
+	m.closed = true
+	m.closed_mu.unlock()
+
+	m.dtls_datagrams.close()
+	m.rtp_packets.close()
+	m.rtcp_packets.close()
+	if handle := m.pump {
+		handle.wait()
+		m.pump = none
+	}
+}
