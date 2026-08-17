@@ -244,3 +244,18 @@ fn test_an_answer_cannot_be_applied_without_an_offer() {
 		}
 	}
 }
+
+fn test_a_candidate_cannot_be_added_before_a_local_description() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	if _ := pc.add_ice_candidate('candidate:1 1 udp 2130706431 127.0.0.1 4000 typ host') {
+		assert false, 'there is nothing to add a candidate to yet'
+	} else {
+		assert err is PeerError
+		if err is PeerError {
+			assert err.reason == .wrong_state
+		}
+	}
+}
