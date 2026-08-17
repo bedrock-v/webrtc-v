@@ -293,3 +293,39 @@ fn test_media_calls_fail_without_a_media_section() {
 		}
 	}
 }
+
+fn test_a_channel_created_before_negotiation_is_connecting() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+	mut channel := pc.create_data_channel('chat')!
+	assert channel.label == 'chat'
+	assert channel.state() == .connecting
+	assert channel.ordered()
+	assert channel.reliable()
+	assert channel.id() == none
+
+	if _ := channel.send_text('too early') {
+		assert false, 'a channel that is not open should refuse to send'
+	} else {
+		assert err is PeerError
+	}
+}
+
+fn test_the_setup_role_decides_which_end_is_the_dtls_client() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.create_data_channel('chat')!
+	offer := offerer.create_offer()!
+	answerer.set_remote_description(offer)!
+
+	// The answerer chose active, so it is the DTLS client and the offerer is
+	// the server. Both ends must reach the same conclusion or the handshake
+	// never starts.
+	assert answerer.role == dtls.Role.client
+}
