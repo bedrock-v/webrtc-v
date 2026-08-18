@@ -41,3 +41,64 @@ a=sctp-port:5000
 a=max-message-size:262144
 '.trim_left('\n').replace('\n',
 	'\r\n')
+
+fn main() {
+	session := sdp.parse(offer)!
+
+	println('session "${session.session_name}" from ${session.origin.unicast_address}')
+	for group in session.bundle_groups() {
+		println('bundle: ${group.join(', ')}')
+	}
+	println('')
+
+	for media in session.media_descriptions {
+		mid := media.mid() or { '?' }
+		println('${media.media} (mid ${mid}) over ${media.proto()}')
+		println('  direction: ${media.direction()}')
+
+		if ufrag := session.ice_ufrag(media) {
+			println('  ice-ufrag: ${ufrag}')
+		}
+		options := session.ice_options(media)
+		if options.len > 0 {
+			println('  ice-options: ${options.join(', ')}')
+		}
+		for fingerprint in session.fingerprints(media) {
+			println('  fingerprint: ${fingerprint.algorithm} ${fingerprint.value[..23]}...')
+		}
+		if setup := session.setup(media) {
+			println('  setup: ${setup} (we would answer ${setup.answer()})')
+		}
+		if media.uses_rtcp_mux() {
+			println('  rtcp-mux: yes')
+		}
+
+		for codec in media.rtpmaps() {
+			mut line := '  codec ${codec.payload_type}: ${codec.encoding_name}/${codec.clock_rate}'
+			if codec.encoding_params != '' {
+				line += '/${codec.encoding_params}'
+			}
+			if params := media.fmtp(codec.payload_type) {
+				line += '  [${params}]'
+			}
+			println(line)
+		}
+		for feedback in media.rtcp_feedback() {
+			println('  feedback: ${feedback}')
+		}
+		for ssrc in media.ssrcs() {
+			println('  ssrc ${ssrc.ssrc}: ${ssrc.attribute}=${ssrc.value}')
+		}
+		if port := media.sctp_port() {
+			size := media.max_message_size() or { 0 }
+			println('  sctp port ${port}, messages up to ${size} bytes')
+		}
+		println('')
+	}
+
+	// Re-serialising is lossless, including the attributes this program never
+	// looked at.
+	if session.marshal() == offer {
+		println('re-serialised byte for byte')
+	}
+}
