@@ -1,0 +1,8 @@
+name: Bug report
+description: Something does not behave the way the specification or the docs say it should
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting.
