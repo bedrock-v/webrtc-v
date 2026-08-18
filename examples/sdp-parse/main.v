@@ -9,3 +9,11 @@ import webrtc.sdp
 // bundled onto a single transport. Written with plain newlines and converted on
 // use, because SDP requires CRLF and an escaped literal is unreadable.
 const offer = '
+v=0
+o=- 4611731400430051336 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0 1
+a=msid-semantic: WMS stream-id
+m=audio 9 UDP/TLS/RTP/SAVPF 111 0 8
+c=IN IP4 0.0.0.0
