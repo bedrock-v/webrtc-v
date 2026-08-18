@@ -439,3 +439,15 @@ fn negotiate(mut caller PeerConnection, mut callee PeerConnection) ! {
 		caller.add_ice_candidate(line) or {}
 	}
 }
+
+fn rtp_test_packet() rtp.Packet {
+	return rtp.Packet{
+		header:  rtp.Header{
+			payload_type:    111
+			sequence_number: 4242
+			timestamp:       160000
+			ssrc:            0x1234abcd
+		}
+		payload: [u8(0x01), 0x02, 0x03, 0x04]
+	}
+}
