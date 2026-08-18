@@ -1,0 +1,13 @@
+name: Bug report
+description: Something does not behave the way the specification or the docs say it should
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting.
+
+        **If this is a security issue, stop here.** Do not file it publicly -
+        follow [SECURITY.md](https://github.com/bedrock-v/webrtc-v/blob/main/SECURITY.md)
+        instead. That includes anything that panics, reads out of bounds,
+        allocates without bound, or accepts a packet it should have rejected.
