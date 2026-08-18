@@ -14,3 +14,42 @@ import webrtc.logging
 const message_size = 16 * 1024
 
 const message_count = 512
+
+fn main() {
+	log := logging.from_env('bench')
+
+	mut caller := webrtc.PeerConnection.new(logger: log)!
+	mut callee := webrtc.PeerConnection.new(logger: log)!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	mut sender := caller.create_data_channel('bench')!
+	negotiate(mut caller, mut callee)!
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+	mut receiver := callee.accept_data_channel(10 * time.second)!
+
+	payload := []u8{len: message_size, init: u8(index & 0xff)}
+	started := time.now()
+	spawn fn [payload] (mut channel webrtc.DataChannel) {
+		for _ in 0 .. message_count {
+			channel.send_binary(payload) or { break }
+		}
+	}(mut sender)
+
+	mut received := 0
+	for received < message_count {
+		receiver.recv(60 * time.second) or { break }
+		received++
+	}
+	took := time.now() - started
+
+	total := received * message_size
+	rate := f64(total) / took.seconds() / 1024 / 1024
+	println('${received}/${message_count} messages of ${message_size} bytes')
+	println('${total} bytes in ${took.milliseconds()}ms = ${rate:.1f} MB/s')
+	println('')
+	println('caller: ${caller.statistics()}')
+}
