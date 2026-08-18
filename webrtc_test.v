@@ -457,3 +457,21 @@ fn quiet_logger() logging.Logger {
 	// run can be re-run with the transports talking.
 	return logging.from_env('test')
 }
+
+fn test_the_direction_of_an_answer_is_the_mirror_of_the_offer() {
+	mut offerer := PeerConnection.new()!
+	mut answerer := PeerConnection.new()!
+	defer {
+		offerer.close()
+		answerer.close()
+	}
+	offerer.add_media(.audio, .sendonly, [opus_48000_2])!
+	answerer.add_media(.audio, .sendrecv, [opus_48000_2])!
+
+	offer := offerer.create_offer()!
+	answerer.set_remote_description(offer)!
+	answer := answerer.create_answer()!
+	// The offerer only sends, so the answerer can only receive.
+	assert answer.sdp.contains('a=recvonly')
+	assert sdp.Direction.sendonly.reverse() == sdp.Direction.recvonly
+}
