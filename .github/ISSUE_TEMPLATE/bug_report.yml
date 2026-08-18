@@ -62,3 +62,30 @@ body:
         - not sure
     validations:
       required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened
+      description: If a specification says so, name the RFC and section.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Include the error message or output verbatim.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >
+        The smallest program or test that shows the problem. If it involves a
+        specific packet, a hex dump of it is ideal.
+      render: v
+    validations:
+      required: true
