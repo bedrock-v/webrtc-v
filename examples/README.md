@@ -53,3 +53,19 @@ data that crossed it.
 
 Uses loopback candidates, which are off by default because they can only ever
 pair with the same machine.
+
+## `ice-dtls`
+
+```sh
+v run examples/ice-dtls
+WEBRTC_LOG_LEVEL=debug v run examples/ice-dtls   # to watch both layers
+```
+
+The complete secure path, end to end in one process. Two ICE agents connect over
+real UDP; a DTLS handshake runs over the pair ICE selected, with each side
+checking the other's certificate against the fingerprint that was "signalled";
+and the handshake exports the keying material that SRTP then uses to protect an
+RTP packet in both directions.
+
+Prints the timings for each stage, and finishes by showing that a tampered
+packet is rejected.
