@@ -183,3 +183,7 @@ fn main() {
 	println('')
 	println('total ${elapsed(started)}')
 }
+
+fn elapsed(from time.Time) string {
+	return '(+${(time.now() - from).milliseconds()}ms)'
+}
