@@ -33,3 +33,11 @@ a=rtpmap:8 PCMA/8000
 a=ssrc:1001 cname:cname-value
 m=application 9 UDP/DTLS/SCTP webrtc-datachannel
 c=IN IP4 0.0.0.0
+a=ice-ufrag:4ZcD
+a=ice-pwd:2/1muCWoOi3uLifh0NuRHlZw
+a=setup:actpass
+a=mid:1
+a=sctp-port:5000
+a=max-message-size:262144
+'.trim_left('\n').replace('\n',
+	'\r\n')
