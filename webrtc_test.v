@@ -451,3 +451,9 @@ fn rtp_test_packet() rtp.Packet {
 		payload: [u8(0x01), 0x02, 0x03, 0x04]
 	}
 }
+
+fn quiet_logger() logging.Logger {
+	// The tests are quiet unless WEBRTC_LOG_LEVEL asks otherwise, so a failing
+	// run can be re-run with the transports talking.
+	return logging.from_env('test')
+}
