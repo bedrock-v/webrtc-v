@@ -74,3 +74,7 @@ fn main() {
 
 	println('done in ${elapsed(started)}')
 }
+
+fn elapsed(from time.Time) string {
+	return '${(time.now() - from).milliseconds()}ms'
+}
