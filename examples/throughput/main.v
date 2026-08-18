@@ -6,3 +6,11 @@
 // stack is CPU-bound on AES, so a debug build measures the compiler rather than
 // the code - by roughly a factor of three.
 module main
+
+import time
+import webrtc
+import webrtc.logging
+
+const message_size = 16 * 1024
+
+const message_count = 512
