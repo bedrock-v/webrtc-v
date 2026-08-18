@@ -25,3 +25,11 @@ a=setup:actpass
 a=mid:0
 a=sendrecv
 a=rtcp-mux
+a=rtpmap:111 opus/48000/2
+a=fmtp:111 minptime=10;useinbandfec=1
+a=rtcp-fb:111 transport-cc
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=ssrc:1001 cname:cname-value
+m=application 9 UDP/DTLS/SCTP webrtc-datachannel
+c=IN IP4 0.0.0.0
