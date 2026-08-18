@@ -8,3 +8,10 @@
 // candidates, and the DTLS fingerprints - is what a real deployment sends
 // through its signalling channel.
 module main
+
+import time
+import webrtc.datachannel
+import webrtc.dtls
+import webrtc.ice
+import webrtc.logging
+import webrtc.sctp
