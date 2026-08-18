@@ -69,3 +69,16 @@ RTP packet in both directions.
 
 Prints the timings for each stage, and finishes by showing that a tampered
 packet is rejected.
+
+## `datachannel`
+
+```sh
+v run examples/datachannel
+WEBRTC_LOG_LEVEL=debug v run examples/datachannel   # to watch every layer
+```
+
+The complete WebRTC data channel path in one process: ICE finds a route, DTLS
+authenticates the peers over it, SCTP runs inside the DTLS connection, and a data
+channel is one SCTP stream pair. Prints the time each layer took, then exchanges
+messages, checks that ordering held across ten of them, transfers 60 KB through
+SCTP's fragmentation, and opens a second unordered channel.
