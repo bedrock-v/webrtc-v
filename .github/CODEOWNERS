@@ -12,3 +12,8 @@
 /ice/checks.v           @vedrock/maintainers @vedrock/security
 /dtls/                  @vedrock/maintainers @vedrock/security
 /sctp/crc32c.v          @vedrock/maintainers @vedrock/security
+
+# Security policy and CI configuration change the guarantees the project makes
+# and the checks that enforce them.
+/SECURITY.md            @vedrock/maintainers @vedrock/security
+/.github/workflows/     @vedrock/maintainers
