@@ -8,3 +8,10 @@
 // usable from the socket the client opened, which is why the ICE agent runs the
 // same exchange on each of its own sockets rather than calling this.
 module main
+
+import os
+import time
+import webrtc.logging
+import webrtc.stunclient
+
+const default_server = 'stun.l.google.com:19302'
