@@ -6,3 +6,7 @@
 // handshake through the extractor of RFC 5764, and are split into the two
 // directions with srtp.split_keying_material.
 module main
+
+import webrtc.rtcp
+import webrtc.rtp
+import webrtc.srtp
