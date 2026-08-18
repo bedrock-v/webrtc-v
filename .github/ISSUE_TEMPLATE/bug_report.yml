@@ -42,3 +42,23 @@ body:
         - Other
     validations:
       required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which one is misbehaving?
+      options:
+        - ice
+        - stun
+        - stunclient
+        - sdp
+        - rtp
+        - rtcp
+        - srtp
+        - netaddr
+        - transport
+        - logging
+        - not sure
+    validations:
+      required: true
