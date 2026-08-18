@@ -96,3 +96,16 @@ outbound UDP to the server.
 The address belongs to the socket that asked: a NAT mapping is created for a
 source port, so this answer is only usable from that socket. That is why the ICE
 agent runs the same exchange on each of its own sockets rather than calling this.
+
+## `peer-connection`
+
+```sh
+v run examples/peer-connection
+```
+
+Two `webrtc.PeerConnection` objects in one process exchange an offer, an answer
+and their candidates, and then talk over a data channel - text in both
+directions and a 64 KB binary message. It is the same connection as
+`datachannel` above, with the transports assembled by the library rather than by
+the program, and it is the shortest complete thing to read if you only want to
+know what the API looks like.
