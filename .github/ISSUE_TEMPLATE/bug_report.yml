@@ -11,3 +11,34 @@ body:
         follow [SECURITY.md](https://github.com/bedrock-v/webrtc-v/blob/main/SECURITY.md)
         instead. That includes anything that panics, reads out of bounds,
         allocates without bound, or accepts a packet it should have rejected.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release, or the commit hash if you are on main.
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: vversion
+    attributes:
+      label: V version
+      description: The output of `v version`.
+      placeholder: V 0.5.2 282bf30
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Platform
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - FreeBSD or another BSD
+        - Other
+    validations:
+      required: true
