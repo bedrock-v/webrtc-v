@@ -53,3 +53,20 @@ fn main() {
 	println('')
 	println('caller: ${caller.statistics()}')
 }
+
+fn negotiate(mut caller webrtc.PeerConnection, mut callee webrtc.PeerConnection) ! {
+	offer := caller.create_offer()!
+	caller.set_local_description(offer)!
+	callee.set_remote_description(offer)!
+
+	answer := callee.create_answer()!
+	callee.set_local_description(answer)!
+	caller.set_remote_description(answer)!
+
+	for line in caller.local_candidates() {
+		callee.add_ice_candidate(line) or {}
+	}
+	for line in callee.local_candidates() {
+		caller.add_ice_candidate(line) or {}
+	}
+}
