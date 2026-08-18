@@ -24,3 +24,16 @@ bundled - and prints the codecs, ICE credentials, DTLS fingerprint, setup role
 and SCTP parameters. Finishes by re-serialising it and confirming the output is
 byte for byte identical to the input, including the attributes the program never
 looked at.
+
+## `rtp-roundtrip`
+
+```sh
+v run examples/rtp-roundtrip
+```
+
+Builds RTP packets with an RFC 8285 header extension, protects them with
+AES-GCM SRTP, and unprotects them again. Shows that the header stays readable
+while the payload does not, and demonstrates the two ways a packet is rejected:
+as a replay, and as a failed authentication.
+
+The keys are made up. In a real connection they come from the DTLS handshake.
