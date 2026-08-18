@@ -1,0 +1,19 @@
+# Every pull request needs a review from a maintainer.
+*                       @vedrock/maintainers
+
+# Anything that touches cryptography, authentication or the parsing of
+# attacker-controlled input needs a second pair of eyes. These are the places
+# where a mistake is a vulnerability rather than a bug.
+/srtp/                  @vedrock/maintainers @vedrock/security
+/stun/credentials.v     @vedrock/maintainers @vedrock/security
+/stun/message.v         @vedrock/maintainers @vedrock/security
+/internal/codec/        @vedrock/maintainers @vedrock/security
+/internal/randutil/     @vedrock/maintainers @vedrock/security
+/ice/checks.v           @vedrock/maintainers @vedrock/security
+/dtls/                  @vedrock/maintainers @vedrock/security
+/sctp/crc32c.v          @vedrock/maintainers @vedrock/security
+
+# Security policy and CI configuration change the guarantees the project makes
+# and the checks that enforce them.
+/SECURITY.md            @vedrock/maintainers @vedrock/security
+/.github/workflows/     @vedrock/maintainers
