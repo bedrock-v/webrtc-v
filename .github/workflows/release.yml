@@ -72,3 +72,14 @@ jobs:
         run: v fmt -verify .
       - name: Run the test suite
         run: v test .
+
+  publish:
+    name: Publish
+    needs: [verify, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
