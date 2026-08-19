@@ -154,3 +154,25 @@ jobs:
           v run examples/ice-dtls
           v run examples/datachannel
           v run examples/peer-connection
+
+  hardening:
+    name: Hardening
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+      # The decoders take attacker-controlled input, and their tests feed them
+      # thousands of structured-random byte strings. Running those under stricter
+      # C warnings, without the garbage collector, and with optimisation on
+      # exercises three different code paths through V's backend. A bug that only
+      # appears in one of them is exactly the kind that reaches production.
+      - name: Strict C warnings
+        run: make harden-cstrict
+      - name: Without the garbage collector
+        run: make harden-gc-none
+      - name: Optimised
+        run: make harden-prod
