@@ -1,0 +1,10 @@
+name: Feature request
+description: Propose something the library should be able to do
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [the status table](https://github.com/bedrock-v/webrtc-v/blob/main/README.md#status)
+        first. DTLS, SCTP, data channels and the peer connection API are already
+        planned, and it also lists what this project deliberately will not do.
