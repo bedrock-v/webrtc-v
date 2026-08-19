@@ -1,1 +1,11 @@
 name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Weekly, so that a break caused by a new V release is found before someone
+  # else finds it.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
