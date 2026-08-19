@@ -29,3 +29,10 @@ body:
       render: v
     validations:
       required: true
+
+  - type: input
+    id: spec
+    attributes:
+      label: Specification
+      description: If this is a standardised protocol or extension, which RFC or draft?
+      placeholder: RFC 8656 (TURN)
