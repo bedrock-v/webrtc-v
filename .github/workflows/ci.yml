@@ -68,3 +68,23 @@ jobs:
       # races and ordering bugs that only show up under a different schedule.
       - name: Run the test suite again
         run: v test .
+
+  test-windows:
+    name: Test (windows, best effort)
+    runs-on: windows-latest
+    # Windows is not a supported platform yet: interface enumeration falls back
+    # to one address per family. This job reports the state without gating the
+    # branch on it.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vlang/setup-v@v1.4
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$HOME\.vmodules" | Out-Null
+          New-Item -ItemType Junction -Path "$HOME\.vmodules\webrtc" -Target "$PWD"
+      - name: Run the test suite
+        run: v test .
