@@ -176,3 +176,32 @@ jobs:
         run: make harden-gc-none
       - name: Optimised
         run: make harden-prod
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # gitleaks-action asks organisation-owned repositories for a paid licence.
+      # The scanner is free, so the release binary is used directly.
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          version=8.28.0
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          tar -C /tmp -xzf /tmp/gitleaks.tar.gz gitleaks
+          sudo install -m 0755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+      - name: Scan for committed credentials
+        run: gitleaks detect --source . --redact --no-banner --exit-code 1
+
+  actions:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Lint the workflows
+        uses: raven-actions/actionlint@v2
