@@ -52,3 +52,10 @@ body:
           required: true
         - label: I checked that the roadmap does not already cover this
           required: true
+
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to implement this
