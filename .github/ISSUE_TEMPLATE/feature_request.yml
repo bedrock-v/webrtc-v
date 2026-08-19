@@ -18,3 +18,14 @@ body:
         situation, not the solution.
     validations:
       required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: >
+        If you have an API in mind, sketch it. A rough signature is more useful
+        than a prose description.
+      render: v
+    validations:
+      required: true
