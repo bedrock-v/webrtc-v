@@ -30,3 +30,25 @@ jobs:
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # A tag that disagrees with v.mod produces a release that installs as a
+      # different version than it claims to be. Catching that here is cheaper
+      # than yanking it afterwards.
+      - name: Check that v.mod agrees with the tag
+        run: |
+          set -euo pipefail
+          declared="$(sed -n "s/^[[:space:]]*version:[[:space:]]*'\(.*\)'.*/\1/p" v.mod)"
+          expected="${{ steps.version.outputs.version }}"
+          if [ "$declared" != "$expected" ]; then
+            echo "::error::v.mod declares version '$declared' but the tag is '$expected'"
+            exit 1
+          fi
+
+      - name: Check that the changelog has an entry for this version
+        run: |
+          set -euo pipefail
+          expected="${{ steps.version.outputs.version }}"
+          if ! grep -q "^## \[$expected\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$expected]' section"
+            exit 1
+          fi
