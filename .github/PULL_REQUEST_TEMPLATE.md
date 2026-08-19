@@ -26,3 +26,22 @@ user-visible, this is a docs change".
 If this implements or corrects a rule from an RFC, name it: "RFC 8445 section
 7.3.1.1". If it does not, say "not applicable".
 -->
+
+## Testing
+
+- [ ] `make check` passes locally
+- [ ] New tests cover the change
+- [ ] A bug fix includes a test that fails without it
+- [ ] A new decoder handles malformed input without panicking, and is included in
+      the adversarial test
+
+<!-- Describe what you tested and how, especially anything CI cannot cover. -->
+
+## Checklist
+
+- [ ] Formatted with `v fmt -w .`
+- [ ] No codec module gained a dependency on `net`
+- [ ] Any new limit on attacker-controlled input is documented on the constant
+- [ ] Public API has doc comments
+- [ ] `CHANGELOG.md` updated under Unreleased, if the change is user-visible
+- [ ] No unrelated reformatting in the diff
