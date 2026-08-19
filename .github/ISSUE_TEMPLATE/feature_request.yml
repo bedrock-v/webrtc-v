@@ -18,3 +18,27 @@ body:
         situation, not the solution.
     validations:
       required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: >
+        If you have an API in mind, sketch it. A rough signature is more useful
+        than a prose description.
+      render: v
+    validations:
+      required: true
+
+  - type: input
+    id: spec
+    attributes:
+      label: Specification
+      description: If this is a standardised protocol or extension, which RFC or draft?
+      placeholder: RFC 8656 (TURN)
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Including doing it in your own application on top of what exists.
