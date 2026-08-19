@@ -95,3 +95,33 @@ jobs:
           internal/randutil stun stunclient turn mdns sdp rtp rtcp srtp ice
           dtls sctp datachannel configuration.v connect.v data_channel.v
           description.v media.v peer_connection.v stats.v webrtc_test.v
+
+  build:
+    name: Build (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Production builds turn on optimisation and a different code path in
+        # V's dead-code elimination, which has broken this project before.
+        mode: [debug, prod]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+      - name: Build every module as a shared library
+        run: |
+          set -euo pipefail
+          for module in netaddr logging transport internal/codec internal/aes internal/randutil \
+                        stun stunclient turn mdns sdp rtp rtcp srtp ice dtls sctp datachannel; do
+            echo "::group::$module"
+            if [ "${{ matrix.mode }}" = "prod" ]; then
+              v -prod -shared -check "$module"
+            else
+              v -shared -check "$module"
+            fi
+            echo "::endgroup::"
+          done
