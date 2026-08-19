@@ -36,3 +36,12 @@ If this implements or corrects a rule from an RFC, name it: "RFC 8445 section
       the adversarial test
 
 <!-- Describe what you tested and how, especially anything CI cannot cover. -->
+
+## Checklist
+
+- [ ] Formatted with `v fmt -w .`
+- [ ] No codec module gained a dependency on `net`
+- [ ] Any new limit on attacker-controlled input is documented on the constant
+- [ ] Public API has doc comments
+- [ ] `CHANGELOG.md` updated under Unreleased, if the change is user-visible
+- [ ] No unrelated reformatting in the diff
