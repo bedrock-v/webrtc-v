@@ -169,3 +169,15 @@ jobs:
         run: v -gc none test internal/codec netaddr stun sdp rtp rtcp srtp sctp
       - name: Optimised
         run: v -prod test internal/codec netaddr stun sdp rtp rtcp srtp sctp
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for committed credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
