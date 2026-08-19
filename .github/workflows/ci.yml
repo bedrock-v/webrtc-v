@@ -19,3 +19,17 @@ concurrency:
 
 env:
   VFLAGS: -no-parallel
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vlang/setup-v@v1.4
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+      - name: Verify formatting
+        run: v fmt -verify .
