@@ -43,3 +43,12 @@ jobs:
             echo "::error::v.mod declares version '$declared' but the tag is '$expected'"
             exit 1
           fi
+
+      - name: Check that the changelog has an entry for this version
+        run: |
+          set -euo pipefail
+          expected="${{ steps.version.outputs.version }}"
+          if ! grep -q "^## \[$expected\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$expected]' section"
+            exit 1
+          fi
