@@ -52,3 +52,23 @@ jobs:
             echo "::error::CHANGELOG.md has no '## [$expected]' section"
             exit 1
           fi
+
+  test:
+    name: Test (${{ matrix.os }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vlang/setup-v@v1.4
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+      - name: Verify formatting
+        run: v fmt -verify .
+      - name: Run the test suite
+        run: v test .
