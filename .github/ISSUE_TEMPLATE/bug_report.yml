@@ -20,3 +20,12 @@ body:
       placeholder: v0.1.0
     validations:
       required: true
+
+  - type: input
+    id: vversion
+    attributes:
+      label: V version
+      description: The output of `v version`.
+      placeholder: V 0.5.2 282bf30
+    validations:
+      required: true
