@@ -46,3 +46,25 @@ jobs:
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Vet
         run: make vet
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+      - name: Run the test suite
+        run: make test
+      # The suite includes tests that open loopback sockets and drive two ICE
+      # agents through a full exchange. Running it a second time catches the
+      # races and ordering bugs that only show up under a different schedule.
+      - name: Run the test suite again
+        run: make test
