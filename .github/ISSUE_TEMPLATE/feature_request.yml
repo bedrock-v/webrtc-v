@@ -36,3 +36,9 @@ body:
       label: Specification
       description: If this is a standardised protocol or extension, which RFC or draft?
       placeholder: RFC 8656 (TURN)
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Including doing it in your own application on top of what exists.
