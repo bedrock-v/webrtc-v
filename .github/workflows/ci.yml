@@ -125,3 +125,32 @@ jobs:
             fi
             echo "::endgroup::"
           done
+
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
+        with:
+          check-latest: true
+      - name: Link the module into V's module path
+        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+      - name: Build every example
+        run: |
+          set -euo pipefail
+          for example in examples/*/; do
+            name="$(basename "$example")"
+            echo "::group::$name"
+            v -o "/tmp/$name" "$example"
+            echo "::endgroup::"
+          done
+      - name: Run the offline examples
+        run: |
+          set -euo pipefail
+          v run examples/sdp-parse
+          v run examples/rtp-roundtrip
+          v run examples/ice-loopback
+          v run examples/ice-dtls
+          v run examples/datachannel
+          v run examples/peer-connection
