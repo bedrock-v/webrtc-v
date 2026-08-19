@@ -1,1 +1,22 @@
 version: 2
+
+updates:
+  # V modules are not a Dependabot ecosystem, and this project has no third-party
+  # V dependencies by design. The actions in the workflows are the only pinned
+  # third-party code in the repository, so they are what needs watching.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci'
+      include: scope
+    labels:
+      - dependencies
+      - ci
+    groups:
+      actions:
+        patterns:
+          - '*'
