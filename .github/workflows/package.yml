@@ -52,3 +52,22 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=long
             type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # The layer cache lives with the workflow, so an unchanged tree does
+          # not rebuild the V toolchain image every time.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Check the image actually runs
+        run: |
+          set -euo pipefail
+          image="${REGISTRY}/${IMAGE_NAME}:sha-${GITHUB_SHA}"
+          docker run --rm "$image" | tee /tmp/out.txt
+          grep -q "connected in" /tmp/out.txt
