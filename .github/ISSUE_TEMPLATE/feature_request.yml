@@ -42,3 +42,13 @@ body:
     attributes:
       label: Alternatives you have considered
       description: Including doing it in your own application on top of what exists.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This transports data; it does not encode, decode or capture media
+          required: true
+        - label: I checked that the roadmap does not already cover this
+          required: true
