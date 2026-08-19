@@ -19,3 +19,10 @@ user-visible, this is a docs change".
 - [ ] Breaking change (the public API changes)
 - [ ] Documentation
 - [ ] Tests, tooling or CI
+
+## Specification
+
+<!--
+If this implements or corrects a rule from an RFC, name it: "RFC 8445 section
+7.3.1.1". If it does not, say "not applicable".
+-->
