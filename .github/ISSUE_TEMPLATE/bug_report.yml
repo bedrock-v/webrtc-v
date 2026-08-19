@@ -89,3 +89,12 @@ body:
       render: v
     validations:
       required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        Output with `WEBRTC_LOG_LEVEL=debug` set, if the problem involves ICE or
+        anything else with timing. Remove any credentials first.
+      render: shell
