@@ -62,3 +62,11 @@ body:
         - not sure
     validations:
       required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened
+      description: If a specification says so, name the RFC and section.
+    validations:
+      required: true
