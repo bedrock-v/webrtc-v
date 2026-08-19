@@ -1,0 +1,25 @@
+name: Package
+
+# Publishes the container image described in the Dockerfile: V with this
+# library already linked, and the examples built.
+#
+# It is a convenience for trying the library and for running the suite in a
+# known-good environment, not a deployment artifact - this repository is a
+# library and has no service to run.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
