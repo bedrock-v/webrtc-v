@@ -70,3 +70,11 @@ body:
       description: If a specification says so, name the RFC and section.
     validations:
       required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Include the error message or output verbatim.
+    validations:
+      required: true
