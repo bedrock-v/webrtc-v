@@ -29,3 +29,16 @@ body:
       placeholder: V 0.5.2 282bf30
     validations:
       required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Platform
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - FreeBSD or another BSD
+        - Other
+    validations:
+      required: true
