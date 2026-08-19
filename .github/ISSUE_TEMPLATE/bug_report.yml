@@ -78,3 +78,14 @@ body:
       description: Include the error message or output verbatim.
     validations:
       required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >
+        The smallest program or test that shows the problem. If it involves a
+        specific packet, a hex dump of it is ideal.
+      render: v
+    validations:
+      required: true
