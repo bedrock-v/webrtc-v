@@ -94,3 +94,18 @@ being documented.
 ### It is formatted
 
 `v fmt -w .` before committing. CI verifies it.
+
+## Running the tests
+
+```sh
+make test                 # everything
+v test stun               # one module
+v test ice/ice_test.v     # one file
+```
+
+Some tests open loopback sockets and take a few seconds. If they are flaky on
+your machine, say so in an issue rather than adding a sleep - a test that needs a
+longer timeout to pass is usually telling you something.
+
+`WEBRTC_LOG_LEVEL=debug` turns on the stack's logging, which is the fastest way
+to see what an ICE agent is actually doing.
