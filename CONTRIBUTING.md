@@ -90,3 +90,39 @@ Do not comment what the code already says. `// increment the counter` above
 
 Public API gets a doc comment whose first sentence starts with the identifier
 being documented.
+
+### It is formatted
+
+`v fmt -w .` before committing. CI verifies it.
+
+## Running the tests
+
+```sh
+make test                 # everything
+v test stun               # one module
+v test ice/ice_test.v     # one file
+```
+
+Some tests open loopback sockets and take a few seconds. If they are flaky on
+your machine, say so in an issue rather than adding a sleep - a test that needs a
+longer timeout to pass is usually telling you something.
+
+`WEBRTC_LOG_LEVEL=debug` turns on the stack's logging, which is the fastest way
+to see what an ICE agent is actually doing.
+
+## Commit messages
+
+Conventional commits, one purpose per commit:
+
+```
+feat(ice): learn peer-reflexive candidates from inbound checks
+fix(srtp): advance the watermark on the first packet of a stream
+docs(readme): correct the module status table
+test(rtcp): add the RFC 4585 NACK vectors
+```
+
+Types in use: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`,
+`chore`. The scope is the module name.
+
+Keep the subject under 72 characters and in the imperative. If the change needs
+explaining, put it in the body - what it does and why, not how.
