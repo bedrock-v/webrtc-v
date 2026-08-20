@@ -363,3 +363,29 @@ at all:
 
 Why the split matters, and the reasoning behind the concurrency model, error
 handling and resource limits, is in the header comment of each module.
+
+## Development
+
+```sh
+make test        # run the test suite
+make fmt         # format
+make check       # fmt verification, vet and tests
+make examples    # build every example
+```
+
+Or, without make:
+
+```sh
+v test .
+v fmt -verify .
+v vet .
+```
+
+The tests are not only unit tests over byte slices. `ice`, `stunclient` and the
+transport layer open real sockets on loopback and drive two agents through a
+complete exchange, because the interesting failures in this domain are in
+timing, state transitions and concurrency, and those do not show up in a
+pure-function test.
+
+Contributions are welcome; please read
+[CONTRIBUTING.md](CONTRIBUTING.md) first.
