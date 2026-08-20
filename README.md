@@ -247,3 +247,32 @@ fn main() {
 	protected := outbound.protect_rtp(packet.marshal()!)!
 }
 ```
+
+### Open a data channel
+
+SCTP runs inside the DTLS connection, and a data channel is one SCTP stream pair.
+
+```v
+import webrtc.datachannel
+import webrtc.sctp
+
+fn main() {
+	// The DTLS client is the SCTP client (RFC 8841), so the role passes through.
+	mut association := sctp.Association.new(dtls_conn, role: .client)!
+	association.connect(20 * time.second)!
+
+	mut channels := datachannel.Manager.new(association, is_dtls_client: true)
+	mut chat := channels.create('chat', datachannel.ChannelOptions{}, 10 * time.second)!
+
+	chat.send_text('hello')!
+	println(chat.recv(5 * time.second)!.text())
+
+	// Unordered and partially reliable, for latency-sensitive traffic.
+	mut fast := channels.create('fast', datachannel.ChannelOptions{
+		ordered:         false
+		max_retransmits: u16(0)
+	}, 10 * time.second)!
+}
+```
+
+The other end takes them with `channels.accept(timeout)`.
