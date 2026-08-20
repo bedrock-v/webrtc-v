@@ -72,3 +72,21 @@ import `net`. Adding an I/O dependency to one of them will be rejected; put the
 networked part in `transport`, `stunclient` or `ice`. The reasoning, including a
 V compiler bug that makes this more than a stylistic preference, is in the
 header comment of `netaddr`.
+
+### It is commented where it needs to be
+
+Comments explain *why*. If a line implements a specific rule, name the RFC
+section:
+
+```v
+// RFC 8445 section 7.2.2: the username is the peer's fragment followed by ours,
+// so the receiver can tell which session the check belongs to before it has
+// verified anything.
+request.add_username('${a.remote_ufrag}:${a.local_ufrag}')!
+```
+
+Do not comment what the code already says. `// increment the counter` above
+`i++` is noise.
+
+Public API gets a doc comment whose first sentence starts with the identifier
+being documented.
