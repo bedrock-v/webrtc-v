@@ -104,3 +104,45 @@ ln -s "$PWD/webrtc-v" ~/.vmodules/webrtc
 Requires V 0.5.2 or newer.
 
 ## Usage
+
+### A peer connection with a data channel
+
+This is the whole API for the common case. Everything the two peers have to
+exchange - the offer, the answer and the candidates - goes through whatever
+signalling you already have; nothing else needs to.
+
+```v
+import time
+import webrtc
+
+fn main() {
+	mut pc := webrtc.PeerConnection.new(
+		ice_servers: [webrtc.IceServer{
+			urls: ['stun:stun.l.google.com:19302']
+		}]
+	)!
+	defer { pc.close() }
+
+	mut chat := pc.create_data_channel('chat')!
+
+	offer := pc.create_offer()!
+	pc.set_local_description(offer)!
+	// Send offer.sdp and pc.local_candidates() to the peer, and apply what it
+	// sends back:
+	//   pc.set_remote_description(webrtc.SessionDescription{ typ: .answer, sdp: answer })!
+	//   pc.add_ice_candidate(line)!
+
+	pc.wait_connected(30 * time.second)!
+	chat.send_text('hello')!
+
+	message := chat.recv(5 * time.second)!
+	println(message.text())
+}
+```
+
+The answering side is the same, in the other order: `set_remote_description`
+with the offer, then `create_answer`, `set_local_description`, and
+`accept_data_channel` to receive the channels the caller opened.
+
+[`examples/peer-connection`](examples/peer-connection) runs both ends in one
+process, so it is a complete, working exchange to read.
