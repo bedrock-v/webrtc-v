@@ -28,3 +28,53 @@ The design goals, in the order they are traded off:
    and the networked modules are built on top of them.
 4. **Being readable.** This is also meant to be a way to learn how WebRTC
    actually works. Comments explain *why*, and point at the specification.
+
+## Status
+
+| Module        | Specification                       | State |
+|---------------|-------------------------------------|-------|
+| `netaddr`     | IP and socket address values        | ✅ Complete |
+| `logging`     | leveled logging                     | ✅ Complete |
+| `transport`   | socket ↔ address bridging           | ✅ Complete |
+| `stun`        | RFC 8489, RFC 5389                  | ✅ Complete, passes the RFC 5769 vectors |
+| `stunclient`  | STUN over UDP with retransmission   | ✅ Complete |
+| `turn`        | RFC 8656 client                     | ✅ Complete for UDP |
+| `mdns`        | RFC 8828 candidate resolution       | ✅ Resolver only |
+| `sdp`         | RFC 8866 + the WebRTC attributes    | ✅ Complete |
+| `rtp`         | RFC 3550, RFC 8285                  | ✅ Complete |
+| `rtcp`        | RFC 3550, 4585, 5104, REMB, TWCC    | ✅ Complete |
+| `srtp`        | RFC 3711, RFC 7714                  | ✅ Complete, passes the RFC 3711 KDF vectors |
+| `ice`         | RFC 8445, RFC 8839, RFC 7675        | ✅ Complete for UDP |
+| `dtls`        | DTLS 1.2, RFC 5764                  | ✅ Complete for ECDHE-ECDSA-AES128-GCM |
+| `sctp`        | RFC 4960 over DTLS                  | ✅ Complete |
+| `datachannel` | RFC 8831, RFC 8832                  | ✅ Complete |
+| `webrtc`      | RTCPeerConnection, JSEP offer/answer | ✅ Complete for data channels |
+
+What you can build today: a peer-to-peer connection from an offer and an answer.
+`webrtc.PeerConnection` does the JSEP part - it builds and reads the SDP, works
+out which end is the DTLS client, brings ICE, DTLS and SCTP up in order and
+hands you data channels.
+[`examples/peer-connection`](examples/peer-connection) is the whole thing in
+about forty lines.
+
+Every layer underneath is a module you can use on its own, which is what
+[`examples/datachannel`](examples/datachannel) shows: the same connection
+assembled by hand, transport by transport.
+
+Relays work: `turn` is an RFC 8656 client, and ICE gathers relayed candidates
+from any `turn:` server in the configuration, so a connection is made even when
+neither peer can reach the other directly.
+
+What is not there yet: media. RTP, RTCP and SRTP are complete and a negotiated
+audio or video section gets keyed SRTP contexts and `send_rtp`/`recv_rtp`, but
+there is no track abstraction, no sender or receiver, and no congestion control.
+
+Candidates naming a `.local` host are resolved through multicast DNS, so a
+browser's privacy-preserving candidates still produce a local-network path.
+Registering such a name for this end's own candidates is not implemented, so
+this end's offers carry addresses.
+
+**Platforms.** Linux, macOS and the BSDs are supported and tested. Windows
+compiles and works, but interface enumeration falls back to finding one address
+per family rather than all of them; see the note in
+[`ice/interfaces_windows.c.v`](ice/interfaces_windows.c.v).
