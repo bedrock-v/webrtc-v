@@ -78,3 +78,33 @@ this end's offers carry addresses.
 compiles and works, but interface enumeration falls back to finding one address
 per family rather than all of them; see the note in
 [`ice/interfaces_windows.c.v`](ice/interfaces_windows.c.v).
+
+## Install
+
+```sh
+v install --git https://github.com/bedrock-v/webrtc-v
+```
+
+Or, for development, clone the repository and link it into V's module path:
+
+```sh
+git clone https://github.com/bedrock-v/webrtc-v
+ln -s "$PWD/webrtc-v" ~/.vmodules/webrtc
+```
+
+Requires V newer than the 0.5.2 release - `crypto.ecdsa.PublicKey.uncompressed_bytes`
+landed after it was tagged - so build V from its default branch, or use the
+container image below. OpenSSL development headers are needed too
+(`libssl-dev` on Debian and Ubuntu, `openssl-devel` on Fedora).
+
+### Container image
+
+```sh
+docker run --rm ghcr.io/bedrock-v/webrtc-v
+```
+
+That connects two peers and passes messages over a data channel, with V and the
+library already linked. It is for trying the library and for running the suite
+in a known environment; there is no service here worth deploying.
+
+## Usage
