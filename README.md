@@ -220,3 +220,30 @@ fn main() {
 For a complete runnable version, see
 [`examples/ice-loopback`](examples/ice-loopback), and for the same thing with
 DTLS and SRTP on top, [`examples/ice-dtls`](examples/ice-dtls).
+
+### Secure the path with DTLS
+
+The ICE agent is a datagram transport, which is all `dtls.Conn` needs. The
+handshake authenticates the peer against the fingerprint from signalling and
+exports the keys SRTP uses.
+
+```v
+import webrtc.dtls
+
+fn main() {
+	certificate := dtls.Certificate.generate()!
+	// Publish this in your offer as a=fingerprint.
+	println('a=fingerprint:${certificate.fingerprint(.sha256)}')
+
+	mut conn := dtls.Conn.new(agent,
+		role:                .client
+		certificate:         certificate
+		remote_fingerprints: [dtls.Fingerprint.parse(peer_fingerprint_line)!]
+	)!
+	conn.handshake()!
+
+	// Two SRTP contexts, keyed from the handshake and pointed the right ways.
+	mut outbound, mut inbound := conn.srtp_contexts()!
+	protected := outbound.protect_rtp(packet.marshal()!)!
+}
+```
