@@ -86,3 +86,35 @@ breaking changes are listed under **Changed** with a migration note.
   turns the advertisement off. `datachannel` wires `max_retransmits` and
   `max_packet_lifetime` through to it in both directions, so an unreliable
   channel is now actually unreliable rather than merely labelled so.
+
+### Fixed
+
+- **Performance measurement**: the documented "about 50 KB/s on loopback,
+  limited by the association loop's 20 ms tick" was wrong in both the number and
+  the cause. It was measured in an unoptimised build, and the real limit was the
+  standard library's AES. V's default build is not optimised, and this stack is
+  CPU-bound on the cipher, so anything measured without `-prod` reports roughly a
+  third of the real figure.
+
+- **`sctp`**: the acknowledgement point started at zero rather than one below
+  the initial transmission sequence number. Since that number is random, roughly
+  half of all associations discarded every acknowledgement the peer sent, never
+  opened the congestion window, and stalled permanently on any transfer larger
+  than it.
+- **`sctp`**: the per-chunk payload limit did not account for the four-byte chunk
+  padding, so packets were one byte over the transport's maximum whenever that
+  maximum was not itself a multiple of four - which is the case over DTLS.
+- **`ice`**: a nominated candidate pair lost a priority comparison against an
+  already-selected pair, so a controlled agent could ignore the nomination and
+  keep using a path the peer had stopped using.
+- **`ice`**: sorting an empty check list faulted inside V's stable sort, which
+  an agent has whenever it gathers before the peer's candidates arrive.
+- **`sctp`**: FORWARD_TSN discarded data the receiver had already accepted. The
+  sender's acknowledgement point may legitimately cover transmission sequence
+  numbers reported in a gap block, so skipping ahead has to deliver what
+  arrived and skip only what did not; it deleted the lot, losing messages the
+  sender believed were delivered.
+- **`datachannel`**: `Manager.accept` returned a nil channel when the manager was
+  closed while a caller was waiting, because a receive on a closed V channel
+  completes with the zero value. Callers dereferenced it and crashed on
+  shutdown.
