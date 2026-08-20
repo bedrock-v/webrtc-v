@@ -64,3 +64,11 @@ Everything from the network is attacker-controlled. When you write a decoder:
   make the limit a parameter, and document it on the constant itself.
 - Return a typed error. Do not panic, and do not return a partially decoded
   structure.
+
+### It respects the layering
+
+The codec modules - `netaddr`, `stun`, `sdp`, `rtp`, `rtcp`, `srtp` - do not
+import `net`. Adding an I/O dependency to one of them will be rejected; put the
+networked part in `transport`, `stunclient` or `ice`. The reasoning, including a
+V compiler bug that makes this more than a stylistic preference, is in the
+header comment of `netaddr`.
