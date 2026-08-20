@@ -146,3 +146,35 @@ with the offer, then `create_answer`, `set_local_description`, and
 
 [`examples/peer-connection`](examples/peer-connection) runs both ends in one
 process, so it is a complete, working exchange to read.
+
+### Connect through a relay
+
+When neither peer can reach the other - symmetric NAT on both sides, or a
+network that blocks everything but the path out - a TURN server forwards for
+them. Add it to the configuration and ICE does the rest: it allocates, gathers
+the relayed address as a candidate, and installs the permissions the relay needs
+before a check can get through.
+
+```v
+mut pc := webrtc.PeerConnection.new(
+	ice_servers: [
+		webrtc.IceServer{
+			urls: ['stun:stun.example:3478']
+		},
+		webrtc.IceServer{
+			urls:       ['turn:relay.example:3478']
+			username:   'user'
+			credential: 'secret'
+		},
+	]
+)!
+```
+
+A relayed pair is the last resort - it costs the relay's bandwidth and adds a
+hop - so ICE only settles on one when nothing direct works. To force it, for
+testing or for privacy, set `ice_gather_policy: .relay_only`; to keep local
+addresses off the wire while still trying a direct path, use `.no_host`.
+
+`turn` can also be used on its own: `turn.Client` allocates, creates
+permissions, binds channels, and sends and receives, with the allocation kept
+alive for you.
