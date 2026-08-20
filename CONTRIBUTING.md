@@ -31,3 +31,5 @@ write it.
 **For anything security-sensitive**, read [SECURITY.md](SECURITY.md) first. If
 you have found a vulnerability, do not open a pull request that fixes it in
 public; report it privately.
+
+## What a good change looks like
