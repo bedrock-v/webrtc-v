@@ -334,3 +334,32 @@ fn main() {
 ```
 
 More examples are in [`examples/`](examples).
+
+## Architecture
+
+The stack is a set of independent modules with an explicit dependency order.
+Nothing above reaches down past its neighbour, and the codec modules have no I/O
+at all:
+
+```
+                 ┌─────────────┐
+                 │  webrtc     │  RTCPeerConnection, JSEP
+                 └──────┬──────┘
+        ┌───────────────┼───────────────┐
+   ┌────▼────┐   ┌──────▼──────┐  ┌─────▼─────┐
+   │  ice    │   │    dtls     │  │   sctp    │──> datachannel
+   └────┬────┘   └──────┬──────┘  └─────┬─────┘
+        │               │               │
+   ┌────▼────┐     ┌────▼────┐          │
+   │  stun   │     │  srtp   │──────────┘
+   └────┬────┘     └────┬────┘
+        │          ┌────▼────┬─────────┐
+        │          │   rtp   │  rtcp   │
+        │          └─────────┴─────────┘
+   ┌────▼──────────────────────────────┐
+   │ netaddr · transport · logging     │
+   └───────────────────────────────────┘
+```
+
+Why the split matters, and the reasoning behind the concurrency model, error
+handling and resource limits, is in the header comment of each module.
