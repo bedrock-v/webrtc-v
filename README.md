@@ -87,3 +87,18 @@ this end's offers carry addresses.
 compiles and works, but interface enumeration falls back to finding one address
 per family rather than all of them; see the note in
 [`ice/interfaces_windows.c.v`](ice/interfaces_windows.c.v).
+
+## Install
+
+```sh
+v install --git https://github.com/bedrock-v/webrtc-v
+```
+
+Or, for development, clone the repository and link it into V's module path:
+
+```sh
+git clone https://github.com/bedrock-v/webrtc-v
+ln -s "$PWD/webrtc-v" ~/.vmodules/webrtc
+```
+
+Requires V 0.5.2 or newer.
