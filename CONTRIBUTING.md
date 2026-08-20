@@ -141,3 +141,9 @@ explaining, put it in the body - what it does and why, not how.
 Review is about correctness against the specification, safety against hostile
 input, and whether the next person will understand it. Expect questions about
 edge cases; they are not an objection to the change.
+
+## If you found a better design
+
+Say so, in an issue. Do not fold a redesign into an unrelated pull request. A
+better idea is welcome; a large diff that changes several things at once is hard
+to review and harder to revert.
