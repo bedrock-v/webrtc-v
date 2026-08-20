@@ -182,3 +182,45 @@ addresses off the wire while still trying a direct path, use `.no_host`.
 `turn` can also be used on its own: `turn.Client` allocates, creates
 permissions, binds channels, and sends and receives, with the allocation kept
 alive for you.
+
+### Connect two peers with ICE
+
+The ICE agent gathers candidates, exchanges them through whatever signalling you
+already have, and gives you a datagram channel over whichever path worked.
+
+```v
+import time
+import webrtc.ice
+
+fn main() {
+	mut agent := ice.Agent.new(
+		role:         .controlling
+		stun_servers: ['stun.l.google.com:19302']
+	)!
+	defer { agent.close() }
+
+	// Hand these to the peer over your signalling channel.
+	ufrag, pwd := agent.local_credentials()
+	println('local credentials: ${ufrag} / ${pwd}')
+
+	// And take the peer's in return.
+	agent.set_remote_credentials(remote_ufrag, remote_pwd)!
+
+	// Gathering opens the sockets and discovers reflexive addresses.
+	agent.gather()!
+	for candidate in agent.local_candidates() {
+		signal_to_peer('a=candidate:${candidate}')
+	}
+
+	// Candidates from the peer can arrive at any time (trickle ICE).
+	agent.add_remote_candidate_string(line_from_peer)!
+
+	agent.connect(30 * time.second)!
+	agent.send('hello'.bytes())!
+	println(agent.recv(5 * time.second)!.bytestr())
+}
+```
+
+For a complete runnable version, see
+[`examples/ice-loopback`](examples/ice-loopback), and for the same thing with
+DTLS and SRTP on top, [`examples/ice-dtls`](examples/ice-dtls).
