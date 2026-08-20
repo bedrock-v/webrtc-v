@@ -90,3 +90,7 @@ Do not comment what the code already says. `// increment the counter` above
 
 Public API gets a doc comment whose first sentence starts with the identifier
 being documented.
+
+### It is formatted
+
+`v fmt -w .` before committing. CI verifies it.
