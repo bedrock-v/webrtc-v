@@ -287,3 +287,20 @@ fn main() {
 	println('the internet sees me as ${addr}')
 }
 ```
+
+### Parse an offer
+
+```v
+import webrtc.sdp
+
+fn main() {
+	offer := sdp.parse(offer_text)!
+	for media in offer.media_descriptions {
+		mid := media.mid() or { '?' }
+		println('${media.media} (mid ${mid}) is ${media.direction()}')
+		for codec in media.rtpmaps() {
+			println('  ${codec.payload_type}: ${codec.encoding_name}/${codec.clock_rate}')
+		}
+	}
+}
+```
