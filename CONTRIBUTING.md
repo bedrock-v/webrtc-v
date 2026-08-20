@@ -33,3 +33,22 @@ you have found a vulnerability, do not open a pull request that fixes it in
 public; report it privately.
 
 ## What a good change looks like
+
+### It is tested
+
+Every change to protocol code needs tests. Concretely:
+
+- A new decoder needs a round-trip test, tests for each way the input can be
+  malformed, and an inclusion in the adversarial test that feeds it random bytes.
+  It must not panic on anything.
+- A new packet format that the RFC publishes test vectors for must be tested
+  against them. Reproducing the vector byte for byte catches the errors that a
+  self-consistent implementation cannot.
+- A change to anything with state or timing needs a test that drives it over real
+  sockets. Look at `ice/ice_test.v` and `stunclient/client_test.v` for the
+  pattern.
+- A bug fix needs a test that fails before it and passes after.
+
+Tests are not a formality here. The failures that matter in this domain are in
+timing, state transitions and hostile input, and none of them show up in code
+review.
