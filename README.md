@@ -276,3 +276,14 @@ fn main() {
 ```
 
 The other end takes them with `channels.accept(timeout)`.
+
+### Discover your public address
+
+```v
+import webrtc.stunclient
+
+fn main() {
+	addr := stunclient.discover('stun.l.google.com:19302')!
+	println('the internet sees me as ${addr}')
+}
+```
