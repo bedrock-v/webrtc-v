@@ -118,3 +118,9 @@ breaking changes are listed under **Changed** with a migration note.
   closed while a caller was waiting, because a receive on a closed V channel
   completes with the zero value. Callers dereferenced it and crashed on
   shutdown.
+
+## [0.1.0] - 2026-08-20
+
+First release. The protocol layers below are implemented and tested; DTLS, SCTP,
+data channels and the peer connection API are not yet written, so this cannot
+open a browser-compatible connection.
