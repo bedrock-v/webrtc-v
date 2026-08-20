@@ -52,3 +52,15 @@ Every change to protocol code needs tests. Concretely:
 Tests are not a formality here. The failures that matter in this domain are in
 timing, state transitions and hostile input, and none of them show up in code
 review.
+
+### It handles hostile input
+
+Everything from the network is attacker-controlled. When you write a decoder:
+
+- Read through `internal/codec.Reader`. Do not index a slice directly.
+- Use `Reader.sub` for a length-delimited substructure, so the nested decoder
+  cannot read past its own bounds.
+- If a length field from the wire decides how much you allocate, give it a limit,
+  make the limit a parameter, and document it on the constant itself.
+- Return a typed error. Do not panic, and do not return a partially decoded
+  structure.
