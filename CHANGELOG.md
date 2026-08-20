@@ -159,3 +159,19 @@ open a browser-compatible connection.
   foundation computation, pair formation and freezing, paced connectivity checks,
   role conflict resolution, peer-reflexive candidate discovery, nomination, and
   consent freshness per RFC 7675. Supports trickle ICE.
+
+### Security
+
+- Every decoder reads through a single bounds-checked cursor and returns typed
+  errors rather than panicking on malformed input.
+- Every length field taken from the wire has a documented, configurable limit.
+- SRTP verifies authentication before decrypting and before consulting the replay
+  window, so a forged packet changes no state.
+- ICE authenticates a connectivity check before it can create a candidate or
+  advance a pair.
+- All unpredictable values come from the operating system CSPRNG with no
+  fallback; ICE credentials are drawn with rejection sampling so the distribution
+  is uniform.
+
+[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/bedrock-v/webrtc-v/releases/tag/v0.1.0
