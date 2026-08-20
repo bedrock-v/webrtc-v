@@ -126,3 +126,28 @@ Types in use: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`,
 
 Keep the subject under 72 characters and in the imperative. If the change needs
 explaining, put it in the body - what it does and why, not how.
+
+## Pull requests
+
+- One logical change per pull request. A refactor and a fix in the same diff is
+  two pull requests.
+- Do not reformat code you are not otherwise changing; it buries the real change
+  and destroys `git blame`.
+- Fill in the template. "What breaks if this is wrong" is the field reviewers
+  read first.
+- CI must be green. It runs the same `make check` you can run locally, on Linux
+  and macOS.
+
+Review is about correctness against the specification, safety against hostile
+input, and whether the next person will understand it. Expect questions about
+edge cases; they are not an objection to the change.
+
+## If you found a better design
+
+Say so, in an issue. Do not fold a redesign into an unrelated pull request. A
+better idea is welcome; a large diff that changes several things at once is hard
+to review and harder to revert.
+
+## Code of conduct
+
+Participation is governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
