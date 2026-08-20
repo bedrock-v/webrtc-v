@@ -147,3 +147,7 @@ edge cases; they are not an objection to the change.
 Say so, in an issue. Do not fold a redesign into an unrelated pull request. A
 better idea is welcome; a large diff that changes several things at once is hard
 to review and harder to revert.
+
+## Code of conduct
+
+Participation is governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
