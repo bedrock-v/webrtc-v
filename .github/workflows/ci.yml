@@ -25,8 +25,8 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -38,8 +38,8 @@ jobs:
     name: Vet
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -55,8 +55,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -77,8 +77,8 @@ jobs:
     # branch on it.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -99,8 +99,8 @@ jobs:
         # V's dead-code elimination, which has broken this project before.
         mode: [debug, prod]
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -123,8 +123,8 @@ jobs:
     name: Examples
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -152,8 +152,8 @@ jobs:
     name: Hardening
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: vlang/setup-v@v1.4
+      - uses: actions/checkout@v7
+      - uses: vlang/setup-v@v1.7
         with:
           check-latest: true
       - name: Link the module into V's module path
@@ -174,11 +174,11 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Scan for committed credentials
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -186,6 +186,6 @@ jobs:
     name: Workflow lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Lint the workflows
         uses: raven-actions/actionlint@v2
