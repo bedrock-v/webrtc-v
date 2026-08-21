@@ -1,0 +1,27 @@
+# gitleaks configuration.
+#
+# The test suite is full of key material, because a protocol implementation is
+# only trustworthy if it reproduces the vectors its specification publishes.
+# Those vectors are printed in the RFCs; they are not credentials, and they
+# cannot be used against anything.
+#
+# The exemptions below name the individual values rather than the files that
+# hold them. A blanket "ignore the tests" would hide a real credential
+# committed into a test, which is exactly where one tends to end up.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Key material published in the specifications this code implements"
+regexTarget = "match"
+regexes = [
+  # RFC 3711 appendix B.3 - the SRTP key derivation vectors.
+  '''e1f97a0d3e018be0d64fa32c06de4139''',
+  '''0ec675ad498afeebb6960b3aabe6''',
+  '''cebe321f6ff7716b6fd4ab49af256a156d38baa4''',
+  '''c61e7a93744f39ee10734afe3ff7a087''',
+  # RFC 5769 section 2 - the STUN test vectors, including the long-term
+  # credential password used by the sample request and response.
+  '''VOkJxbRl1RmTxUk/WvJxBt''',
+]
