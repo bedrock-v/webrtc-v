@@ -370,8 +370,40 @@ pub fn (mut pc PeerConnection) create_answer() !SessionDescription {
 	}
 }
 
-// set_local_description applies a description this end created.
+// set_local_description applies a description this end created, starts ICE
+// gathering and starts bring-up (ICE, then DTLS, then SCTP) once both
+// descriptions are applied.
+//
+// Non-trickle answerers must not use this: bring-up would start before the
+// description and its embedded candidates, has reached the peer. Use
+// set_local_description_deferred & begin_connecting instead.
 pub fn (mut pc PeerConnection) set_local_description(description SessionDescription) ! {
+	pc.apply_local_description(description)!
+	pc.start_gathering()!
+	pc.maybe_start()
+}
+
+// set_local_description_deferred applies description and starts ICE
+// gathering without starting bring-up. Call begin_connecting once the
+// description has reached the peer.
+//
+// Known problem: even with this ordering, the answering side's ICE agent
+// doesn't reliably reach connected under disable_trickle_ice. It can stay
+// in checking indefinitely. Working on.
+pub fn (mut pc PeerConnection) set_local_description_deferred(description SessionDescription) ! {
+	pc.apply_local_description(description)!
+	pc.start_gathering()!
+}
+
+// begin_connecting starts bring-up if both
+// descriptions are applied; a noop otherwise.
+pub fn (mut pc PeerConnection) begin_connecting() {
+	pc.maybe_start()
+}
+
+// apply_local_description validates and records description without
+// starting gathering or bring-up.
+fn (mut pc PeerConnection) apply_local_description(description SessionDescription) ! {
 	pc.mu.lock()
 	if pc.closed {
 		pc.mu.unlock()
@@ -405,13 +437,6 @@ pub fn (mut pc PeerConnection) set_local_description(description SessionDescript
 	}
 	pc.local_sdp = description.sdp
 	pc.mu.unlock()
-
-	// Gathering starts here rather than at construction: the credentials in the
-	// description have to be the ones the sockets will use, and the application
-	// has now committed to them.
-	pc.start_gathering()!
-	pc.maybe_start()
-	return
 }
 
 // set_remote_description applies the peer's offer or answer.
