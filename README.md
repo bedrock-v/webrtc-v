@@ -304,3 +304,29 @@ fn main() {
 	}
 }
 ```
+
+### Build and parse RTP
+
+```v
+import webrtc.rtp
+
+fn main() {
+	mut packet := rtp.Packet{
+		header:  rtp.Header{
+			payload_type:    96
+			sequence_number: 1234
+			timestamp:       90000
+			ssrc:            0xCAFEBABE
+			marker:          true
+		}
+		payload: frame
+	}
+	packet.header.set_extension(1, [u8(0x80)])!
+
+	wire := packet.marshal()!
+	back := rtp.Packet.decode(wire)!
+	assert back.payload == frame
+}
+```
+
+More examples are in [`examples/`](examples).
