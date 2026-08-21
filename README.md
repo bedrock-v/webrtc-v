@@ -385,3 +385,12 @@ pure-function test.
 
 Contributions are welcome; please read
 [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+## Security
+
+Please do not report security issues in public issues. The disclosure process is
+in [SECURITY.md](SECURITY.md).
+
+This code parses attacker-controlled input on every packet. If you find a way to
+make it panic, read out of bounds, allocate without bound, or accept a packet it
+should have rejected, that is a security issue and we want to hear about it.
