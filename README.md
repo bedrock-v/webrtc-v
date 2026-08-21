@@ -411,3 +411,7 @@ which solves this problem well in its own language:
 
 No code was copied from any of them. Where the behaviour matches, it is because
 the RFC says so.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
