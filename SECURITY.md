@@ -19,3 +19,17 @@ Please include:
   unbounded allocation, a bypassed check.
 
 You do not need a working exploit. A crashing input is a complete report.
+
+### What to expect
+
+| Stage | Target |
+|---|---|
+| Acknowledgement | 3 working days |
+| Initial assessment, with a severity | 10 working days |
+| Fix for a high or critical issue | 30 days from assessment |
+| Fix for a low or medium issue | the next scheduled release |
+
+If we cannot meet a target we will say so, and why, before it passes.
+
+We will credit you in the advisory and the changelog unless you ask us not to.
+We do not currently offer a bounty.
