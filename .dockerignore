@@ -1,0 +1,6 @@
+# Reference material and build output never belong in the image context.
+inspirations/
+_docs/
+.git/
+.github/
+*.tar
