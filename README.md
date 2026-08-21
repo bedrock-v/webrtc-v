@@ -394,3 +394,20 @@ in [SECURITY.md](SECURITY.md).
 This code parses attacker-controlled input on every packet. If you find a way to
 make it panic, read out of bounds, allocate without bound, or accept a packet it
 should have rejected, that is a security issue and we want to hear about it.
+
+## Acknowledgements
+
+The design was informed by studying several existing implementations, each of
+which solves this problem well in its own language:
+
+- [Pion WebRTC](https://github.com/pion/webrtc) (Go, MIT) - for the module
+  decomposition and the principle that a WebRTC library should transport media
+  rather than produce it.
+- [webrtc-rs](https://github.com/webrtc-rs/webrtc) (Rust, MIT/Apache-2.0) - for
+  the sans-I/O core and for taking API stability seriously before 1.0.
+- [webrtc-java](https://github.com/devopvoid/webrtc-java) (Apache-2.0) and
+  [PHP-WebRTC](https://github.com/php-webrtc/webrtc) (BSD-3-Clause) - for how
+  they present the browser API in a host language.
+
+No code was copied from any of them. Where the behaviour matches, it is because
+the RFC says so.
