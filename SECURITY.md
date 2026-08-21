@@ -80,3 +80,40 @@ about them:
 - **Information disclosure** - a local address or other host detail leaking to a
   peer that should not have received it, beyond what the ICE candidate exchange
   necessarily discloses.
+
+### Out of scope
+
+- Vulnerabilities in the V compiler or standard library. Report those to
+  [vlang/v](https://github.com/vlang/v/issues); tell us too if the stack is
+  affected and we will work around it.
+- Denial of service that requires the attacker to already be on the path and
+  able to drop packets. UDP offers no protection against that and neither can we.
+- The fact that ICE discloses local IP addresses to the peer. That is what ICE
+  is; use the `InterfaceOptions` filter to control which addresses are gathered.
+- Attacks that require the application to hand the library secrets it should not
+  have, or to disable the checks the library performs.
+- Anything in the `inspirations/` directory, which is reference material and not
+  part of the module.
+
+## Security properties this library aims to provide
+
+Stated plainly so that a deviation is recognisable as a bug:
+
+1. No input from the network causes a panic, an out-of-bounds access, or an
+   allocation not bounded by a documented limit.
+2. An SRTP packet is authenticated before it is decrypted and before it touches
+   the replay window. A packet that fails authentication changes no state.
+3. An ICE connectivity check is authenticated with the peer's password before it
+   can create a candidate, advance a pair, or be answered with anything other
+   than an error.
+4. A DTLS peer is accepted only when its certificate matches a fingerprint
+   supplied by the application. Accepting any certificate requires setting
+   `insecure_skip_fingerprint_verification` explicitly; a connection with
+   neither is refused at construction.
+5. An SCTP packet whose verification tag does not match the association is
+   discarded without changing any state.
+6. Values an attacker must not predict come from the operating system CSPRNG,
+   with no fallback. That includes STUN transaction ids, ICE credentials and
+   tiebreakers, SSRCs, DTLS randoms and certificate serials, and SCTP
+   verification tags and initial sequence numbers.
+7. Secrets are compared in constant time.
