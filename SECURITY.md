@@ -33,3 +33,10 @@ If we cannot meet a target we will say so, and why, before it passes.
 
 We will credit you in the advisory and the changelog unless you ask us not to.
 We do not currently offer a bounty.
+
+### Coordinated disclosure
+
+We ask for 90 days from the acknowledgement before public disclosure, or until a
+fix is released, whichever comes first. If a fix will take longer we will
+explain why and agree a date with you. If an issue is being exploited in the
+wild, tell us and we will move immediately.
