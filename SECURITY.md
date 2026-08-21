@@ -80,3 +80,17 @@ about them:
 - **Information disclosure** - a local address or other host detail leaking to a
   peer that should not have received it, beyond what the ICE candidate exchange
   necessarily discloses.
+
+### Out of scope
+
+- Vulnerabilities in the V compiler or standard library. Report those to
+  [vlang/v](https://github.com/vlang/v/issues); tell us too if the stack is
+  affected and we will work around it.
+- Denial of service that requires the attacker to already be on the path and
+  able to drop packets. UDP offers no protection against that and neither can we.
+- The fact that ICE discloses local IP addresses to the peer. That is what ICE
+  is; use the `InterfaceOptions` filter to control which addresses are gathered.
+- Attacks that require the application to hand the library secrets it should not
+  have, or to disable the checks the library performs.
+- Anything in the `inspirations/` directory, which is reference material and not
+  part of the module.
