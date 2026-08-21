@@ -49,3 +49,34 @@ This project is pre-1.0. Only the latest release receives security fixes.
 |---|---|
 | latest release | ✅ |
 | anything older | ❌ |
+
+## Scope
+
+This library sits directly on the network and parses input from parties that
+have not been authenticated yet. The following are in scope and we want to hear
+about them:
+
+- **Memory safety** - an out-of-bounds read or write, or a panic reachable from
+  a network packet. Every decoder is expected to reject malformed input as an
+  error; a panic is a bug even if V catches it.
+- **Resource exhaustion** - an input that causes unbounded allocation, unbounded
+  CPU, or unbounded growth of an internal data structure. Every decoder that
+  allocates based on a length field from the wire has a documented ceiling; a way
+  around one of them is a vulnerability.
+- **Authentication bypass** - anything that makes the stack accept a packet it
+  should have rejected. Specifically: a STUN message with a bad or missing
+  MESSAGE-INTEGRITY treated as authentic, an SRTP packet with a bad tag
+  decrypted, an ICE connectivity check from an unauthenticated source advancing
+  a candidate pair, a DTLS certificate accepted that does not match the
+  fingerprint the application supplied, or an SCTP packet accepted with the wrong
+  verification tag.
+- **Replay** - a captured packet accepted a second time, or a way to advance a
+  replay window with a forged packet.
+- **Weak or predictable randomness** - anything that makes a transaction ID, ICE
+  credential, SSRC, tiebreaker, DTLS random, certificate serial or SCTP
+  verification tag guessable.
+- **Cryptographic misuse** - a repeated SRTP counter, a key derived with the
+  wrong label, a non-constant-time comparison of a secret.
+- **Information disclosure** - a local address or other host detail leaking to a
+  peer that should not have received it, beyond what the ICE candidate exchange
+  necessarily discloses.
