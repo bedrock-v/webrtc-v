@@ -9,8 +9,48 @@ breaking changes are listed under **Changed** with a migration note.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-08-21
+
+The first release: the whole stack, from the codecs up to a peer connection
+carrying data channels, directly or through a TURN relay. Media is carried but
+has no track layer above it, and the public API may still change before 1.0.
+
 ### Added
 
+- **`netaddr`** - IPv4 and IPv6 address values with RFC 5952-conformant
+  formatting, strict parsing (leading-zero octets and bare IPv6 hosts are
+  rejected), scope identifiers, and classification helpers.
+- **`logging`** - a leveled logger with a pluggable sink, quiet by default and
+  configurable through `WEBRTC_LOG_LEVEL`.
+- **`transport`** - conversion between `netaddr` values and the standard
+  library's socket addresses, and the bound-address lookup ICE needs.
+- **`stun`** - a complete RFC 8489 codec: message types, all registered
+  attributes, XOR-MAPPED-ADDRESS, MESSAGE-INTEGRITY and MESSAGE-INTEGRITY-SHA256,
+  FINGERPRINT, ERROR-CODE, the ICE attributes, and short- and long-term
+  credential derivation. Verified against the RFC 5769 test vectors, including
+  reproducing both digests byte for byte.
+- **`stunclient`** - STUN over UDP with the RFC 8489 retransmission schedule and
+  transaction matching.
+- **`sdp`** - an RFC 8866 parser and serialiser that preserves attributes it does
+  not understand, with typed accessors for the WebRTC attributes: bundle groups,
+  ICE credentials, fingerprints, setup roles, rtpmap, fmtp, rtcp-fb, extmap,
+  ssrc, msid and the SCTP attributes.
+- **`rtp`** - RFC 3550 packets with RFC 8285 one-byte and two-byte header
+  extensions, padding, contributing sources, and the sequence-number arithmetic
+  SRTP depends on.
+- **`rtcp`** - sender and receiver reports, SDES, BYE, APP, PLI, FIR, NACK, REMB
+  and transport-wide congestion control feedback, with compound datagram handling
+  and unknown packet types preserved intact.
+- **`srtp`** - RFC 3711 with AES-CM and HMAC-SHA1 at 80 and 32 bits, and RFC 7714
+  AES-GCM at 128 and 256 bits. Key derivation verified against the RFC 3711
+  vectors. Includes replay detection and the DTLS-SRTP keying material split.
+- **`ice`** - an RFC 8445 agent over UDP: candidate gathering from local
+  interfaces and STUN servers, candidate parsing and serialisation, priority and
+  foundation computation, pair formation and freezing, paced connectivity checks,
+  role conflict resolution, peer-reflexive candidate discovery, nomination, and
+  consent freshness per RFC 7675. Supports trickle ICE.
 - **`dtls`** - DTLS 1.2 (RFC 6347) with the DTLS-SRTP profile (RFC 5764).
   Includes the record layer with per-epoch replay detection, handshake
   fragmentation and reassembly, the HelloVerifyRequest cookie exchange,
@@ -118,60 +158,6 @@ breaking changes are listed under **Changed** with a migration note.
   closed while a caller was waiting, because a receive on a closed V channel
   completes with the zero value. Callers dereferenced it and crashed on
   shutdown.
-
-## [0.1.0] - 2026-08-20
-
-First release. The protocol layers below are implemented and tested; DTLS, SCTP,
-data channels and the peer connection API are not yet written, so this cannot
-open a browser-compatible connection.
-
-### Added
-
-- **`netaddr`** - IPv4 and IPv6 address values with RFC 5952-conformant
-  formatting, strict parsing (leading-zero octets and bare IPv6 hosts are
-  rejected), scope identifiers, and classification helpers.
-- **`logging`** - a leveled logger with a pluggable sink, quiet by default and
-  configurable through `WEBRTC_LOG_LEVEL`.
-- **`transport`** - conversion between `netaddr` values and the standard
-  library's socket addresses, and the bound-address lookup ICE needs.
-- **`stun`** - a complete RFC 8489 codec: message types, all registered
-  attributes, XOR-MAPPED-ADDRESS, MESSAGE-INTEGRITY and MESSAGE-INTEGRITY-SHA256,
-  FINGERPRINT, ERROR-CODE, the ICE attributes, and short- and long-term
-  credential derivation. Verified against the RFC 5769 test vectors, including
-  reproducing both digests byte for byte.
-- **`stunclient`** - STUN over UDP with the RFC 8489 retransmission schedule and
-  transaction matching.
-- **`sdp`** - an RFC 8866 parser and serialiser that preserves attributes it does
-  not understand, with typed accessors for the WebRTC attributes: bundle groups,
-  ICE credentials, fingerprints, setup roles, rtpmap, fmtp, rtcp-fb, extmap,
-  ssrc, msid and the SCTP attributes.
-- **`rtp`** - RFC 3550 packets with RFC 8285 one-byte and two-byte header
-  extensions, padding, contributing sources, and the sequence-number arithmetic
-  SRTP depends on.
-- **`rtcp`** - sender and receiver reports, SDES, BYE, APP, PLI, FIR, NACK, REMB
-  and transport-wide congestion control feedback, with compound datagram handling
-  and unknown packet types preserved intact.
-- **`srtp`** - RFC 3711 with AES-CM and HMAC-SHA1 at 80 and 32 bits, and RFC 7714
-  AES-GCM at 128 and 256 bits. Key derivation verified against the RFC 3711
-  vectors. Includes replay detection and the DTLS-SRTP keying material split.
-- **`ice`** - an RFC 8445 agent over UDP: candidate gathering from local
-  interfaces and STUN servers, candidate parsing and serialisation, priority and
-  foundation computation, pair formation and freezing, paced connectivity checks,
-  role conflict resolution, peer-reflexive candidate discovery, nomination, and
-  consent freshness per RFC 7675. Supports trickle ICE.
-
-### Security
-
-- Every decoder reads through a single bounds-checked cursor and returns typed
-  errors rather than panicking on malformed input.
-- Every length field taken from the wire has a documented, configurable limit.
-- SRTP verifies authentication before decrypting and before consulting the replay
-  window, so a forged packet changes no state.
-- ICE authenticates a connectivity check before it can create a candidate or
-  advance a pair.
-- All unpredictable values come from the operating system CSPRNG with no
-  fallback; ICE credentials are drawn with rejection sampling so the distribution
-  is uniform.
 
 [Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/bedrock-v/webrtc-v/releases/tag/v0.1.0

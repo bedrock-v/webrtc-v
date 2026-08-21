@@ -69,9 +69,9 @@ jobs:
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Verify formatting
-        run: v fmt -verify .
+        run: make fmt-check
       - name: Run the test suite
-        run: v test .
+        run: make test
 
   publish:
     name: Publish
