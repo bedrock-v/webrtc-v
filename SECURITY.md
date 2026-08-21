@@ -117,3 +117,39 @@ Stated plainly so that a deviation is recognisable as a bug:
    tiebreakers, SSRCs, DTLS randoms and certificate serials, and SCTP
    verification tags and initial sequence numbers.
 7. Secrets are compared in constant time.
+
+## Known limitations
+
+These are design limits, not bugs, and are documented so nobody mistakes one for
+a guarantee:
+
+- **The stack is pre-1.0 and has not been independently audited.** Do not deploy
+  it where a compromise would be serious without reviewing it yourself.
+- **AES is table-driven and is not constant time.** `internal/aes` uses the
+  standard round tables, so its memory access pattern depends on the key. An
+  attacker able to run code on the same machine and observe the cache can, in
+  principle, recover key material; an attacker on the network cannot. The
+  standard library's implementation has the same property through its S-box
+  lookup, so this is not a regression, but it is a real limit: on a machine where
+  untrusted code runs beside this library, AES-NI through a vetted C
+  implementation is the answer, and this project does not link one.
+- **TURN over TLS is not implemented.** `turns:` is refused rather than
+  downgraded to plain TURN, because a downgrade would put the long-term
+  credentials on the wire in the clear. Plain `turn:` over UDP works, and its
+  credentials are protected by MESSAGE-INTEGRITY rather than by encryption -
+  which is what RFC 8656 specifies, and which means an observer sees the
+  relayed traffic.
+- **DTLS implements one cipher suite**, `ECDHE_ECDSA_WITH_AES_128_GCM_SHA256`. A
+  peer with nothing else in common fails the handshake rather than falling back
+  to something weaker, which is the right outcome but worth knowing before
+  deploying against an old endpoint.
+- **The SCTP state cookie is remembered rather than self-authenticating.** RFC
+  4960 makes it a stateless authenticated blob so a server can resist a flood of
+  forged INITs; here the association sits behind an authenticated DTLS connection
+  with exactly one peer, so that flood cannot reach it. Using `sctp` over an
+  unauthenticated transport would need the RFC's construction instead.
+- **SASLprep is not implemented.** `stun.short_term_key` rejects passwords
+  outside printable ASCII rather than normalising them, because two peers that
+  normalise differently would derive different keys and fail with no diagnosable
+  cause. ICE credentials are ASCII by construction, so this affects only
+  non-ICE uses of STUN long-term credentials.
