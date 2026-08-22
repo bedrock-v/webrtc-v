@@ -2,6 +2,7 @@ module ice
 
 import time
 import webrtc.netaddr
+import webrtc.stun
 
 fn test_candidate_parse_and_render_round_trip() {
 	lines := [
@@ -623,4 +624,75 @@ fn test_an_unresolvable_mdns_candidate_does_not_become_a_pair() {
 	started := time.now()
 	agent.add_remote_candidate_string('candidate:1 1 udp 2130706431 nothing-answers-for-this.local 44444 typ host')!
 	assert (time.now() - started) < mdns_timeout, 'resolution must not block the caller'
+}
+
+fn test_a_response_that_fails_authentication_leaves_the_check_pending() {
+	// A peer that has not been given our credentials yet answers a check with an
+	// unauthenticated error. Retiring the check on it would strand the pair: it
+	// would sit in progress with nothing to retransmit it and nothing to time it
+	// out, and the two agents would never agree on a pair.
+	mut agent := Agent.new(local_pwd: '0123456789012345678901')!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('abcd', '0123456789012345678901')!
+	agent.pairs << CandidatePair{
+		local:  Candidate{
+			address: netaddr.SocketAddr.parse('1.1.1.1:1')!
+		}
+		remote: Candidate{
+			address: netaddr.SocketAddr.parse('2.2.2.2:2')!
+		}
+		state:  .in_progress
+	}
+	request := stun.Message.new(.request, .binding)!
+	agent.pending[request.transaction_id[..].hex()] = PendingCheck{
+		pair_index: 0
+		sent_at:    time.now()
+	}
+
+	mut refusal := stun.Message.response(request, .error_response)
+	refusal.add_error_code(stun.code_unauthenticated, '')!
+	raw := refusal.encode(fingerprint: true)!
+	agent.handle_binding_response(stun.Message.decode(raw)!, InboundPacket{
+		from: netaddr.SocketAddr.parse('2.2.2.2:2')!
+		data: raw
+	})
+
+	assert agent.pending.len == 1, 'the check must stay outstanding'
+	assert agent.pairs[0].state == .in_progress
+}
+
+fn test_a_response_from_another_address_leaves_the_check_pending() {
+	mut agent := Agent.new(local_pwd: '0123456789012345678901')!
+	defer {
+		agent.close()
+	}
+	agent.set_remote_credentials('abcd', '0123456789012345678901')!
+	agent.pairs << CandidatePair{
+		local:  Candidate{
+			address: netaddr.SocketAddr.parse('1.1.1.1:1')!
+		}
+		remote: Candidate{
+			address: netaddr.SocketAddr.parse('2.2.2.2:2')!
+		}
+		state:  .in_progress
+	}
+	request := stun.Message.new(.request, .binding)!
+	agent.pending[request.transaction_id[..].hex()] = PendingCheck{
+		pair_index: 0
+		sent_at:    time.now()
+	}
+
+	mut response := stun.Message.response(request, .success_response)
+	response.add_xor_mapped_address(netaddr.SocketAddr.parse('1.1.1.1:1')!)!
+	key := stun.short_term_key('0123456789012345678901')!
+	raw := response.encode(integrity_key: key, fingerprint: true)!
+	agent.handle_binding_response(stun.Message.decode(raw)!, InboundPacket{
+		from: netaddr.SocketAddr.parse('3.3.3.3:3')!
+		data: raw
+	})
+
+	assert agent.pending.len == 1
+	assert agent.pairs[0].state == .in_progress
 }

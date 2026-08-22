@@ -359,9 +359,11 @@ pub fn (mut a Agent) add_remote_candidate_string(line string) ! {
 // form_pairs rebuilds the check list from the current candidate sets. The
 // caller must hold the mutex.
 //
-// Existing pairs keep their state, so a candidate arriving mid-session neither
-// restarts checks that are already in flight nor discards one that has already
-// succeeded.
+// Existing pairs keep their state and their place, so a candidate arriving
+// mid-session neither restarts checks that are already in flight nor discards
+// one that has already succeeded. New pairs are appended: a pending check and
+// the selected pair are indices into this list, so a pair may never change
+// position. Priority decides which pair is probed next, in send_next_check.
 fn (mut a Agent) form_pairs() {
 	if a.remote_ufrag == '' || a.remote_pwd == '' {
 		// Without the peer's credentials a check cannot be authenticated, so
@@ -385,7 +387,6 @@ fn (mut a Agent) form_pairs() {
 		}
 	}
 	a.unfreeze_by_foundation()
-	sort_pairs(mut a.pairs, a.role == .controlling)
 }
 
 // unfreeze_by_foundation moves one pair per foundation to waiting.

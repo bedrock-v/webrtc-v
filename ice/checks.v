@@ -10,10 +10,15 @@ import webrtc.turn
 // hold the mutex.
 fn (mut a Agent) start() {
 	a.mu.lock()
-	if a.closed || a.threads.len > 0 {
+	if a.closed || a.started {
 		a.mu.unlock()
 		return
 	}
+	// Not "have we spawned anything": resolving a ".local" candidate and opening
+	// a relay permission both spawn threads of their own, and either can happen
+	// before gathering finishes when the peer does not trickle. Counting those
+	// would leave the agent loop unstarted and no check ever sent.
+	a.started = true
 	count := a.sockets.len
 	a.mu.unlock()
 
@@ -179,15 +184,25 @@ fn (mut a Agent) expire_checks() {
 // One check per tick is what implements the Ta pacing of RFC 8445 section 14.2.
 // Sending the whole check list at once would put a burst on the network that
 // looks like a scan and competes with the media it is trying to enable.
+//
+// The list is searched rather than sorted, because a pending check and the
+// selected pair are both indices into it: reordering the list would point them
+// at other pairs.
 fn (mut a Agent) send_next_check() {
 	if a.remote_ufrag == '' || a.remote_pwd == '' {
 		return
 	}
+	controlling := a.role == .controlling
 	mut index := -1
+	mut best := u64(0)
 	for i, pair in a.pairs {
-		if pair.state == .waiting {
+		if pair.state != .waiting {
+			continue
+		}
+		priority := pair.priority(controlling)
+		if index < 0 || priority > best {
 			index = i
-			break
+			best = priority
 		}
 	}
 	if index < 0 {
@@ -458,7 +473,6 @@ fn (mut a Agent) resolve_role_conflict(message stun.Message, packet InboundPacke
 		}
 		a.log.info('role conflict: switching to controlled')
 		a.role = .controlled
-		sort_pairs(mut a.pairs, false)
 		return false
 	}
 	if remote_tiebreaker := message.ice_controlled() {
@@ -471,7 +485,6 @@ fn (mut a Agent) resolve_role_conflict(message stun.Message, packet InboundPacke
 		}
 		a.log.info('role conflict: switching to controlling')
 		a.role = .controlling
-		sort_pairs(mut a.pairs, true)
 		return false
 	}
 	return false
@@ -535,17 +548,29 @@ fn (mut a Agent) handle_binding_response(message stun.Message, packet InboundPac
 		a.log.debug('discarded a response with an unknown transaction id from ${packet.from}')
 		return
 	}
-	a.pending.delete(key)
-
 	if check.pair_index >= a.pairs.len {
+		a.pending.delete(key)
 		return
 	}
 
+	// The check stays pending until the response has been shown to answer it.
+	// Retiring it on a response that fails authentication would strand the pair:
+	// nothing would retransmit the check and nothing would time it out, so the
+	// pair would sit in progress for the rest of the session - and one forged
+	// datagram would be enough for an off-path attacker to do it.
 	integrity_key := stun.short_term_key(a.remote_pwd) or { return }
 	message.check_message_integrity(integrity_key) or {
 		a.log.debug('response from ${packet.from} failed integrity: ${err.msg()}')
 		return
 	}
+	// A response must come from the address the check was sent to. Accepting
+	// one from elsewhere would let an attacker who can see the transaction id
+	// confirm a path that does not exist.
+	if !a.pairs[check.pair_index].remote.address.equal(packet.from) {
+		a.log.debug('response for ${a.pairs[check.pair_index].remote.address} arrived from ${packet.from}')
+		return
+	}
+	a.pending.delete(key)
 
 	if message.typ.class == .error_response {
 		code := message.error_code() or {
@@ -557,21 +582,12 @@ fn (mut a Agent) handle_binding_response(message stun.Message, packet InboundPac
 			// role it insisted on.
 			a.role = if a.role == .controlling { Role.controlled } else { Role.controlling }
 			a.log.info('peer reported a role conflict: switching to ${a.role}')
-			sort_pairs(mut a.pairs, a.role == .controlling)
 			a.pairs[check.pair_index].state = .waiting
 			a.pairs[check.pair_index].binding_requests = 0
 			return
 		}
 		a.log.debug('check to ${packet.from} was refused: ${code}')
 		a.pairs[check.pair_index].state = .failed
-		return
-	}
-
-	// A response must come from the address the check was sent to. Accepting
-	// one from elsewhere would let an attacker who can see the transaction id
-	// confirm a path that does not exist.
-	if !a.pairs[check.pair_index].remote.address.equal(packet.from) {
-		a.log.debug('response for ${a.pairs[check.pair_index].remote.address} arrived from ${packet.from}')
 		return
 	}
 

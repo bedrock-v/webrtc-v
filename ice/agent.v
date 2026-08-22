@@ -232,7 +232,9 @@ mut:
 	last_activity time.Time
 
 	gathering_done bool
-	closed         bool
+	// started marks the agent loop and the socket readers as running.
+	started bool
+	closed  bool
 
 	inbound chan InboundPacket = chan InboundPacket{cap: max_inbound_queue}
 	data    chan []u8          = chan []u8{cap: max_data_queue}
