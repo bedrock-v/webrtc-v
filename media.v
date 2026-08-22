@@ -66,6 +66,14 @@ fn (mut m MediaTransport) send(data []u8) !int {
 fn (mut m MediaTransport) recv(timeout time.Duration) ![]u8 {
 	select {
 		datagram := <-m.dtls_datagrams {
+			if datagram.len == 0 && m.is_closed() {
+				// A receive on a closed channel succeeds with the zero value in
+				// V 0.5.2, and an empty datagram is never a real record.
+				return PeerError{
+					reason: .closed
+					detail: 'the media transport is closed'
+				}
+			}
 			return datagram
 		}
 		timeout {

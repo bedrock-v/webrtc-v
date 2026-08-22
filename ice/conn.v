@@ -113,6 +113,14 @@ pub fn (mut a Agent) recv(timeout time.Duration) ![]u8 {
 	}
 	select {
 		data := <-a.data {
+			if data.len == 0 && a.is_closed() {
+				// A receive on a closed channel succeeds with the zero value in
+				// V 0.5.2, and an empty datagram is never a real one.
+				return AgentError{
+					reason: .closed
+					detail: 'agent is closed'
+				}
+			}
 			return data
 		}
 		timeout {
@@ -132,6 +140,10 @@ pub fn (mut a Agent) recv(timeout time.Duration) ![]u8 {
 pub fn (mut a Agent) try_recv() ?[]u8 {
 	select {
 		data := <-a.data {
+			if data.len == 0 && a.is_closed() {
+				// The zero value of a closed channel, not a datagram: see recv.
+				return none
+			}
 			return data
 		}
 		else {

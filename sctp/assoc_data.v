@@ -114,6 +114,20 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 	}
 	select {
 		message := <-a.delivered {
+			if message.data.len == 0 {
+				// A receive on a closed channel succeeds with the zero value in
+				// V 0.5.2. No real message is empty - RFC 4960 forbids an empty
+				// DATA chunk, and RFC 8831 gives an empty application message a
+				// padding byte - so this is the association ending.
+				return AssociationError{
+					reason: .closed
+					detail: if a.abort_reason != '' {
+						a.abort_reason
+					} else {
+						'the association is closed'
+					}
+				}
+			}
 			return message
 		}
 		timeout {
@@ -133,6 +147,10 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 pub fn (mut a Association) try_recv() ?Message {
 	select {
 		message := <-a.delivered {
+			if message.data.len == 0 {
+				// The zero value of a closed channel, not a message: see recv.
+				return none
+			}
 			return message
 		}
 		else {

@@ -66,6 +66,15 @@ pub fn (mut c Channel) send(data []u8, is_string bool) ! {
 pub fn (mut c Channel) recv(timeout time.Duration) !Message {
 	select {
 		message := <-c.inbound {
+			if message.data.len == 0 && c.state() == .closed {
+				// A receive on a closed channel succeeds with the zero value in
+				// V 0.5.2, so an empty message on a closed channel is the
+				// channel ending rather than something the peer sent.
+				return ChannelError{
+					reason: .closed
+					detail: 'the channel is closed'
+				}
+			}
 			return message
 		}
 		timeout {
@@ -91,6 +100,10 @@ pub fn (mut c Channel) recv(timeout time.Duration) !Message {
 pub fn (mut c Channel) try_recv() ?Message {
 	select {
 		message := <-c.inbound {
+			if message.data.len == 0 && c.state() == .closed {
+				// The zero value of a closed channel, not a message: see recv.
+				return none
+			}
 			return message
 		}
 		else {

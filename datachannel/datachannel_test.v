@@ -521,3 +521,21 @@ fn test_a_reliable_channel_still_delivers_a_lost_message() {
 	message := receiver.recv(5 * time.second)!
 	assert message.text() == 'must arrive'
 }
+
+fn test_a_receive_on_a_closed_channel_fails_rather_than_delivering_nothing() {
+	// The association ending closes every channel on it. A receiver blocked on
+	// one must be told so, not handed the zero value V completes a receive on a
+	// closed channel with - an empty message the peer never sent.
+	mut endpoints := connect_endpoints()!
+	mut sender := endpoints.client.create('chat', ChannelOptions{}, 5 * time.second)!
+	mut receiver := endpoints.server.accept(5 * time.second)!
+	endpoints.shutdown()
+
+	if message := receiver.recv(50 * time.millisecond) {
+		assert false, 'a closed channel returned a ${message.data.len}-byte message'
+	}
+	if message := receiver.try_recv() {
+		assert false, 'a closed channel returned a ${message.data.len}-byte message'
+	}
+	sender.close()
+}

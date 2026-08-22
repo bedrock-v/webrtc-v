@@ -970,3 +970,25 @@ fn test_the_stream_policy_can_be_read_back() {
 	pair.client.set_stream_reliability(3, Reliability{})
 	assert pair.client.stream_reliability(3).is_reliable()
 }
+
+fn test_a_receive_on_a_closed_association_fails_rather_than_delivering_nothing() {
+	// V 0.5.2 completes a receive on a closed channel with the zero value, so a
+	// receiver that does not guard for it hands the application a message of no
+	// bytes - which no peer can have sent, since an empty DATA chunk is not
+	// allowed on the wire.
+	mut pair := connect_pair(Config{})!
+	pair.server.close()
+	// The close lands while the receive is waiting, which is the case that
+	// matters: the receive is already parked on the channel being closed.
+	closer := spawn fn (mut a Association) {
+		time.sleep(100 * time.millisecond)
+		a.close()
+	}(mut pair.client)
+	if message := pair.client.recv(5 * time.second) {
+		assert false, 'a closed association returned a ${message.data.len}-byte message'
+	}
+	closer.wait()
+	if message := pair.client.try_recv() {
+		assert false, 'a closed association returned a ${message.data.len}-byte message'
+	}
+}

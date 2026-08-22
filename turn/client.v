@@ -417,6 +417,10 @@ pub fn (mut c Client) recv(timeout time.Duration) !Packet {
 pub fn (mut c Client) try_recv() ?Packet {
 	select {
 		packet := <-c.inbound {
+			if packet.data.len == 0 && c.is_closed() {
+				// The zero value of a closed channel, not a datagram: see recv.
+				return none
+			}
 			return packet
 		}
 		else {
