@@ -152,6 +152,9 @@ fn (mut c Conn) send_alert(description u8) {
 // usable: correctly framed, in an epoch we have keys for, not replayed, and
 // decrypted.
 fn (mut c Conn) receive_records(timeout time.Duration) ![]Record {
+	if held := c.take_early_records() {
+		return held
+	}
 	datagram := c.transport.recv(timeout) or {
 		return ConnError{
 			reason: .timed_out
@@ -180,13 +183,45 @@ fn (mut c Conn) receive_records(timeout time.Duration) ![]Record {
 	return out
 }
 
+// max_early_records bounds how much of the next epoch is held while its
+// ChangeCipherSpec is still being acted on. A flight is a handful of records,
+// so anything past that is a peer trying to make us hold state.
+const max_early_records = 8
+
+// take_early_records returns the held records of the epoch we have since moved
+// into, decrypted. It is none while nothing is waiting or the epoch has not
+// caught up with them.
+fn (mut c Conn) take_early_records() ?[]Record {
+	if c.early.len == 0 {
+		return none
+	}
+	held := c.early.clone()
+	c.early = []Record{}
+
+	mut out := []Record{}
+	for record in held {
+		usable := c.accept_record(record) or {
+			c.log.debug('discarded a held record: ${err.msg()}')
+			continue
+		}
+		out << usable
+	}
+	if out.len == 0 {
+		return none
+	}
+	return out
+}
+
 // accept_record validates and decrypts one record.
 fn (mut c Conn) accept_record(record Record) !Record {
 	if record.epoch > c.recv_epoch {
-		// A record from the next epoch, arriving before the peer's
-		// ChangeCipherSpec. It cannot be decrypted yet, and buffering it would
-		// let a peer make us hold arbitrary state, so it is dropped and left to
-		// the peer's retransmission.
+		// A record from the next epoch, arriving in the same datagram as the
+		// ChangeCipherSpec that announces it. It cannot be read until that has
+		// been acted on, so it waits for the next pass rather than being lost
+		// to a retransmission.
+		if record.epoch == c.recv_epoch + 1 && c.early.len < max_early_records {
+			c.early << record
+		}
 		return ConnError{
 			reason: .wrong_state
 			detail: 'record is from epoch ${record.epoch}, we are on ${c.recv_epoch}'

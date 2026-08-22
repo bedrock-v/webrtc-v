@@ -270,6 +270,11 @@ mut:
 	recv_epoch  u16
 	recv_cipher ?RecordCipher
 	replay      AntiReplay
+	// early holds records from the epoch after this one. A peer sends its
+	// ChangeCipherSpec and its Finished in the same datagram, and the Finished
+	// cannot be read until the ChangeCipherSpec ahead of it has been acted on -
+	// which the caller only does once the whole datagram has been taken apart.
+	early []Record
 
 	next_message_seq     u16
 	expected_message_seq u16

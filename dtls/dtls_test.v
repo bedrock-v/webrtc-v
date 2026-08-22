@@ -20,6 +20,11 @@ mut:
 	// drop_change_cipher_spec discards the next datagram carrying one, which is
 	// the datagram a peer must have before it can read the epoch that follows.
 	drop_change_cipher_spec bool
+	// coalesce_change_cipher_spec holds a datagram carrying one back and sends
+	// it in front of the next, which is how the game's own stack puts its
+	// ChangeCipherSpec and its Finished on the wire.
+	coalesce_change_cipher_spec bool
+	held                        []u8
 	sent                    int
 	closed                  bool
 }
@@ -48,6 +53,20 @@ fn (mut p PipeTransport) send(data []u8) !int {
 		p.drop_change_cipher_spec = false
 		drop = true
 	}
+	mut payload := data.clone()
+	if p.coalesce_change_cipher_spec && !drop {
+		if data.len > 0 && data[0] == 20 {
+			p.held = payload
+			p.mu.unlock()
+			// Held, not lost: it goes out in front of whatever follows.
+			return data.len
+		}
+		if p.held.len > 0 {
+			payload = p.held.clone()
+			payload << data
+			p.held = []u8{}
+		}
+	}
 	p.mu.unlock()
 
 	if drop {
@@ -60,7 +79,7 @@ fn (mut p PipeTransport) send(data []u8) !int {
 	// The payload is copied into a variable first. V 0.5.2 sends a zero value
 	// when the expression in a select-send is a call, so `peer.inbound <-
 	// data.clone()` would silently deliver an empty datagram.
-	copy := data.clone()
+	copy := payload
 	select {
 		peer.inbound <- copy {}
 		else {
@@ -97,6 +116,12 @@ fn (mut p PipeTransport) drop(n int) {
 fn (mut p PipeTransport) drop_next_change_cipher_spec() {
 	p.mu.lock()
 	p.drop_change_cipher_spec = true
+	p.mu.unlock()
+}
+
+fn (mut p PipeTransport) coalesce_next_change_cipher_spec() {
+	p.mu.lock()
+	p.coalesce_change_cipher_spec = true
 	p.mu.unlock()
 }
 
@@ -929,6 +954,44 @@ fn test_handshake_survives_a_lost_change_cipher_spec() {
 	)!
 
 	client_pipe.drop_next_change_cipher_spec()
+
+	server_thread := spawn fn (mut c Conn) ! {
+		c.handshake()!
+	}(mut server)
+	client.handshake()!
+	server_thread.wait()!
+
+	assert client.state() == .connected
+	assert server.state() == .connected
+	assert client.srtp_keying_material()! == server.srtp_keying_material()!
+}
+
+// A peer puts its ChangeCipherSpec and its Finished in one datagram. The
+// Finished cannot be read until the ChangeCipherSpec in front of it has been
+// acted on, which happens only after the whole datagram has been taken apart -
+// so the Finished has to survive that gap rather than be waited out.
+fn test_handshake_reads_a_finished_coalesced_with_its_change_cipher_spec() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+
+	client_certificate := Certificate.generate()!
+	server_certificate := Certificate.generate()!
+
+	mut client := Conn.new(client_pipe,
+		role:                .client
+		certificate:         client_certificate
+		remote_fingerprints: [server_certificate.fingerprint(.sha256)]
+		handshake_timeout:   5 * time.second
+		retransmit_interval: 50 * time.millisecond
+	)!
+	mut server := Conn.new(server_pipe,
+		role:                .server
+		certificate:         server_certificate
+		remote_fingerprints: [client_certificate.fingerprint(.sha256)]
+		handshake_timeout:   5 * time.second
+		retransmit_interval: 50 * time.millisecond
+	)!
+
+	server_pipe.coalesce_next_change_cipher_spec()
 
 	server_thread := spawn fn (mut c Conn) ! {
 		c.handshake()!
