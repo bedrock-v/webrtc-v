@@ -696,3 +696,72 @@ fn test_a_response_from_another_address_leaves_the_check_pending() {
 	assert agent.pending.len == 1
 	assert agent.pairs[0].state == .in_progress
 }
+
+// The selected pair says where to send. A peer that has not yet moved onto it
+// keeps sending from the path it picked, and dropping that costs whatever was
+// in flight - a DTLS flight, in practice, which then never completes.
+fn test_data_from_a_valid_pair_that_is_not_selected_is_delivered() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+
+	selected_remote := netaddr.SocketAddr.parse('192.168.1.29:1000')!
+	other_remote := netaddr.SocketAddr.parse('172.19.0.1:2000')!
+	local := netaddr.SocketAddr.parse('192.168.1.29:3000')!
+
+	agent.pairs << CandidatePair{
+		local:  Candidate{
+			address: local
+		}
+		remote: Candidate{
+			address: selected_remote
+		}
+		state:  .succeeded
+	}
+	agent.pairs << CandidatePair{
+		local:  Candidate{
+			address: local
+		}
+		remote: Candidate{
+			address: other_remote
+		}
+		state:  .succeeded
+	}
+	agent.selected = 0
+
+	payload := 'a flight the peer sent down its own path'.bytes()
+	agent.deliver_application_data(InboundPacket{
+		from: other_remote
+		data: payload
+	})
+	assert agent.recv(time.second)! == payload
+}
+
+// An address no check ever succeeded on is still refused: it has proved
+// nothing about who is sending.
+fn test_data_from_an_unchecked_address_is_dropped() {
+	mut agent := Agent.new()!
+	defer {
+		agent.close()
+	}
+
+	agent.pairs << CandidatePair{
+		local:  Candidate{
+			address: netaddr.SocketAddr.parse('192.168.1.29:3000')!
+		}
+		remote: Candidate{
+			address: netaddr.SocketAddr.parse('192.168.1.29:1000')!
+		}
+		state:  .succeeded
+	}
+	agent.selected = 0
+
+	agent.deliver_application_data(InboundPacket{
+		from: netaddr.SocketAddr.parse('203.0.113.7:9')!
+		data: 'injected'.bytes()
+	})
+	if _ := agent.recv(100 * time.millisecond) {
+		assert false, 'data from an unchecked address reached the application'
+	}
+}

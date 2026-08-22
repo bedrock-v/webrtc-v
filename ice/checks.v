@@ -368,19 +368,29 @@ fn (mut a Agent) handle_packet(packet InboundPacket) {
 // deliver_application_data queues a non-STUN datagram for the application.
 fn (mut a Agent) deliver_application_data(packet InboundPacket) {
 	a.mu.lock()
-	accepted := a.selected >= 0 && a.selected < a.pairs.len
-		&& a.pairs[a.selected].remote.address.equal(packet.from)
-	if accepted {
-		a.pairs[a.selected].last_received = time.now()
+	// The selected pair decides where data is sent, not where it may arrive
+	// from. A peer keeps using the path it picked until it learns of ours, and
+	// on a host with several interfaces the two differ for as long as the
+	// checks keep running - long enough to lose a whole DTLS flight. Any path
+	// a check has succeeded on is accepted, which still refuses an address that
+	// never authenticated itself.
+	mut accepted := false
+	for index, pair in a.pairs {
+		if pair.state != .succeeded || !pair.remote.address.equal(packet.from) {
+			continue
+		}
+		a.pairs[index].last_received = time.now()
 		a.last_activity = time.now()
+		accepted = true
+		break
 	}
 	a.mu.unlock()
 
 	if !accepted {
-		// Data from anywhere other than the selected pair is either late
-		// traffic from a path that lost, or an injection attempt. Neither is
-		// something to hand to the application.
-		a.log.debug('dropped ${packet.data.len} bytes from ${packet.from}, which is not the selected pair')
+		// Data from a path no check ever succeeded on is either late traffic
+		// from an attempt that was abandoned, or an injection attempt. Neither
+		// is something to hand to the application.
+		a.log.debug('dropped ${packet.data.len} bytes from ${packet.from}, which no valid pair uses')
 		return
 	}
 	select {
