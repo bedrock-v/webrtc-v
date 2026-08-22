@@ -60,6 +60,13 @@ fn (c &Conn) max_record_payload() int {
 // sending them in one datagram rather than four means one round of loss costs
 // one retransmission instead of four.
 fn (mut c Conn) send_records(content_type ContentType, fragments [][]u8) ! {
+	c.emit_records(content_type, fragments)!
+}
+
+// emit_records is send_records with the datagrams it put on the wire returned,
+// so a flight can keep them and resend exactly what the peer missed.
+fn (mut c Conn) emit_records(content_type ContentType, fragments [][]u8) ![][]u8 {
+	mut sent := [][]u8{}
 	mut datagram := []u8{}
 
 	for fragment in fragments {
@@ -67,23 +74,25 @@ fn (mut c Conn) send_records(content_type ContentType, fragments [][]u8) ! {
 		// Flush before exceeding the MTU, but never split a record: a record is
 		// the unit the peer's parser works in.
 		if datagram.len > 0 && datagram.len + record.len > c.config.mtu {
-			c.transport.send(datagram) or {
-				return ConnError{
-					reason: .transport
-					detail: 'sending a datagram: ${err.msg()}'
-				}
-			}
+			c.send_datagram(datagram)!
+			sent << datagram
 			datagram = []u8{}
 		}
 		datagram << record
 	}
 
 	if datagram.len > 0 {
-		c.transport.send(datagram) or {
-			return ConnError{
-				reason: .transport
-				detail: 'sending a datagram: ${err.msg()}'
-			}
+		c.send_datagram(datagram)!
+		sent << datagram
+	}
+	return sent
+}
+
+fn (mut c Conn) send_datagram(datagram []u8) ! {
+	c.transport.send(datagram) or {
+		return ConnError{
+			reason: .transport
+			detail: 'sending a datagram: ${err.msg()}'
 		}
 	}
 }
@@ -124,11 +133,12 @@ fn (mut c Conn) build_record(content_type ContentType, payload []u8) ![]u8 {
 //
 // The order matters: the message itself must go out under the old epoch, and
 // everything after it under the new one.
-fn (mut c Conn) send_change_cipher_spec(cipher RecordCipher) ! {
-	c.send_records(.change_cipher_spec, [[u8(1)]])!
+fn (mut c Conn) send_change_cipher_spec(cipher RecordCipher) ![][]u8 {
+	sent := c.emit_records(.change_cipher_spec, [[u8(1)]])!
 	c.send_epoch++
 	c.send_sequence = 0
 	c.send_cipher = cipher
+	return sent
 }
 
 // send_alert sends a fatal alert. Failures are ignored: the connection is

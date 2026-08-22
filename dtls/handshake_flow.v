@@ -60,12 +60,18 @@ mut:
 	// the handshake records and under a different epoch.
 	send_change_cipher_spec bool
 	finished_records        [][]u8
+	// datagrams is what actually went on the wire, kept so a retransmission
+	// repeats it byte for byte. Rebuilding instead would take new sequence
+	// numbers, and would encrypt the records that went out before the
+	// ChangeCipherSpec under the epoch that came after it.
+	datagrams [][]u8
 }
 
-// transmit sends a flight.
-fn (mut c Conn) transmit(flight Flight, cipher ?RecordCipher) ! {
+// transmit sends a flight, keeping the datagrams for a retransmission.
+fn (mut c Conn) transmit(mut flight Flight, cipher ?RecordCipher) ! {
+	flight.datagrams = [][]u8{}
 	if flight.handshake_records.len > 0 {
-		c.send_records(.handshake, flight.handshake_records)!
+		flight.datagrams << c.emit_records(.handshake, flight.handshake_records)!
 	}
 	if flight.send_change_cipher_spec {
 		installed := cipher or {
@@ -75,29 +81,22 @@ fn (mut c Conn) transmit(flight Flight, cipher ?RecordCipher) ! {
 			}
 		}
 
-		c.send_change_cipher_spec(installed)!
+		flight.datagrams << c.send_change_cipher_spec(installed)!
 	}
 	if flight.finished_records.len > 0 {
-		c.send_records(.handshake, flight.finished_records)!
+		flight.datagrams << c.emit_records(.handshake, flight.finished_records)!
 	}
 }
 
-// retransmit_flight resends the records of a flight without advancing any
-// handshake state.
+// retransmit_flight resends a flight exactly as it was first sent, without
+// advancing any handshake state.
+//
+// The ChangeCipherSpec goes out again with it. A peer that missed it is
+// waiting on the epoch it announces, and would discard every record of the
+// flight that follows it - including the Finished - until it arrives.
 fn (mut c Conn) retransmit_flight(flight Flight) ! {
-	if flight.handshake_records.len > 0 {
-		c.send_records(.handshake, flight.handshake_records)!
-	}
-	if flight.send_change_cipher_spec {
-		// The ChangeCipherSpec belongs to the previous epoch, which we have
-		// already left. Resending it is not possible without rewinding the
-		// epoch, so the Finished alone is retransmitted; a peer that missed the
-		// ChangeCipherSpec will retransmit its own flight and we will answer
-		// again.
-		c.log.debug('retransmitting the Finished without the ChangeCipherSpec')
-	}
-	if flight.finished_records.len > 0 {
-		c.send_records(.handshake, flight.finished_records)!
+	for datagram in flight.datagrams {
+		c.send_datagram(datagram)!
 	}
 }
 
@@ -108,7 +107,7 @@ fn (mut c Conn) run_client(deadline time.Time) ! {
 	mut flight := Flight{
 		handshake_records: c.queue_handshake(hello)!
 	}
-	c.transmit(flight, none)!
+	c.transmit(mut flight, none)!
 
 	// Flights 2 and 4: the server answers with either a HelloVerifyRequest, in
 	// which case the hello is repeated with the cookie, or with its own flight.
@@ -145,7 +144,7 @@ fn (mut c Conn) run_client(deadline time.Time) ! {
 							flight = Flight{
 								handshake_records: c.queue_handshake(hello)!
 							}
-							c.transmit(flight, none)!
+							c.transmit(mut flight, none)!
 							interval = c.config.retransmit_interval
 							continue
 						}
@@ -205,7 +204,7 @@ fn (mut c Conn) run_client(deadline time.Time) ! {
 		send_change_cipher_spec: true
 		finished_records:        finished_records
 	}
-	c.transmit(flight, send_cipher)!
+	c.transmit(mut flight, send_cipher)!
 
 	c.await_peer_finished(flight, recv_cipher, expected_peer_verify, deadline)!
 }
@@ -230,10 +229,10 @@ fn (mut c Conn) run_server(deadline time.Time) ! {
 		// Neither the first ClientHello nor the HelloVerifyRequest is part of
 		// the hash.
 		c.transcript = []u8{}
-		verify_flight := Flight{
+		mut verify_flight := Flight{
 			handshake_records: records
 		}
-		c.transmit(verify_flight, none)!
+		c.transmit(mut verify_flight, none)!
 
 		client_hello = c.await_client_hello(deadline, verify_flight)!
 		if client_hello.cookie != c.cookie {
@@ -261,7 +260,7 @@ fn (mut c Conn) run_server(deadline time.Time) ! {
 	mut flight := Flight{
 		handshake_records: records
 	}
-	c.transmit(flight, none)!
+	c.transmit(mut flight, none)!
 
 	// Flight 5: the client's certificate, key share, proof and Finished.
 	mut peer_finished := ?Finished(none)
@@ -339,10 +338,11 @@ fn (mut c Conn) run_server(deadline time.Time) ! {
 		verify_data: verify_data(c.master_secret, c.transcript_hash(), false)
 	}
 	finished_records := c.queue_handshake(finished)!
-	c.transmit(Flight{
+	mut final_flight := Flight{
 		send_change_cipher_spec: true
 		finished_records:        finished_records
-	}, RecordCipher.new(keys.server)!)!
+	}
+	c.transmit(mut final_flight, RecordCipher.new(keys.server)!)!
 }
 
 // await_client_hello waits for a ClientHello.

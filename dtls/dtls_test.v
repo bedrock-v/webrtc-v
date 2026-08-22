@@ -17,8 +17,11 @@ mut:
 	mu      &sync.Mutex    = sync.new_mutex()
 	// drop_next causes the next n sends to be discarded.
 	drop_next int
-	sent      int
-	closed    bool
+	// drop_change_cipher_spec discards the next datagram carrying one, which is
+	// the datagram a peer must have before it can read the epoch that follows.
+	drop_change_cipher_spec bool
+	sent                    int
+	closed                  bool
 }
 
 fn new_pipe_pair() (&PipeTransport, &PipeTransport) {
@@ -36,9 +39,14 @@ fn (mut p PipeTransport) send(data []u8) !int {
 		return error('pipe closed')
 	}
 	p.sent++
-	drop := p.drop_next > 0
+	mut drop := p.drop_next > 0
 	if drop {
 		p.drop_next--
+	}
+	// A record's content type is its first byte; 20 is ChangeCipherSpec.
+	if p.drop_change_cipher_spec && data.len > 0 && data[0] == 20 {
+		p.drop_change_cipher_spec = false
+		drop = true
 	}
 	p.mu.unlock()
 
@@ -83,6 +91,12 @@ fn (mut p PipeTransport) close() {
 fn (mut p PipeTransport) drop(n int) {
 	p.mu.lock()
 	p.drop_next = n
+	p.mu.unlock()
+}
+
+fn (mut p PipeTransport) drop_next_change_cipher_spec() {
+	p.mu.lock()
+	p.drop_change_cipher_spec = true
 	p.mu.unlock()
 }
 
@@ -888,4 +902,41 @@ fn test_zero_length_message_reassembles() {
 	assert pending.add(parsed[0].header.fragment_offset, parsed[0].body)
 	assert pending.is_complete()
 	assert pending.body.len == 0
+}
+
+// A peer that misses the ChangeCipherSpec is left waiting on an epoch it has
+// not been told to expect, and discards everything sent under it. The
+// retransmission has to carry it again, or neither side ever moves.
+fn test_handshake_survives_a_lost_change_cipher_spec() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+
+	client_certificate := Certificate.generate()!
+	server_certificate := Certificate.generate()!
+
+	mut client := Conn.new(client_pipe,
+		role:                .client
+		certificate:         client_certificate
+		remote_fingerprints: [server_certificate.fingerprint(.sha256)]
+		handshake_timeout:   5 * time.second
+		retransmit_interval: 50 * time.millisecond
+	)!
+	mut server := Conn.new(server_pipe,
+		role:                .server
+		certificate:         server_certificate
+		remote_fingerprints: [client_certificate.fingerprint(.sha256)]
+		handshake_timeout:   5 * time.second
+		retransmit_interval: 50 * time.millisecond
+	)!
+
+	client_pipe.drop_next_change_cipher_spec()
+
+	server_thread := spawn fn (mut c Conn) ! {
+		c.handshake()!
+	}(mut server)
+	client.handshake()!
+	server_thread.wait()!
+
+	assert client.state() == .connected
+	assert server.state() == .connected
+	assert client.srtp_keying_material()! == server.srtp_keying_material()!
 }
