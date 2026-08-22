@@ -374,9 +374,10 @@ pub fn (mut pc PeerConnection) create_answer() !SessionDescription {
 // gathering and starts bring-up (ICE, then DTLS, then SCTP) once both
 // descriptions are applied.
 //
-// Non-trickle answerers must not use this: bring-up would start before the
-// description and its embedded candidates, has reached the peer. Use
-// set_local_description_deferred & begin_connecting instead.
+// A non-trickle answerer may use it: bring-up starting before the description
+// has reached the peer only means the first checks go unanswered, and they are
+// retransmitted once the peer has the credentials to authenticate them. Use
+// set_local_description_deferred & begin_connecting to hold them back.
 pub fn (mut pc PeerConnection) set_local_description(description SessionDescription) ! {
 	pc.apply_local_description(description)!
 	pc.start_gathering()!
@@ -386,10 +387,6 @@ pub fn (mut pc PeerConnection) set_local_description(description SessionDescript
 // set_local_description_deferred applies description and starts ICE
 // gathering without starting bring-up. Call begin_connecting once the
 // description has reached the peer.
-//
-// Known problem: even with this ordering, the answering side's ICE agent
-// doesn't reliably reach connected under disable_trickle_ice. It can stay
-// in checking indefinitely. Working on.
 pub fn (mut pc PeerConnection) set_local_description_deferred(description SessionDescription) ! {
 	pc.apply_local_description(description)!
 	pc.start_gathering()!
