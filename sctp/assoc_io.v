@@ -137,7 +137,13 @@ fn (mut a Association) handle_chunk(chunk RawChunk) ! {
 			} else {
 				'the peer aborted'
 			}
-			a.log.warn(a.abort_reason)
+			// A user initiated abort is how a peer says it is leaving on
+			// purpose, so it is not worth a warning.
+			if causes.any(it.code == cause_user_initiated_abort) {
+				a.log.debug(a.abort_reason)
+			} else {
+				a.log.warn(a.abort_reason)
+			}
 			a.set_state(.aborted)
 		}
 		.shutdown {
