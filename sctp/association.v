@@ -111,7 +111,13 @@ pub:
 	role Role = .client
 	// streams is how many streams to offer in each direction.
 	streams u16 = default_streams
-	// receive_window is the buffer space advertised to the peer.
+	// receive_window is the buffer space advertised to the peer,and the figure
+	// handle_data holds arriving data to.
+	//
+	// It is closely rather than exactly enforced. The chunk at the cumulative
+	// point is accepted even when the buffer is full because it is the one that
+	// releases everything waiting behind it, so retention can exceed this by one
+	// chunk while a gap is being closed.
 	receive_window u32 = default_receive_window
 	// max_message_size bounds one reassembled message.
 	max_message_size int           = default_max_message_size

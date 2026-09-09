@@ -1196,3 +1196,14 @@ fn test_a_collected_msg_stops_counting_against_the_window() {
 	assert a.held.len == 0, 'the backing array should be released once the backlog is empty'
 	assert a.held_head == 0
 }
+
+fn test_sender_that_never_leaves_a_gap_is_still_held_to_window() {
+	window := u32(64 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 0
+
+	for i in 0 .. 5000 {
+		a.handle_data(whole_message(u32(1 + i), 0, u16(i % 65535), 1024)) or { break }
+	}
+	assert a.receive_buffered <= window, 'retained ${a.receive_buffered} bytes against a ${window} byte window'
+}
