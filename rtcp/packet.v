@@ -171,6 +171,7 @@ fn decode_packet(header Header, body []u8) !Packet {
 		}
 		else {}
 	}
+
 	return RawPacket{
 		header: header
 		body:   body.clone()

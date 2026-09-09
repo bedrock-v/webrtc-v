@@ -53,6 +53,7 @@ fn decode_address(value []u8) !netaddr.SocketAddr {
 			}
 		}
 	}
+
 	want := family.octet_len()
 	if value.len != 4 + want {
 		return DecodeError{

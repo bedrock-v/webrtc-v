@@ -335,6 +335,7 @@ fn test_transport_cc_round_trip_mixed_statuses() {
 			.received_large_delta { i32(-500 - i) }
 			else { i32(0) }
 		}
+
 		cc.packets << PacketFeedback{
 			sequence_number: u16(1000 + i)
 			status:          status

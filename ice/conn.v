@@ -34,6 +34,7 @@ pub fn (mut a Agent) connect(timeout time.Duration) ! {
 			}
 			else {}
 		}
+
 		time.sleep(10 * time.millisecond)
 	}
 	return AgentError{

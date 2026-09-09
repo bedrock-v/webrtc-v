@@ -378,6 +378,7 @@ fn (mut c Conn) collect_handshake(record Record) ![]HandshakeMessage {
 			.finished { c.transcript_at_peer_finished = c.transcript.clone() }
 			else {}
 		}
+
 		// HelloVerifyRequest is excluded from the transcript by RFC 6347
 		// section 4.2.1, along with the ClientHello that provoked it.
 		if pending.typ != .hello_verify_request {

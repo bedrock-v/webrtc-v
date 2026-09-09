@@ -25,8 +25,8 @@ mut:
 	// ChangeCipherSpec and its Finished on the wire.
 	coalesce_change_cipher_spec bool
 	held                        []u8
-	sent                    int
-	closed                  bool
+	sent                        int
+	closed                      bool
 }
 
 fn new_pipe_pair() (&PipeTransport, &PipeTransport) {

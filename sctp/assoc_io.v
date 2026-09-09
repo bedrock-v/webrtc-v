@@ -93,6 +93,7 @@ fn (mut a Association) handle_chunk(chunk RawChunk) ! {
 				return
 			}
 		}
+
 		return
 	}
 

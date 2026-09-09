@@ -288,6 +288,7 @@ fn (mut pc PeerConnection) watch() {
 			.disconnected { next = .disconnected }
 			else {}
 		}
+
 		if next == .connected && needs_sctp {
 			match association.state() {
 				.aborted { next = .failed }
@@ -328,6 +329,7 @@ pub fn (mut pc PeerConnection) wait_connected(timeout time.Duration) ! {
 			}
 			else {}
 		}
+
 		time.sleep(5 * time.millisecond)
 	}
 	return PeerError{

@@ -304,6 +304,7 @@ pub fn (mut m Message) encode(opts EncodeOptions) ![]u8 {
 			.sha1 { attr_message_integrity, sha1.size }
 			.sha256 { attr_message_integrity_sha256, sha256.size }
 		}
+
 		offset := w.len()
 		set_body_length(mut w.buf, offset + 4 + digest_len)
 		digest := integrity_digest(w.buf, opts.integrity_key, opts.integrity_algorithm)

@@ -295,6 +295,7 @@ pub fn (mut m Manager) create(label string, options ChannelOptions, timeout time
 			}
 			else {}
 		}
+
 		time.sleep(2 * time.millisecond)
 	}
 	m.forget(stream)

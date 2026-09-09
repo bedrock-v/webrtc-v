@@ -271,6 +271,7 @@ pub fn parse_candidate(input string) !Candidate {
 			}
 		}
 	}
+
 	priority := parse_u32_field(fields[3], 'priority')!
 	mut hostname := ''
 	mut ip := netaddr.IpAddr{}
@@ -363,6 +364,7 @@ pub fn parse_candidate(input string) !Candidate {
 				extensions << value
 			}
 		}
+
 		i += 2
 	}
 

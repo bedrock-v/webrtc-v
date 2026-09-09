@@ -418,6 +418,7 @@ fn parse_typed_time(field string) !u64 {
 		`s` { u64(1) }
 		else { u64(0) }
 	}
+
 	if multiplier == 0 {
 		return parse_u64(field)!
 	}

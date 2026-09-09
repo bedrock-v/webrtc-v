@@ -39,6 +39,7 @@ pub fn Cipher.new(key []u8) !&Cipher {
 		32 { 14 }
 		else { return error('aes: a key must be 16, 24 or 32 bytes, got ${key.len}') }
 	}
+
 	return &Cipher{
 		round_keys: expand_key(key, rounds)
 		rounds:     rounds

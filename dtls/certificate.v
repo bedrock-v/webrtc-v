@@ -225,16 +225,9 @@ pub fn Certificate.from_key(private_key ecdsa.PrivateKey, public_key ecdsa.Publi
 	name := encode_common_name(common_name)!
 	validity := der_sequence_of(encode_time(not_before), encode_time(not_after))
 
-	tbs := der_sequence_of(
-		// [0] EXPLICIT version, 2 meaning v3.
-		der_tlv(der_context_constructed(0), der_integer_from_bytes([u8(2)])),
-		der_integer_from_bytes(serial),
-		algorithm,
-		name,
-		validity,
-		name,
-		subject_public_key_info,
-	)
+	tbs := der_sequence_of( // [0] EXPLICIT version, 2 meaning v3.
+	 der_tlv(der_context_constructed(0), der_integer_from_bytes([u8(2)])),
+		der_integer_from_bytes(serial), algorithm, name, validity, name, subject_public_key_info)
 
 	// The signature is over the DER of the TBSCertificate, with SHA-256 chosen
 	// by the recommended-hash setting for a P-256 key.

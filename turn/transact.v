@@ -156,6 +156,7 @@ fn (c &Client) server_error(code stun.ErrorCode) TurnError {
 			TurnErrorReason.refused
 		}
 	}
+
 	return TurnError{
 		reason: reason
 		detail: if code.reason != '' { code.reason } else { 'the server refused the request' }

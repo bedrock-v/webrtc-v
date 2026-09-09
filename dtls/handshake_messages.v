@@ -223,6 +223,7 @@ fn (mut c Conn) apply_server_message(message HandshakeMessage) !bool {
 			}
 		}
 	}
+
 	return false
 }
 

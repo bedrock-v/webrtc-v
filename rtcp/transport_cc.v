@@ -329,6 +329,7 @@ fn decode_transport_cc(body []u8) !TransportLayerCc {
 				}
 			}
 		}
+
 		out.packets << PacketFeedback{
 			sequence_number: base + u16(i)
 			status:          status

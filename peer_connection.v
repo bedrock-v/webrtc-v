@@ -432,6 +432,7 @@ fn (mut pc PeerConnection) apply_local_description(description SessionDescriptio
 			pc.signaling = .stable
 		}
 	}
+
 	pc.local_sdp = description.sdp
 	pc.mu.unlock()
 }

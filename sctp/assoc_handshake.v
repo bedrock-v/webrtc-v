@@ -65,6 +65,7 @@ pub fn (mut a Association) connect(timeout time.Duration) ! {
 			}
 			else {}
 		}
+
 		time.sleep(5 * time.millisecond)
 	}
 	return AssociationError{

@@ -304,6 +304,7 @@ fn decode_extension(typ u16, body []u8) Extension {
 		}
 		else {}
 	}
+
 	return RawExtension{
 		typ:  typ
 		data: body
