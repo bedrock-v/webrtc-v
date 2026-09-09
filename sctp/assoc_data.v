@@ -112,6 +112,9 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 			detail: 'the association is closed'
 		}
 	}
+	// The backlog is given its place in the queue before the queue is read.
+	// A message that had to wait is the next one collected rather than the last.
+	a.drain_held()
 	select {
 		message := <-a.delivered {
 			if message.data.len == 0 {
@@ -145,6 +148,7 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 
 // try_recv returns a message if one is already queued.
 pub fn (mut a Association) try_recv() ?Message {
+	a.drain_held()
 	select {
 		message := <-a.delivered {
 			if message.data.len == 0 {
@@ -299,8 +303,13 @@ fn (mut a Association) deliver(data Data) ! {
 	}
 }
 
-// forward queues a message for the application.
+// forward queues a message for the application. The caller must hold the mutex.
 fn (mut a Association) forward(message Message) {
+	a.drain_held_locked()
+	if a.held.len > 0 {
+		a.held << message
+		return
+	}
 	select {
 		a.delivered <- message {}
 		else {
@@ -311,6 +320,40 @@ fn (mut a Association) forward(message Message) {
 			a.held << message
 		}
 	}
+}
+
+// drain_held moves the backlog into the delivery queue, for callers that don't
+// already hold the mutex.
+fn (mut a Association) drain_held() {
+	a.mu.lock()
+	a.drain_held_locked()
+	a.mu.unlock()
+}
+
+// drain_held_locked moves as much of the backlog into the delivery queue as it
+// will take, oldest first. The caller must hold the mutex.
+fn (mut a Association) drain_held_locked() {
+	if a.closed {
+		// A closed association delivers nothing. What is still queued belongs to
+		// one that has ended and the channel it would go to is closed.
+		return
+	}
+	mut moved := 0
+	for moved < a.held.len {
+		message := a.held[moved]
+		select {
+			a.delivered <- message {
+				moved++
+			}
+			else {
+				break
+			}
+		}
+	}
+	if moved == 0 {
+		return
+	}
+	a.held = a.held[moved..].clone()
 }
 
 // schedule_sack arranges for an acknowledgement.

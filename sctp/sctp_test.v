@@ -992,3 +992,48 @@ fn test_a_receive_on_a_closed_association_fails_rather_than_delivering_nothing()
 		assert false, 'a closed association returned a ${message.data.len}-byte message'
 	}
 }
+
+fn test_messages_past_the_delivery_queue_are_still_delivered() {
+	mut pipe, _ := new_pipe_pair()
+	mut a := Association.new(pipe, role: .server)!
+	a.state = .established
+
+	count := 400
+	for i in 0 .. count {
+		a.forward(Message{
+			stream_identifier: 0
+			data:              'message ${i}'.bytes()
+		})
+	}
+	assert a.held.len > 0, 'the delivery queue should have overflowed'
+
+	mut seen := []string{}
+	for _ in 0 .. count {
+		message := a.try_recv() or { break }
+		seen << message.data.bytestr()
+	}
+	assert seen.len == count, 'collected ${seen.len} of ${count} messages'
+}
+
+fn test_a_backlog_is_delivered_in_the_order_it_was_queued() {
+	mut pipe, _ := new_pipe_pair()
+	mut a := Association.new(pipe, role: .server)!
+	a.state = .established
+
+	count := 400
+	for i in 0 .. count {
+		a.forward(Message{
+			stream_identifier: 0
+			data:              'message ${i:04}'.bytes()
+		})
+	}
+
+	mut seen := []string{}
+	for _ in 0 .. count {
+		message := a.try_recv() or { break }
+		seen << message.data.bytestr()
+	}
+	for i in 0 .. seen.len {
+		assert seen[i] == 'message ${i:04}', 'position ${i} holds ${seen[i]}'
+	}
+}
