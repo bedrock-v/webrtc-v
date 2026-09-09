@@ -87,7 +87,7 @@ fn test_the_block_cipher_agrees_with_the_standard_library() {
 			mut mine := []u8{len: 16}
 			ours.encrypt_block(mut mine, block)!
 
-			theirs := vlib_aes.new_cipher(key)
+			theirs := vlib_aes.new_cipher(key)!
 			mut reference := []u8{len: 16}
 			theirs.encrypt(mut reference, block)
 
@@ -363,7 +363,7 @@ fn test_counter_mode_agrees_with_the_standard_library() {
 		mut mine := []u8{len: plaintext.len}
 		ours.xor_key_stream(mut mine, plaintext)!
 
-		block := vlib_aes.new_cipher(key)
+		block := vlib_aes.new_cipher(key)!
 		mut stream := cipher.new_ctr(block, counter)
 		mut reference := []u8{len: plaintext.len}
 		stream.xor_key_stream(mut reference, plaintext)
