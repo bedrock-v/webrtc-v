@@ -35,6 +35,12 @@ struct TransportParameters {
 }
 
 // build_description assembles an offer or an answer.
+// default_remote_max_message_size is what RFC 8841 section 6 says to assume when
+// a peer's data channel section carries no max-message-size attribute. It's a
+// fact about the peer, so our own configured limit is not a
+// substitute for it.
+const default_remote_max_message_size = 65536
+
 fn build_description(sections []Section, parameters TransportParameters, session_id u64, version u64, max_message_size int) !string {
 	mut description := sdp.SessionDescription{
 		version:      0
@@ -198,7 +204,12 @@ mut:
 	// candidates are any `a=candidate` lines carried in the description itself,
 	// which is how a non-trickling peer sends them.
 	candidates []string
-	// max_message_size is what the peer will accept on a data channel.
+	// max_message_size is what the peer will accept on a data channel, resolved
+	// as RFC 8841 section 6 defines it rather than as it was written: the
+	// advertised value or the default when the attribute is absent. Zero is
+	// carried through unchanged and means the peer will take any size.
+	//
+	// It's none only when the description carried no data channel section at all.
 	max_message_size ?int
 	parsed           sdp.SessionDescription
 }
@@ -284,14 +295,15 @@ fn parse_remote_description(text string) !RemoteDescription {
 		for line in media.candidates() {
 			remote.candidates << line
 		}
-		if size := media.max_message_size() {
-			// RFC 8841 section 6: zero is the absence of a limit, not a limit of
-			// nothing. A value past what an int holds is treated the same way
-			// because a limit that cannot be represented cannot be applied.
-			// Both then mean what a missing attribute means which leaves one
-			// case downstream instead of three.
-			if size != 0 && size <= u32(max_i32) {
-				remote.max_message_size = int(size)
+		if kind == .application {
+			if size := media.max_message_size() {
+				remote.max_message_size = if size > u32(max_i32) {
+					int(max_i32)
+				} else {
+					int(size)
+				}
+			} else {
+				remote.max_message_size = default_remote_max_message_size
 			}
 		}
 		if remote.ice_ufrag == '' {

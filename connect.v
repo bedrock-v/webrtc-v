@@ -158,11 +158,15 @@ fn (mut pc PeerConnection) connect_sctp() ! {
 	// we will accept and it is what we advertised in turn. They are separate
 	// promises, so there is nothing to reconcile between them: a peer that
 	// accepts less than we do has not changed what we accept.
-	mut peer_max := config.max_message_size
+	//
+	// Nor is our own limit the fallback when the peer has said nothing. What a
+	// peer will reassemble is a fact about the peer and RFC 8841 section 6
+	// supplies the default for it. Reaching for config.max_message_size here
+	// would let an end configured to accept a megabyte send one to a peer whose
+	// effective limit is 64 KiB.
+	mut peer_max := default_remote_max_message_size
 	if remote := pc.remote {
-		if advertised := remote.max_message_size {
-			peer_max = advertised
-		}
+		peer_max = remote.max_message_size or { default_remote_max_message_size }
 	}
 	pc.mu.unlock()
 

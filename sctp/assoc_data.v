@@ -41,7 +41,9 @@ pub fn (mut a Association) send(stream_identifier u16, payload_protocol_identifi
 			detail: 'stream ${stream_identifier} is outside the ${a.config.streams} negotiated'
 		}
 	}
-	if data.len > a.config.peer_max_message_size {
+	// Zero is not a limit of nothing: it is the peer saying it will reassemble
+	// whatever arrives, so there is nothing to compare against.
+	if a.config.peer_max_message_size > 0 && data.len > a.config.peer_max_message_size {
 		return AssociationError{
 			reason: .too_large
 			detail: '${data.len} bytes exceeds the ${a.config.peer_max_message_size}-byte maximum the peer accepts'

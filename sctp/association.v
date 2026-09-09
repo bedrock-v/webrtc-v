@@ -112,12 +112,14 @@ pub:
 	// accept and the figure to advertise to the peer.
 	max_message_size int = default_max_message_size
 	// peer_max_message_size bounds one message sent because it is the figure
-	// the peer advertised for its own reassembly.
+	// the peer advertised for its own reassembly. Zero means the peer will take
+	// any size which is how RFC 8841 section 6 spells no limit and is carried
+	// here unchanged rather than encoded as some large number.
 	//
 	// It is separate from max_message_size because the two are separate
 	// promises. Collapsing them to the smaller of the pair lets a peer that
 	// accepts less than we do also shrink what we accept, below the figure we
-	// ourselves advertised. And the association then aborts on a message we
+	// ourselves advertised and the association then aborts on a message we
 	// said we would take.
 	peer_max_message_size int           = default_max_message_size
 	rto_initial      time.Duration = default_rto_initial
@@ -309,10 +311,10 @@ pub fn Association.new(transport Transport, config Config) !&Association {
 			detail: 'max_message_size must be positive'
 		}
 	}
-	if config.peer_max_message_size <= 0 {
+	if config.peer_max_message_size < 0 {
 		return AssociationError{
 			reason: .wrong_state
-			detail: 'peer_max_message_size must be positive'
+			detail: 'peer_max_message_size cannot be negative'
 		}
 	}
 
@@ -372,7 +374,8 @@ pub fn (a &Association) max_message_size() int {
 	return a.config.max_message_size
 }
 
-// peer_max_message_size is the largest message the peer said it will accept.
+// peer_max_message_size is the largest message the peer said it will accept or
+// zero if it will accept any size.
 //
 // A caller that does its own segmentation on top of a data channel needs this
 // rather than its own limit because the message has to survive reassembly at

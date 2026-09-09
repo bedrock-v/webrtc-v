@@ -1051,3 +1051,21 @@ fn test_reassembly_is_bounded_by_our_own_limit() {
 	assert messages.len == 1
 	assert messages[0].data.len == 4096
 }
+
+// RFC 8841 section 6: a peer advertising zero will reassemble a message of any
+// size. Refusing to send on that basis would be reading it as a limit of
+// nothing which is the opposite of what it says.
+fn test_a_peer_that_accepts_any_size_is_not_a_peer_that_accepts_nothing() {
+	mut pair := connect_pair(Config{
+		max_message_size:      64 * 1024
+		peer_max_message_size: 0
+	})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	body := []u8{len: 32 * 1024, init: u8(index & 0xff)}
+	pair.client.send(0, ppid_binary, body, true)!
+	message := pair.server.recv(5 * time.second)!
+	assert message.data == body
+}
