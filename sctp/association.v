@@ -108,8 +108,20 @@ pub:
 	streams u16 = default_streams
 	// receive_window is the buffer space advertised to the peer.
 	receive_window u32 = default_receive_window
-	// max_message_size bounds one reassembled message.
-	max_message_size int           = default_max_message_size
+	// max_message_size bounds one reassembled message: the largest this end will
+	// accept and the figure to advertise to the peer.
+	max_message_size int = default_max_message_size
+	// peer_max_message_size bounds one message sent because it is the figure
+	// the peer advertised for its own reassembly. Zero means the peer will take
+	// any size which is how RFC 8841 section 6 spells no limit and is carried
+	// here unchanged rather than encoded as some large number.
+	//
+	// It is separate from max_message_size because the two are separate
+	// promises. Collapsing them to the smaller of the pair lets a peer that
+	// accepts less than we do also shrink what we accept, below the figure we
+	// ourselves advertised and the association then aborts on a message we
+	// said we would take.
+	peer_max_message_size int           = default_max_message_size
 	rto_initial      time.Duration = default_rto_initial
 	rto_min          time.Duration = default_rto_min
 	rto_max          time.Duration = default_rto_max
@@ -299,6 +311,12 @@ pub fn Association.new(transport Transport, config Config) !&Association {
 			detail: 'max_message_size must be positive'
 		}
 	}
+	if config.peer_max_message_size < 0 {
+		return AssociationError{
+			reason: .wrong_state
+			detail: 'peer_max_message_size cannot be negative'
+		}
+	}
 
 	// The verification tag and the initial TSN are both random. The tag is what
 	// stops an off-path attacker from injecting into the association, and a
@@ -350,10 +368,21 @@ pub fn (a &Association) role() Role {
 	return if a.is_client { Role.client } else { Role.server }
 }
 
-// max_message_size is the largest message this association will send or accept.
+// max_message_size is the largest message this association will accept.
 @[inline]
 pub fn (a &Association) max_message_size() int {
 	return a.config.max_message_size
+}
+
+// peer_max_message_size is the largest message the peer said it will accept or
+// zero if it will accept any size.
+//
+// A caller that does its own segmentation on top of a data channel needs this
+// rather than its own limit because the message has to survive reassembly at
+// the far end.
+@[inline]
+pub fn (a &Association) peer_max_message_size() int {
+	return a.config.peer_max_message_size
 }
 
 // is_closed reports whether the association has been shut down.
