@@ -1121,3 +1121,78 @@ fn test_the_window_returns_as_messages_are_delivered() {
 	assert a.available_receive_window() == window, 'delivered messages should not stay charged'
 	assert a.receive_buffered == 0
 }
+
+fn test_messages_past_the_delivery_queue_are_still_delivered() {
+	mut pipe, _ := new_pipe_pair()
+	mut a := Association.new(pipe, role: .server)!
+	a.state = .established
+
+	count := 400
+	for i in 0 .. count {
+		a.forward(Message{
+			stream_identifier: 0
+			data:              'message ${i}'.bytes()
+		})
+	}
+	assert a.held_len() > 0, 'the delivery queue should have overflowed'
+
+	mut seen := []string{}
+	for _ in 0 .. count {
+		message := a.try_recv() or { break }
+		seen << message.data.bytestr()
+	}
+	assert seen.len == count, 'collected ${seen.len} of ${count} messages'
+}
+
+fn test_a_backlog_is_delivered_in_the_order_it_was_queued() {
+	mut pipe, _ := new_pipe_pair()
+	mut a := Association.new(pipe, role: .server)!
+	a.state = .established
+
+	count := 400
+	for i in 0 .. count {
+		a.forward(Message{
+			stream_identifier: 0
+			data:              'message ${i:04}'.bytes()
+		})
+	}
+
+	mut seen := []string{}
+	for _ in 0 .. count {
+		message := a.try_recv() or { break }
+		seen << message.data.bytestr()
+	}
+	for i in 0 .. seen.len {
+		assert seen[i] == 'message ${i:04}', 'position ${i} holds ${seen[i]}'
+	}
+}
+
+fn test_a_collected_msg_stops_counting_against_the_window() {
+	window := u32(4 * 1024 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 0
+
+	count := 400
+	for i in 0 .. count {
+		a.handle_data(whole_message(u32(1 + i), 0, u16(i), 1024))!
+	}
+	assert a.held_len() > 0, 'the delivery queue should have overflowed'
+	assert a.receive_buffered > 0, 'waiting messages should still be charged'
+	assert a.available_receive_window() < window
+
+	for _ in 0 .. 32 {
+		a.try_recv() or { break }
+	}
+	for i in 0 .. a.held_head {
+		assert a.held[i].data.len == 0, 'slot ${i} was delivered but still holds its payload'
+	}
+
+	for _ in 0 .. count {
+		a.try_recv() or { break }
+	}
+	assert a.receive_buffered == 0, 'collected messages must give their room back'
+	assert a.available_receive_window() == window
+	assert a.held_len() == 0
+	assert a.held.len == 0, 'the backing array should be released once the backlog is empty'
+	assert a.held_head == 0
+}

@@ -281,6 +281,12 @@ mut:
 	// the advertised receive window, which is how the application's slowness
 	// reaches the sender rather than being absorbed by an unbounded queue.
 	held []Message
+	// held_head is where the waiting messages start. Everything before it has
+	// already been delivered and no longer retains the message payload; the
+	// slots are kept only so that collecting one message doesn't rebuild the
+	// array behind it and the compaction rule in drain_held_locked bounds how
+	// many of them there can be.
+	held_head int
 
 	closed bool
 	// torn_down separates "not started yet" from "finished". Both are the

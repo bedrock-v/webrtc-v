@@ -112,6 +112,9 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 			detail: 'the association is closed'
 		}
 	}
+	// The backlog is given its place in the queue before the queue is read.
+	// A message that had to wait is the next one collected rather than the last.
+	a.drain_held()
 	select {
 		message := <-a.delivered {
 			if message.data.len == 0 {
@@ -145,6 +148,7 @@ pub fn (mut a Association) recv(timeout time.Duration) !Message {
 
 // try_recv returns a message if one is already queued.
 pub fn (mut a Association) try_recv() ?Message {
+	a.drain_held()
 	select {
 		message := <-a.delivered {
 			if message.data.len == 0 {
@@ -318,8 +322,13 @@ fn (mut a Association) deliver(data Data) ! {
 	}
 }
 
-// forward queues a message for the application.
+// forward queues a message for the application. The caller must hold the mutex.
 fn (mut a Association) forward(message Message) {
+	a.drain_held_locked()
+	if a.held_len() > 0 {
+		a.held << message
+		return
+	}
 	select {
 		a.delivered <- message {
 			a.discharge(u32(message.data.len))
@@ -332,6 +341,57 @@ fn (mut a Association) forward(message Message) {
 			a.held << message
 		}
 	}
+}
+
+// drain_held moves the backlog into the delivery queue, for callers that don't
+// already hold the mutex.
+fn (mut a Association) drain_held() {
+	a.mu.lock()
+	a.drain_held_locked()
+	a.mu.unlock()
+}
+
+// drain_held_locked moves as much of the backlog into the delivery queue as it
+// will take, oldest first. The caller must hold the mutex.
+fn (mut a Association) drain_held_locked() {
+	if a.closed {
+		// A closed association delivers nothing. What is still queued belongs to
+		// one that has ended and the channel it would go to is closed.
+		return
+	}
+	mut moved := 0
+	for a.held_head + moved < a.held.len {
+		index := a.held_head + moved
+		message := a.held[index]
+		select {
+			a.delivered <- message {
+				// Leaving through the backlog is still leaving. Without this the
+				// bytes stay charged for the lifetime of the association and the
+				// window shrinks by every message that ever had to wait.
+				a.discharge(u32(message.data.len))
+				a.held[index] = Message{}
+				moved++
+			}
+			else {
+				break
+			}
+		}
+	}
+	if moved == 0 {
+		return
+	}
+	a.held_head += moved
+	if a.held_head * 2 >= a.held.len {
+		a.held = a.held[a.held_head..].clone()
+		a.held_head = 0
+	}
+}
+
+// held_len is how many messages are still waiting. a.held keeps a delivered
+// prefix, so its length is not the answer.
+@[inline]
+fn (a &Association) held_len() int {
+	return a.held.len - a.held_head
 }
 
 // schedule_sack arranges for an acknowledgement.
