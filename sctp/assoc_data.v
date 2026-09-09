@@ -306,7 +306,7 @@ fn (mut a Association) deliver(data Data) ! {
 // forward queues a message for the application. The caller must hold the mutex.
 fn (mut a Association) forward(message Message) {
 	a.drain_held_locked()
-	if a.held.len > 0 {
+	if a.held_len() > 0 {
 		a.held << message
 		return
 	}
@@ -339,10 +339,12 @@ fn (mut a Association) drain_held_locked() {
 		return
 	}
 	mut moved := 0
-	for moved < a.held.len {
-		message := a.held[moved]
+	for a.held_head + moved < a.held.len {
+		index := a.held_head + moved
+		message := a.held[index]
 		select {
 			a.delivered <- message {
+				a.held[index] = Message{}
 				moved++
 			}
 			else {
@@ -353,7 +355,18 @@ fn (mut a Association) drain_held_locked() {
 	if moved == 0 {
 		return
 	}
-	a.held = a.held[moved..].clone()
+	a.held_head += moved
+	if a.held_head * 2 >= a.held.len {
+		a.held = a.held[a.held_head..].clone()
+		a.held_head = 0
+	}
+}
+
+// held_len is how many messages are still waiting. a.held keeps a delivered
+// prefix, so its length is not the answer.
+@[inline]
+fn (a &Association) held_len() int {
+	return a.held.len - a.held_head
 }
 
 // schedule_sack arranges for an acknowledgement.
@@ -437,8 +450,8 @@ fn (mut a Association) available_receive_window() u32 {
 	for _, data in a.out_of_order {
 		used += u32(data.user_data.len)
 	}
-	for message in a.held {
-		used += u32(message.data.len)
+	for i in a.held_head .. a.held.len {
+		used += u32(a.held[i].data.len)
 	}
 	if used >= a.my_receive_window {
 		return 0
