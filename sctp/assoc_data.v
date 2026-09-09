@@ -249,11 +249,30 @@ fn (mut a Association) handle_data(data Data) ! {
 		a.schedule_sack(true)
 		return
 	}
+	closes_gap := data.tsn == a.last_received_tsn + 1
+	// The chunk that closes the gap is the one that drains everything held
+	// behind it, so the window is applied only to chunks that would extend the
+	// backlog. Refusing the closing chunk would deadlock the association against
+	// its own back pressure: the buffer stays full precisely because the thing
+	// that would empty it keeps being turned away.
+	if !closes_gap {
+		if u32(data.user_data.len) > a.available_receive_window()
+			|| a.out_of_order.len >= max_out_of_order {
+			// The peer was told there is no room. Dropping is what makes that
+			// advertisement mean something; a sender that respects it has
+			// nothing to retransmit and one that does not gets no memory out of
+			// us. The acknowledgement repeats the window in case the earlier one
+			// was lost.
+			a.schedule_sack(true)
+			return
+		}
+	}
 
 	a.out_of_order[data.tsn] = data
+	a.receive_buffered += u32(data.user_data.len)
 	// A chunk that does not close the gap needs an immediate acknowledgement so
 	// the sender can fast-retransmit rather than wait for its timer.
-	gap_opened := data.tsn != a.last_received_tsn + 1
+	gap_opened := !closes_gap
 	a.advance_cumulative_ack()!
 
 	// RFC 4960 section 6.2 requires an acknowledgement at least every second
@@ -302,7 +321,9 @@ fn (mut a Association) deliver(data Data) ! {
 // forward queues a message for the application.
 fn (mut a Association) forward(message Message) {
 	select {
-		a.delivered <- message {}
+		a.delivered <- message {
+			a.discharge(u32(message.data.len))
+		}
 		else {
 			// The application is not keeping up. Dropping here would break the
 			// reliability the stream promised, so the message is kept and the
@@ -386,21 +407,29 @@ fn (mut a Association) gap_block(start u32, end u32) GapAckBlock {
 
 // available_receive_window is what is left of the advertised buffer.
 //
-// Reporting it honestly is what makes back pressure work: a peer that is told
-// there is no room stops sending, and the application's own slowness reaches
-// the sender instead of being absorbed by an unbounded queue.
-fn (mut a Association) available_receive_window() u32 {
-	mut used := u32(0)
-	for _, data in a.out_of_order {
-		used += u32(data.user_data.len)
-	}
-	for message in a.held {
-		used += u32(message.data.len)
-	}
-	if used >= a.my_receive_window {
+// Reporting it honestly is what carries back pressure to a peer that respects
+// it and the application's own slowness reaches the sender rather than being
+// absorbed by an unbounded queue. handle_data applies the same figure to what
+// arrives which is what covers the peer that doesn't respect it.
+fn (a &Association) available_receive_window() u32 {
+	if a.receive_buffered >= a.my_receive_window {
 		return 0
 	}
-	return a.my_receive_window - used
+	return a.my_receive_window - a.receive_buffered
+}
+
+// discharge removes bytes from the receive accounting once they are no longer
+// retained.
+//
+// It saturates at zero rather than wrapping. An accounting slip that let the
+// counter drift should surface as a window that is slightly too generous, not
+// as an unsigned wrap that advertises four gigabytes of room.
+fn (mut a Association) discharge(bytes u32) {
+	if bytes >= a.receive_buffered {
+		a.receive_buffered = 0
+		return
+	}
+	a.receive_buffered -= bytes
 }
 
 // handle_sack processes an acknowledgement from the peer.
@@ -655,7 +684,9 @@ fn (mut a Association) handle_forward_tsn(forward ForwardTsn) {
 				identifier: stream.identifier
 			}
 		}
-		for message in inbound.skip_to(stream.sequence_number) {
+		messages, abandoned := inbound.skip_to(stream.sequence_number)
+		a.discharge(abandoned)
+		for message in messages {
 			a.forward(message)
 		}
 		a.inbound[stream.identifier] = inbound

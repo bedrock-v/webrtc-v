@@ -77,6 +77,11 @@ pub const default_rto_max = 60 * time.second
 // association is declared dead.
 pub const default_max_retransmits = 10
 
+// max_out_of_order bounds the gap list by entry count as well as by the receive
+// window because a window measured in bytes still admits a million single byte
+// chunks and every one of them is an entry build_sack has to sort.
+const max_out_of_order = 4096
+
 // default_sack_delay is how long acknowledgement is held back to let it ride
 // with outgoing data or cover several chunks (RFC 4960 section 6.2).
 pub const default_sack_delay = 200 * time.millisecond
@@ -210,6 +215,14 @@ mut:
 	// out_of_order holds TSNs received above the cumulative point, so they can
 	// be reported as gap blocks and delivered once the gap fills.
 	out_of_order map[u32]Data
+	// receive_buffered is the total payload retained on the receive side,
+	// wherever it currently sits: the gap list above, per stream reassembly,
+	// per stream ordering or the delivery backlog. Charging it where a chunk is
+	// accepted and discharging it where a message leaves for the application is
+	// what keeps the advertised window honest regardless of which of those the
+	// bytes happen to be in. Counting one of them, as a scan over that buffer
+	// would, leaves the others free to grow unwatched.
+	receive_buffered u32
 	// seen_duplicates are TSNs received again since the last acknowledgement.
 	seen_duplicates []u32
 
