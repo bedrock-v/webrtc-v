@@ -154,28 +154,24 @@ fn (mut pc PeerConnection) connect_sctp() ! {
 	mut conn := pc.dtls_conn
 	role := pc.role
 	config := pc.config
-	// The peer's advertised maximum bounds what we may send it; ours bounds
-	// what we will accept. Taking the smaller of the two for sending is what
-	// keeps a message from being dropped at the far end.
-	mut remote_max := config.max_message_size
+	// The peer's advertised maximum bounds what we may send it; ours bounds what
+	// we will accept and it is what we advertised in turn. They are separate
+	// promises, so there is nothing to reconcile between them: a peer that
+	// accepts less than we do has not changed what we accept.
+	mut peer_max := config.max_message_size
 	if remote := pc.remote {
 		if advertised := remote.max_message_size {
-			remote_max = advertised
+			peer_max = advertised
 		}
 	}
 	pc.mu.unlock()
 
-	max_message_size := if remote_max < config.max_message_size {
-		remote_max
-	} else {
-		config.max_message_size
-	}
-
 	// RFC 8841: the DTLS client is the SCTP client.
 	mut association := sctp.Association.new(conn,
-		role:             if role == .client { sctp.Role.client } else { sctp.Role.server }
-		max_message_size: max_message_size
-		logger:           config.logger
+		role:                  if role == .client { sctp.Role.client } else { sctp.Role.server }
+		max_message_size:      config.max_message_size
+		peer_max_message_size: peer_max
+		logger:                config.logger
 	) or {
 		return PeerError{
 			reason: .transport

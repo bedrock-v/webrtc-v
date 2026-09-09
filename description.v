@@ -285,7 +285,14 @@ fn parse_remote_description(text string) !RemoteDescription {
 			remote.candidates << line
 		}
 		if size := media.max_message_size() {
-			remote.max_message_size = int(size)
+			// RFC 8841 section 6: zero is the absence of a limit, not a limit of
+			// nothing. A value past what an int holds is treated the same way
+			// because a limit that cannot be represented cannot be applied.
+			// Both then mean what a missing attribute means which leaves one
+			// case downstream instead of three.
+			if size != 0 && size <= u32(max_i32) {
+				remote.max_message_size = int(size)
+			}
 		}
 		if remote.ice_ufrag == '' {
 			if ufrag := parsed.ice_ufrag(media) {

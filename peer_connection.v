@@ -106,6 +106,13 @@ pub fn PeerConnection.new(config Configuration) !&PeerConnection {
 	}
 }
 
+// peer_max_message_size is the largest data channel message the peer said it
+// will accept once the association has been established.
+pub fn (pc &PeerConnection) peer_max_message_size() ?int {
+	association := pc.association or { return none }
+	return association.peer_max_message_size()
+}
+
 // local_fingerprint is the certificate fingerprint this connection publishes.
 pub fn (pc &PeerConnection) local_fingerprint() dtls.Fingerprint {
 	return pc.certificate.fingerprint(.sha256)

@@ -475,3 +475,32 @@ fn test_the_direction_of_an_answer_is_the_mirror_of_the_offer() {
 	assert answer.sdp.contains('a=recvonly')
 	assert sdp.Direction.sendonly.reverse() == sdp.Direction.recvonly
 }
+
+fn description_with_max_message_size(value string) string {
+	return 'v=0\r\no=- 1 1 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\n' +
+		'm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\n' +
+		'a=ice-ufrag:abcd\r\na=ice-pwd:0123456789012345678901\r\na=mid:0\r\n' +
+		'a=fingerprint:sha-256 75:74:5A:A6:A4:E5:52:F4:A7:67:4C:01:C7:EE:91:3F:21:3D:A2:E3:53:7B:6F:30:86:F2:30:AA:65:FB:04:24\r\n' +
+		'a=setup:active\r\na=sctp-port:5000\r\n' + value
+}
+
+fn test_a_peer_may_advertise_a_smaller_message_size() {
+	remote := parse_remote_description(description_with_max_message_size('a=max-message-size:65536\r\n'))!
+	assert remote.max_message_size? == 65536
+}
+
+// RFC 8841 section 6
+fn test_a_max_message_size_of_zero_means_no_limit() {
+	remote := parse_remote_description(description_with_max_message_size('a=max-message-size:0\r\n'))!
+	assert remote.max_message_size == none
+}
+
+fn test_a_max_message_size_beyond_an_int_is_not_neg_limit() {
+	remote := parse_remote_description(description_with_max_message_size('a=max-message-size:4294967295\r\n'))!
+	assert remote.max_message_size == none
+}
+
+fn test_a_desc_without_max_mesg_size_leaves_it_unset() {
+	remote := parse_remote_description(description_with_max_message_size(''))!
+	assert remote.max_message_size == none
+}

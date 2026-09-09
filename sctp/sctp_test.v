@@ -755,7 +755,7 @@ fn test_send_rejects_an_unknown_stream() {
 }
 
 fn test_send_rejects_an_oversized_message() {
-	mut pair := connect_pair(max_message_size: 1000)!
+	mut pair := connect_pair(peer_max_message_size: 1000)!
 	defer {
 		pair.client.close()
 		pair.server.close()
@@ -991,4 +991,63 @@ fn test_a_receive_on_a_closed_association_fails_rather_than_delivering_nothing()
 	if message := pair.client.try_recv() {
 		assert false, 'a closed association returned a ${message.data.len}-byte message'
 	}
+}
+
+// The two message limits
+
+fn test_a_peers_smaller_limit_does_not_shrink_what_we_accept() {
+	mut client_pipe, mut server_pipe := new_pipe_pair()
+	// The client accepts 64 KiB and advertised as much. Its peer happens to
+	// accept only 1 KiB which is a fact about the peer and not about the
+	// client. The server is free to send what the client advertised.
+	mut pair := connect_over_with(mut client_pipe, mut server_pipe, Config{
+		max_message_size:      64 * 1024
+		peer_max_message_size: 1024
+	}, Config{
+		max_message_size:      1024
+		peer_max_message_size: 64 * 1024
+	})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+
+	body := []u8{len: 16 * 1024, init: u8(index & 0xff)}
+	pair.server.send(0, ppid_binary, body, true)!
+	message := pair.client.recv(5 * time.second)!
+	assert message.data.len == body.len
+	assert message.data == body
+}
+
+// A message the peer cannot reassemble is refused here rather than sent and
+// abandoned there and the error names the limit that refused it.
+fn test_sending_is_bounded_by_what_the_peer_accepts() {
+	mut pair := connect_pair(Config{
+		max_message_size:      64 * 1024
+		peer_max_message_size: 1024
+	})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	pair.client.send(0, ppid_binary, []u8{len: 2048}, true) or {
+		assert err is AssociationError
+		if err is AssociationError {
+			assert err.reason == .too_large
+		}
+		assert err.msg().contains('the peer accepts')
+		return
+	}
+	assert false, 'a message the peer cannot reassemble must be refused here'
+}
+
+fn test_reassembly_is_bounded_by_our_own_limit() {
+	mut stream := InboundStream{
+		identifier: 1
+	}
+	// 4 KiB in two fragments, against a 64 KiB limit of our own.
+	assert stream.accept(make_data(1, 0, 'a'.repeat(2048), true, false, false), 64 * 1024)!.len == 0
+	messages := stream.accept(make_data(2, 0, 'b'.repeat(2048), false, true, false), 64 * 1024)!
+	assert messages.len == 1
+	assert messages[0].data.len == 4096
 }
