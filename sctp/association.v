@@ -77,6 +77,11 @@ pub const default_rto_max = 60 * time.second
 // association is declared dead.
 pub const default_max_retransmits = 10
 
+// max_out_of_order bounds the gap list by entry count as well as by the receive
+// window because a window measured in bytes still admits a million single byte
+// chunks and every one of them is an entry build_sack has to sort.
+const max_out_of_order = 4096
+
 // default_sack_delay is how long acknowledgement is held back to let it ride
 // with outgoing data or cover several chunks (RFC 4960 section 6.2).
 pub const default_sack_delay = 200 * time.millisecond
@@ -106,7 +111,13 @@ pub:
 	role Role = .client
 	// streams is how many streams to offer in each direction.
 	streams u16 = default_streams
-	// receive_window is the buffer space advertised to the peer.
+	// receive_window is the buffer space advertised to the peer,and the figure
+	// handle_data holds arriving data to.
+	//
+	// It is closely rather than exactly enforced. The chunk at the cumulative
+	// point is accepted even when the buffer is full because it is the one that
+	// releases everything waiting behind it, so retention can exceed this by one
+	// chunk while a gap is being closed.
 	receive_window u32 = default_receive_window
 	// max_message_size bounds one reassembled message.
 	max_message_size int           = default_max_message_size
@@ -210,6 +221,14 @@ mut:
 	// out_of_order holds TSNs received above the cumulative point, so they can
 	// be reported as gap blocks and delivered once the gap fills.
 	out_of_order map[u32]Data
+	// receive_buffered is the total payload retained on the receive side,
+	// wherever it currently sits: the gap list above, per stream reassembly,
+	// per stream ordering or the delivery backlog. Charging it where a chunk is
+	// accepted and discharging it where a message leaves for the application is
+	// what keeps the advertised window honest regardless of which of those the
+	// bytes happen to be in. Counting one of them, as a scan over that buffer
+	// would, leaves the others free to grow unwatched.
+	receive_buffered u32
 	// seen_duplicates are TSNs received again since the last acknowledgement.
 	seen_duplicates []u32
 

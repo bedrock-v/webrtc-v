@@ -439,9 +439,11 @@ fn test_forward_tsn_skips_an_ordered_stream() {
 	// Sequence 2 arrives while 0 and 1 are still missing.
 	assert stream.accept(make_data(3, 2, 'third', true, true, false), default_max_message_size)!.len == 0
 	// The sender abandons 0 and 1; skipping to 1 releases what was waiting.
-	messages := stream.skip_to(1)
+	messages, abandoned := stream.skip_to(1)
 	assert messages.len == 1
 	assert messages[0].data == 'third'.bytes()
+	// Nothing was buffered for 0 or 1, so nothing was abandoned with them.
+	assert abandoned == 0
 }
 
 // -- Association over a pipe -----------------------------------------------
@@ -993,6 +995,133 @@ fn test_a_receive_on_a_closed_association_fails_rather_than_delivering_nothing()
 	}
 }
 
+// Receive window
+
+// IdleLink accepts writes and never delivers anything which is all a receive
+// side needs from its transport.
+struct IdleLink {
+mut:
+	writes int
+}
+
+fn (mut l IdleLink) write(data []u8) !int {
+	l.writes++
+	return data.len
+}
+
+fn (mut l IdleLink) read(timeout time.Duration) ![]u8 {
+	return error('idle')
+}
+
+fn (l &IdleLink) max_write() int {
+	return 1200
+}
+
+fn established_receiver(window u32) &Association {
+	mut a := Association.new(&IdleLink{}, role: .server, receive_window: window, streams: 1024) or {
+		panic(err)
+	}
+	a.state = .established
+	return a
+}
+
+fn whole_message(tsn u32, stream u16, sequence u16, size int) Data {
+	return Data{
+		tsn:                    tsn
+		stream_identifier:      stream
+		stream_sequence_number: sequence
+		user_data:              []u8{len: size}
+		beginning:              true
+		end:                    true
+	}
+}
+
+fn test_a_peer_never_closes_gap_is_held_to_window() {
+	window := u32(64 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 100
+
+	// 101 would close the gap and is never sent.
+	for i in 0 .. 5000 {
+		a.handle_data(whole_message(u32(102 + i), 0, u16(i), 1024)) or { break }
+	}
+
+	mut held := 0
+	for _, data in a.out_of_order {
+		held += data.user_data.len
+	}
+	assert u32(held) <= window, 'buffered ${held} bytes against a ${window} byte window'
+	assert a.available_receive_window() == 0, 'a full buffer should advertise no room'
+}
+
+fn test_a_peer_never_finishes_a_message_held_to_window() {
+	window := u32(64 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 0
+
+	// Every chunk is contiguous, each leaves the gap list at once and lands
+	// in reassembly. None of them ends its message.
+	for i in 0 .. 5000 {
+		a.handle_data(Data{
+			tsn:                    u32(1 + i)
+			stream_identifier:      0
+			stream_sequence_number: u16(i % 65535)
+			user_data:              []u8{len: 1024}
+			beginning:              true
+			end:                    false
+			unordered:              true
+		}) or { break }
+	}
+
+	mut retained := 0
+	for _, stream in a.inbound {
+		for _, partial in stream.partial {
+			retained += partial.total_bytes
+		}
+	}
+	assert u32(retained) <= window, 'reassembly retained ${retained} bytes against a ${window} byte window'
+}
+
+fn test_the_gap_list_is_bounded_by_entry_count() {
+	mut a := established_receiver(64 * 1024 * 1024)
+	a.last_received_tsn = 100
+
+	for i in 0 .. max_out_of_order * 2 {
+		a.handle_data(whole_message(u32(102 + i), 0, u16(i % 65535), 1)) or { break }
+	}
+	assert a.out_of_order.len <= max_out_of_order
+}
+
+fn test_a_full_buffer_still_accepts_the_chunk_that_drains_it() {
+	mut a := established_receiver(4096)
+	a.last_received_tsn = 100
+
+	// Fill the window with chunks that cannot be delivered yet.
+	for i in 0 .. 32 {
+		a.handle_data(whole_message(u32(102 + i), 0, u16(1 + i), 512)) or { break }
+	}
+	assert a.available_receive_window() == 0, 'the window should be full'
+
+	// 101 closes the gap. Everything contiguous behind it becomes deliverable.
+	a.handle_data(whole_message(101, 0, 0, 512))!
+	assert a.last_received_tsn > 101, 'the closing chunk did not drain the backlog'
+	assert a.available_receive_window() > 0, 'draining did not return the window'
+}
+
+// test_the_window_returns_as_messages_are_delivered : Delivered bytes are
+// no longer retained, so the room they occupied comes back.
+fn test_the_window_returns_as_messages_are_delivered() {
+	window := u32(64 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 0
+
+	for i in 0 .. 8 {
+		a.handle_data(whole_message(u32(1 + i), 0, u16(i), 1024))!
+	}
+	assert a.available_receive_window() == window, 'delivered messages should not stay charged'
+	assert a.receive_buffered == 0
+}
+
 fn test_messages_past_the_delivery_queue_are_still_delivered() {
 	mut pipe, _ := new_pipe_pair()
 	mut a := Association.new(pipe, role: .server)!
@@ -1039,25 +1168,21 @@ fn test_a_backlog_is_delivered_in_the_order_it_was_queued() {
 }
 
 fn test_a_collected_msg_stops_counting_against_the_window() {
-	mut pipe, _ := new_pipe_pair()
-	mut a := Association.new(pipe, role: .server, receive_window: 4 * 1024 * 1024)!
-	a.state = .established
+	window := u32(4 * 1024 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 0
 
 	count := 400
-	for _ in 0 .. count {
-		a.forward(Message{
-			stream_identifier: 0
-			data:              []u8{len: 1024}
-		})
+	for i in 0 .. count {
+		a.handle_data(whole_message(u32(1 + i), 0, u16(i), 1024))!
 	}
 	assert a.held_len() > 0, 'the delivery queue should have overflowed'
-	before := a.available_receive_window()
+	assert a.receive_buffered > 0, 'waiting messages should still be charged'
+	assert a.available_receive_window() < window
 
 	for _ in 0 .. 32 {
 		a.try_recv() or { break }
 	}
-	assert a.available_receive_window() > before, 'collected messages must return their room'
-
 	for i in 0 .. a.held_head {
 		assert a.held[i].data.len == 0, 'slot ${i} was delivered but still holds its payload'
 	}
@@ -1065,7 +1190,20 @@ fn test_a_collected_msg_stops_counting_against_the_window() {
 	for _ in 0 .. count {
 		a.try_recv() or { break }
 	}
+	assert a.receive_buffered == 0, 'collected messages must give their room back'
+	assert a.available_receive_window() == window
 	assert a.held_len() == 0
 	assert a.held.len == 0, 'the backing array should be released once the backlog is empty'
 	assert a.held_head == 0
+}
+
+fn test_sender_that_never_leaves_a_gap_is_still_held_to_window() {
+	window := u32(64 * 1024)
+	mut a := established_receiver(window)
+	a.last_received_tsn = 0
+
+	for i in 0 .. 5000 {
+		a.handle_data(whole_message(u32(1 + i), 0, u16(i % 65535), 1024)) or { break }
+	}
+	assert a.receive_buffered <= window, 'retained ${a.receive_buffered} bytes against a ${window} byte window'
 }

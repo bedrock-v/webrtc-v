@@ -28,6 +28,13 @@ pub const default_max_message_size = 262144
 // max_reassembly_fragments bounds how many fragments one message may take.
 const max_reassembly_fragments = 4096
 
+// max_partial_messages bounds how many messages one stream may have part way
+// through at once. Their bytes are already counted against the receive window,
+// but a peer that begins thousands of messages and finishes none would hold an
+// entry and a fragment list for each and the per message overhead is what a
+// byte count does not see.
+const max_partial_messages = 64
+
 // InboundStream reassembles and orders the messages arriving on one stream.
 struct InboundStream {
 mut:
@@ -85,6 +92,12 @@ fn (mut s InboundStream) accept(data Data, max_message_size int) ![]Message {
 	}
 
 	mut partial := s.partial[data.stream_sequence_number] or {
+		if s.partial.len >= max_partial_messages {
+			return DecodeError{
+				reason: .bad_value
+				detail: 'stream ${data.stream_identifier} has ${s.partial.len} messages part way through, more than ${max_partial_messages}'
+			}
+		}
 		PartialMessage{
 			payload_protocol_identifier: data.payload_protocol_identifier
 			unordered:                   data.unordered
@@ -160,13 +173,24 @@ fn (mut s InboundStream) deliver_ordered(sequence u16, message Message) []Messag
 
 // skip_to advances the ordered sequence past messages the sender abandoned,
 // which is what a FORWARD_TSN means for an ordered stream.
-fn (mut s InboundStream) skip_to(sequence u16) []Message {
+//
+// It returns the messages that became deliverable and the number of bytes it
+// abandoned. Those bytes were charged against the receive window when their
+// chunks arrived and nothing else is in a position to notice they have gone.
+fn (mut s InboundStream) skip_to(sequence u16) ([]Message, u32) {
 	// The comparison is on the wrapping 16-bit space, so a stream that has been
 	// running long enough to wrap is not stalled by it.
 	if !sequence_after(sequence, s.next_sequence) && sequence != s.next_sequence {
-		return []Message{}
+		return []Message{}, 0
 	}
+	mut abandoned := u32(0)
 	for s.next_sequence != sequence + 1 {
+		if partial := s.partial[s.next_sequence] {
+			abandoned += u32(partial.total_bytes)
+		}
+		if ready := s.ready[s.next_sequence] {
+			abandoned += u32(ready.data.len)
+		}
 		s.partial.delete(s.next_sequence)
 		s.ready.delete(s.next_sequence)
 		s.next_sequence++
@@ -178,7 +202,7 @@ fn (mut s InboundStream) skip_to(sequence u16) []Message {
 		s.ready.delete(s.next_sequence)
 		s.next_sequence++
 	}
-	return out
+	return out, abandoned
 }
 
 // OutboundStream tracks the sequence numbering for one stream we send on.
