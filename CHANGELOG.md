@@ -11,6 +11,76 @@ breaking changes are listed under **Changed** with a migration note.
 
 Nothing yet.
 
+## [0.1.2] - 2026-09-09
+
+Two data channel defects that only appear under load and a build fix.
+
+### Fixed
+
+- **`sctp`**: the advertised receive window was never applied to arriving data.
+  `my_receive_window` reached the peer in the INIT, the INIT-ACK and every SACK
+  but nothing on the receive path consulted it, so a peer chose how much memory
+  this end spent. Sending transmission sequence numbers above the cumulative
+  point and never closing the gap retained 20 MB against a 64 KiB window and
+  because the acknowledgement is rebuilt by sorting the gap list, one SACK cost
+  33 ms at 80,000 outstanding chunks. Retention is now counted where a chunk is
+  accepted and released where a message leaves for the application, so it covers
+  reassembly and the delivery backlog as well as the gap list rather than
+  whichever container a scan happened to look at.
+- **`sctp`**: the chunk at the cumulative acknowledgement point is exempt from
+  the window, because it is the one that releases everything waiting behind it.
+  The test for it was only whether the chunk came next in sequence, which for a
+  sender that never leaves a gap is every chunk, so the window applied to
+  nothing at all for in order traffic. It now also requires a gap to be open.
+  Retention can still exceed the window by one chunk while a gap is closing;
+  it is closely rather than exactly enforced.
+- **`sctp`**: the gap list and per stream reassembly are bounded by count as
+  well as by bytes. A window measured in bytes still admits a million one-byte
+  chunks, and a stream can hold thousands of messages begun and never finished
+  whose payloads fit inside it.
+- **`sctp`**: messages set aside when the delivery queue was full were appended
+  to a backlog nothing ever read. An application that fell behind lost them
+  permanently and the memory was never returned: 400 messages through a queue
+  256 deep delivered 256. The backlog is now drained wherever it can make
+  progress, in the order it was queued.
+
+### Changed
+
+- **`internal/aes`**: the reference comparisons against the standard library
+  follow `crypto.aes.new_cipher` which now returns a Result upstream. Building
+  the test suite requires a V new enough to have that signature.
+
+## [0.1.1] - 2026-08-31
+
+Connection establishment and handshake reliability.
+
+### Fixed
+
+- **`ice`**: data was accepted only from the selected candidate pair. The
+  selected pair decides where data is sent, not where it may arrive from: a peer
+  keeps using the path it chose until it learns of ours, and on a host with
+  several interfaces the two differ for as long as the checks run - long enough
+  to lose a whole DTLS flight. Any pair a check has succeeded on is accepted,
+  which still refuses an address that never authenticated itself.
+- **`ice`**: an agent never connected to a peer that signalled all of its
+  candidates at once instead of trickling them. Resolving a `.local` candidate
+  and opening a relay permission each spawn a thread, and either could run
+  before gathering finished, which left the agent loop unstarted and no check
+  ever sent.
+- **`dtls`**: a record was dropped when the ChangeCipherSpec that unlocks its
+  epoch was still in the same datagram. A peer sends its ChangeCipherSpec and
+  its Finished together, and the Finished cannot be read until the record ahead
+  of it has been acted on, which happens only once the whole datagram has been
+  taken apart. Records from the next epoch are now held, up to a bound.
+- **`dtls`**: a retransmitted flight was rebuilt rather than resent as it was
+  first sent. A peer that missed the ChangeCipherSpec was left waiting on an
+  epoch it could not enter.
+- **`datachannel`**, **`sctp`**: a receive on a closed V channel completes with
+  the zero value, so an empty message was handed to callers as though the peer
+  had sent it. It is the association ending, and is now reported as closure.
+- **`sctp`**: a user initiated abort is how a peer says it is leaving on
+  purpose, and was logged as a warning.
+
 ## [0.1.0] - 2026-08-21
 
 The first release: the whole stack, from the codecs up to a peer connection
@@ -159,5 +229,7 @@ has no track layer above it, and the public API may still change before 1.0.
   completes with the zero value. Callers dereferenced it and crashed on
   shutdown.
 
-[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/bedrock-v/webrtc-v/releases/tag/v0.1.0
