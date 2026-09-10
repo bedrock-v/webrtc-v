@@ -475,3 +475,54 @@ fn test_the_direction_of_an_answer_is_the_mirror_of_the_offer() {
 	assert answer.sdp.contains('a=recvonly')
 	assert sdp.Direction.sendonly.reverse() == sdp.Direction.recvonly
 }
+
+fn test_channel_parameters_are_readable_before_the_transports_come_up() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+
+	mut plain := pc.create_data_channel('chat')!
+	assert plain.label == 'chat'
+	assert plain.ordered()
+	assert plain.reliable()
+	assert !plain.negotiated()
+	assert plain.protocol() == ''
+	assert plain.id() == none
+
+	mut agreed := pc.create_data_channel('agreed', negotiated: true, id: u16(42), protocol: 'nethernet')!
+	assert agreed.negotiated()
+	assert agreed.protocol() == 'nethernet'
+
+	mut lossy := pc.create_data_channel('lossy', max_retransmits: u16(0))!
+	assert !lossy.reliable()
+	assert !lossy.negotiated()
+	assert lossy.protocol() == ''
+}
+
+fn test_channel_parameters_survive_the_open_handshake() {
+	mut caller := PeerConnection.new(logger: quiet_logger())!
+	mut callee := PeerConnection.new(logger: quiet_logger())!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	mut sender := caller.create_data_channel('chat', protocol: 'nethernet')!
+	negotiate(mut caller, mut callee)!
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+
+	mut receiver := callee.accept_data_channel(10 * time.second)!
+	assert receiver.label == 'chat'
+
+	assert receiver.protocol() == 'nethernet'
+
+	assert !receiver.negotiated()
+	assert receiver.ordered()
+	assert receiver.reliable()
+
+	assert sender.protocol() == 'nethernet'
+	assert !sender.negotiated()
+	assert sender.id() != none
+}
