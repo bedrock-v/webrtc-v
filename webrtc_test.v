@@ -490,7 +490,11 @@ fn test_channel_parameters_are_readable_before_the_transports_come_up() {
 	assert plain.protocol() == ''
 	assert plain.id() == none
 
-	mut agreed := pc.create_data_channel('agreed', negotiated: true, id: u16(42), protocol: 'nethernet')!
+	mut agreed := pc.create_data_channel('agreed',
+		negotiated: true
+		id:         u16(42)
+		protocol:   'nethernet'
+	)!
 	assert agreed.negotiated()
 	assert agreed.protocol() == 'nethernet'
 
@@ -536,8 +540,16 @@ fn test_a_negotiated_channel_reports_from_the_live_channel() {
 	}
 
 	// Both sides declare the same stream; neither opens it through DCEP.
-	mut ours := caller.create_data_channel('agreed', negotiated: true, id: u16(42), protocol: 'nethernet')!
-	mut theirs := callee.create_data_channel('agreed', negotiated: true, id: u16(42), protocol: 'nethernet')!
+	mut ours := caller.create_data_channel('agreed',
+		negotiated: true
+		id:         u16(42)
+		protocol:   'nethernet'
+	)!
+	mut theirs := callee.create_data_channel('agreed',
+		negotiated: true
+		id:         u16(42)
+		protocol:   'nethernet'
+	)!
 	negotiate(mut caller, mut callee)!
 	caller.wait_connected(30 * time.second)!
 	callee.wait_connected(30 * time.second)!
