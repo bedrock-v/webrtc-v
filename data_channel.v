@@ -100,6 +100,30 @@ pub fn (mut d DataChannel) reliable() bool {
 	return channel.reliable()
 }
 
+// negotiated reports whether the channel was declared by both applications
+// rather than opened through DCEP.
+//
+// A peer that opens a channel this side expected to be negotiated, or the
+// reverse, is not speaking the protocol the application thinks it is.
+// This is worth being able to check rather than assume.
+pub fn (mut d DataChannel) negotiated() bool {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return d.options.negotiated
+	}
+	return channel.negotiated
+}
+
+// protocol is the subprotocol name the channel was opened with, empty when it
+// carries none.
+pub fn (mut d DataChannel) protocol() string {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return d.options.protocol
+	}
+	return channel.protocol
+}
+
 // send_text sends a string message.
 pub fn (mut d DataChannel) send_text(text string) ! {
 	d.send(text.bytes(), true)!

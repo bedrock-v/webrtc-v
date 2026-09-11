@@ -475,3 +475,101 @@ fn test_the_direction_of_an_answer_is_the_mirror_of_the_offer() {
 	assert answer.sdp.contains('a=recvonly')
 	assert sdp.Direction.sendonly.reverse() == sdp.Direction.recvonly
 }
+
+fn test_channel_parameters_are_readable_before_the_transports_come_up() {
+	mut pc := PeerConnection.new()!
+	defer {
+		pc.close()
+	}
+
+	mut plain := pc.create_data_channel('chat')!
+	assert plain.label == 'chat'
+	assert plain.ordered()
+	assert plain.reliable()
+	assert !plain.negotiated()
+	assert plain.protocol() == ''
+	assert plain.id() == none
+
+	mut agreed := pc.create_data_channel('agreed',
+		negotiated: true
+		id:         u16(42)
+		protocol:   'nethernet'
+	)!
+	assert agreed.negotiated()
+	assert agreed.protocol() == 'nethernet'
+
+	mut lossy := pc.create_data_channel('lossy', max_retransmits: u16(0))!
+	assert !lossy.reliable()
+	assert !lossy.negotiated()
+	assert lossy.protocol() == ''
+}
+
+fn test_channel_parameters_survive_the_open_handshake() {
+	mut caller := PeerConnection.new(logger: quiet_logger())!
+	mut callee := PeerConnection.new(logger: quiet_logger())!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	mut sender := caller.create_data_channel('chat', protocol: 'nethernet')!
+	negotiate(mut caller, mut callee)!
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+
+	mut receiver := callee.accept_data_channel(10 * time.second)!
+	assert receiver.label == 'chat'
+
+	assert receiver.protocol() == 'nethernet'
+
+	assert !receiver.negotiated()
+	assert receiver.ordered()
+	assert receiver.reliable()
+
+	assert sender.protocol() == 'nethernet'
+	assert !sender.negotiated()
+	assert sender.id() != none
+}
+
+fn test_a_negotiated_channel_reports_from_the_live_channel() {
+	mut caller := PeerConnection.new(logger: quiet_logger())!
+	mut callee := PeerConnection.new(logger: quiet_logger())!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	// Both sides declare the same stream; neither opens it through DCEP.
+	mut ours := caller.create_data_channel('agreed',
+		negotiated: true
+		id:         u16(42)
+		protocol:   'nethernet'
+	)!
+	mut theirs := callee.create_data_channel('agreed',
+		negotiated: true
+		id:         u16(42)
+		protocol:   'nethernet'
+	)!
+	negotiate(mut caller, mut callee)!
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+
+	mut sides := [ours, theirs]
+	for mut side in sides {
+		id := side.id() or {
+			assert false, 'the negotiated channel was never bound to a live channel'
+			return
+		}
+		assert id == 42
+		assert side.state() == .open
+		assert side.negotiated()
+		assert side.protocol() == 'nethernet'
+		assert side.ordered()
+		assert side.reliable()
+	}
+
+	// Declaring the same id on both sides has to produce one channel.
+	ours.send_text('agreed without a handshake')!
+	message := theirs.recv(5 * time.second)!
+	assert message.text() == 'agreed without a handshake'
+}
