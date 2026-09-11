@@ -526,3 +526,38 @@ fn test_channel_parameters_survive_the_open_handshake() {
 	assert !sender.negotiated()
 	assert sender.id() != none
 }
+
+fn test_a_negotiated_channel_reports_from_the_live_channel() {
+	mut caller := PeerConnection.new(logger: quiet_logger())!
+	mut callee := PeerConnection.new(logger: quiet_logger())!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	// Both sides declare the same stream; neither opens it through DCEP.
+	mut ours := caller.create_data_channel('agreed', negotiated: true, id: u16(42), protocol: 'nethernet')!
+	mut theirs := callee.create_data_channel('agreed', negotiated: true, id: u16(42), protocol: 'nethernet')!
+	negotiate(mut caller, mut callee)!
+	caller.wait_connected(30 * time.second)!
+	callee.wait_connected(30 * time.second)!
+
+	mut sides := [ours, theirs]
+	for mut side in sides {
+		id := side.id() or {
+			assert false, 'the negotiated channel was never bound to a live channel'
+			return
+		}
+		assert id == 42
+		assert side.state() == .open
+		assert side.negotiated()
+		assert side.protocol() == 'nethernet'
+		assert side.ordered()
+		assert side.reliable()
+	}
+
+	// Declaring the same id on both sides has to produce one channel.
+	ours.send_text('agreed without a handshake')!
+	message := theirs.recv(5 * time.second)!
+	assert message.text() == 'agreed without a handshake'
+}
