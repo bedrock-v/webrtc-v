@@ -74,10 +74,8 @@ browser's privacy-preserving candidates still produce a local-network path.
 Registering such a name for this end's own candidates is not implemented, so
 this end's offers carry addresses.
 
-**Platforms.** Linux, macOS and the BSDs are supported and tested. Windows
-compiles and works, but interface enumeration falls back to finding one address
-per family rather than all of them; see the note in
-[`ice/interfaces_windows.c.v`](ice/interfaces_windows.c.v).
+**Platforms.** Linux, macOS, the BSDs and Windows are supported. Local addresses
+are gathered from every active network interface on each platform.
 
 ## Install
 
