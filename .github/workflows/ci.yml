@@ -19,16 +19,38 @@ concurrency:
 
 env:
   VFLAGS: -no-parallel
+  V_REF: 316db75a07afe50a17c5e273a18d10af8e8068d1
+  VC_REF: d31eceeb33b7356676c7fba0a80736d370923c34
 
 jobs:
   format:
     name: Format
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webrtc-v
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Verify formatting
@@ -37,11 +59,31 @@ jobs:
   vet:
     name: Vet
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webrtc-v
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Vet
@@ -50,15 +92,35 @@ jobs:
   test:
     name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: webrtc-v
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Run the test suite
@@ -72,28 +134,45 @@ jobs:
   test-windows:
     name: Test (windows, informational)
     runs-on: windows-latest
-    # Windows is not a supported platform yet: interface enumeration falls back
-    # to one address per family, and on a runner that finds nothing at all, so
-    # every test that opens a socket fails. This job records where Windows
-    # stands without reporting a failure - `continue-on-error` alone keeps the
-    # workflow green but still marks the check red, which reads as a broken
-    # build rather than an unfinished port.
+    defaults:
+      run:
+        working-directory: webrtc-v
+    # Keep the full Windows suite informational until its remaining platform
+    # differences are resolved. The ICE interface enumeration itself is covered
+    # here on a real Windows runner.
     #
     # It goes green again by making the port work, not by deleting this job.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        shell: pwsh
+        working-directory: .
+        run: |
+          .\makev.bat --local -gcc
+          $env:GITHUB_WORKSPACE | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Link the module into V's module path
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path "$HOME\.vmodules" | Out-Null
           New-Item -ItemType Junction -Path "$HOME\.vmodules\webrtc" -Target "$PWD"
       # No make on the Windows runner, so the paths from the Makefile are
-      # repeated here. They are still paths rather than ".", because setup-v
-      # puts the V compiler in the workspace.
+      # repeated here. They are still paths rather than ".", because the V
+      # checkout and this repository share the workspace.
       - name: Run the test suite
         shell: pwsh
         run: |
@@ -105,7 +184,7 @@ jobs:
           if ($code -eq 0) {
             "Windows: the suite passed." | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
           } else {
-            "Windows: the suite failed (exit $code). Windows is not a supported platform yet - see the note on this job and in the README. The log above has the detail." |
+            "Windows: the suite failed (exit $code). This job remains informational while the remaining platform differences are resolved. The log above has the detail." |
               Tee-Object -Append $env:GITHUB_STEP_SUMMARY
           }
           # Reported, not enforced: this is the state of an unfinished port.
@@ -114,6 +193,9 @@ jobs:
   build:
     name: Build (${{ matrix.mode }})
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webrtc-v
     strategy:
       fail-fast: false
       matrix:
@@ -121,10 +203,27 @@ jobs:
         # V's dead-code elimination, which has broken this project before.
         mode: [debug, prod]
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Build every module as a shared library
@@ -144,11 +243,31 @@ jobs:
   examples:
     name: Examples
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webrtc-v
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Build every example
@@ -173,11 +292,31 @@ jobs:
   hardening:
     name: Hardening
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webrtc-v
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
       # The decoders take attacker-controlled input, and their tests feed them

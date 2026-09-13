@@ -1,66 +1,88 @@
 module ice
 
-import net
 import webrtc.netaddr
-import webrtc.transport
 
-// Windows has no getifaddrs. Enumerating adapters properly means calling
-// GetAdaptersAddresses and walking a linked list of variable-length records,
-// which is on the roadmap; until then this fallback finds the address the
-// routing table would actually use.
-//
-// The trick is that connecting a UDP socket performs no I/O - it only fixes the
-// destination, which makes the kernel choose a source address and bind to it.
-// Reading that address back gives the primary address for each family without a
-// packet leaving the machine.
-//
-// The limitation is real and worth stating plainly: on a multi-homed host this
-// finds one address per family rather than all of them, so a path that would
-// only work over a secondary interface will not be discovered. Server-reflexive
-// candidates still work, because they are gathered from these same sockets.
-const probe_targets = {
-	'ipv4': '198.51.100.1:9'
-	'ipv6': '[2001:db8::1]:9'
-}
+#flag windows -liphlpapi
 
+#include "@VMODROOT/ice/interfaces_windows.h"
+
+fn C.webrtc_v_get_interface_addresses(&voidptr, &u32) u32
+
+fn C.webrtc_v_free_interface_addresses(voidptr)
+
+fn C.webrtc_v_interface_family(voidptr, u32) int
+
+fn C.webrtc_v_interface_bytes(voidptr, u32) &u8
+
+fn C.webrtc_v_interface_scope_id(voidptr, u32) u32
+
+fn C.webrtc_v_interface_is_up(voidptr, u32) int
+
+fn C.webrtc_v_interface_is_loopback(voidptr, u32) int
+
+fn C.webrtc_v_interface_name(voidptr, u32) &char
+
+fn C.webrtc_v_interface_adapter_name(voidptr, u32) &char
+
+const windows_af_inet = 2
+const windows_af_inet6 = 23
+
+// local_interface_addresses enumerates every unicast address on an active
+// Windows adapter. Both the friendly interface name and the stable adapter name
+// are accepted by InterfaceOptions.interfaces.
 pub fn local_interface_addresses(opts InterfaceOptions) ![]netaddr.IpAddr {
+	mut addresses := voidptr(unsafe { nil })
+	mut count := u32(0)
+	status := C.webrtc_v_get_interface_addresses(&addresses, &count)
+	if status != 0 {
+		return AgentError{
+			reason: .transport
+			detail: 'GetAdaptersAddresses failed with Windows error ${status}'
+		}
+	}
+	defer {
+		C.webrtc_v_free_interface_addresses(addresses)
+	}
+
 	mut out := []netaddr.IpAddr{}
+	for i in u32(0) .. count {
+		if C.webrtc_v_interface_is_up(addresses, i) == 0 {
+			continue
+		}
+		is_loopback_iface := C.webrtc_v_interface_is_loopback(addresses, i) != 0
+		if is_loopback_iface && !opts.include_loopback {
+			continue
+		}
 
-	for family, target in probe_targets {
-		if family == 'ipv4' && !opts.include_ipv4 {
+		name := unsafe { cstring_to_vstring(C.webrtc_v_interface_name(addresses, i)) }
+		adapter_name := unsafe {
+			cstring_to_vstring(C.webrtc_v_interface_adapter_name(addresses, i))
+		}
+		if opts.interfaces.len > 0 && name !in opts.interfaces && adapter_name !in opts.interfaces {
 			continue
 		}
-		if family == 'ipv6' && !opts.include_ipv6 {
-			continue
-		}
-		mut conn := net.dial_udp(target) or { continue }
-		addr := transport.local_addr(conn) or {
-			conn.close() or {}
-			continue
-		}
-		conn.close() or {}
 
-		if !is_candidate_address(addr.ip, opts) {
-			continue
+		family := match C.webrtc_v_interface_family(addresses, i) {
+			windows_af_inet { netaddr.Family.ipv4 }
+			windows_af_inet6 { netaddr.Family.ipv6 }
+			else { continue }
 		}
-		if out.any(it.equal(addr.ip)) {
-			continue
-		}
-		out << addr.ip
-	}
-
-	if opts.include_loopback {
-		for candidate in [netaddr.IpAddr.parse('127.0.0.1') or { netaddr.ipv4_unspecified },
-			netaddr.IpAddr.parse('::1') or { netaddr.ipv6_unspecified }] {
-			if !is_candidate_address(candidate, opts) {
-				continue
+		mut octets := []u8{len: family.octet_len()}
+		unsafe { vmemcpy(octets.data, C.webrtc_v_interface_bytes(addresses, i), octets.len) }
+		mut addr := netaddr.IpAddr.from_octets(family, octets) or { continue }
+		if family == .ipv6 && addr.is_link_local() {
+			scope := C.webrtc_v_interface_scope_id(addresses, i)
+			if scope != 0 {
+				addr = addr.with_zone(scope.str())
 			}
-			if out.any(it.equal(candidate)) {
-				continue
-			}
-			out << candidate
 		}
+		if !is_candidate_address(addr, opts) {
+			continue
+		}
+		if out.any(it.equal(addr)) {
+			continue
+		}
+		out << addr
 	}
-
 	return out
 }
