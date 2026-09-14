@@ -172,6 +172,7 @@ pub fn (mut a Agent) close() {
 			continue
 		}
 		socket.closed = true
+		a.release_port(socket.leased_port)
 		if socket.relay != unsafe { nil } {
 			// Closing a relay releases the allocation, which frees the relay's
 			// port and quota now rather than when the lifetime runs out.

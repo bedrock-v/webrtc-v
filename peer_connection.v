@@ -689,6 +689,7 @@ fn (mut pc PeerConnection) ensure_agent() !&ice.Agent {
 		turn_servers:  relays
 		interfaces:    pc.config.interfaces
 		gather_policy: pc.config.ice_gather_policy
+		port_pool:     pc.config.ice_port_pool
 		logger:        pc.config.logger
 	) or {
 		return PeerError{

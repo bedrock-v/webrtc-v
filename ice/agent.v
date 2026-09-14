@@ -120,6 +120,88 @@ pub fn (p GatherPolicy) str() string {
 	}
 }
 
+// PortPool hands out the local ports host candidates bind, within a fixed
+// range.
+//
+// Letting the kernel choose is the normal case and needs none of this. A server
+// behind a firewall needs the opposite: an operator can only open the ports
+// they were told about, and an ephemeral port per peer is not something anybody
+// can write a rule for.
+//
+// The pool exists because a range alone is not enough to keep two agents apart.
+// UDP sockets are opened with SO_REUSEADDR, so the kernel will happily bind the
+// same port twice and then deliver a peer's packets to only one of the two.
+// Every agent sharing a range therefore has to share one pool, which is the
+// only thing that knows which ports are already spoken for.
+@[heap]
+pub struct PortPool {
+	min u16
+	max u16
+mut:
+	mu    &sync.Mutex = sync.new_mutex()
+	taken map[u16]bool
+}
+
+// PortPool.new builds a pool over an inclusive range. A range that could never
+// bind is refused here rather than surfacing later as an unexplained gathering
+// failure.
+pub fn PortPool.new(min u16, max u16) !&PortPool {
+	if min == 0 || max == 0 {
+		return AgentError{
+			reason: .transport
+			detail: 'port range ${min}-${max} has an open end; set both bounds or neither'
+		}
+	}
+	if min > max {
+		return AgentError{
+			reason: .transport
+			detail: 'port range ${min}-${max} is inverted'
+		}
+	}
+	return &PortPool{
+		min: min
+		max: max
+		mu:  sync.new_mutex()
+	}
+}
+
+// ports is how many the pool covers, which is the ceiling on how many host
+// candidates every agent sharing it can hold at once.
+pub fn (p &PortPool) ports() int {
+	return int(p.max) - int(p.min) + 1
+}
+
+// lease claims a port, or returns none when every one is in use.
+//
+// The walk starts at a random offset: from the bottom every time, several
+// agents starting together would queue up on the same first port.
+fn (mut p PortPool) lease() ?u16 {
+	span := p.ports()
+	offset := randutil.next_u64() or { 0 } % u64(span)
+
+	p.mu.lock()
+	defer {
+		p.mu.unlock()
+	}
+	for attempt in 0 .. span {
+		port := u16(int(p.min) + int((offset + u64(attempt)) % u64(span)))
+		if port in p.taken {
+			continue
+		}
+		p.taken[port] = true
+		return port
+	}
+	return none
+}
+
+// release gives a port back. A pool that never sees one returned runs out after
+// as many connections as it has ports, so this belongs with closing the socket.
+fn (mut p PortPool) release(port u16) {
+	p.mu.lock()
+	p.taken.delete(port)
+	p.mu.unlock()
+}
+
 @[params]
 pub struct AgentConfig {
 pub:
@@ -136,6 +218,10 @@ pub:
 	interfaces  InterfaceOptions
 	// gather_policy limits which candidate types are gathered.
 	gather_policy GatherPolicy = .all
+	// port_pool hands out the local ports host candidates bind. Leave it unset to
+	// let the kernel choose. Every agent that should stay inside one range has to
+	// be given the same pool.
+	port_pool ?&PortPool
 	// turn_servers are relays to allocate an address on. A relayed candidate is
 	// the last resort and the only one that works when both peers are behind a
 	// NAT that will not hairpin.
@@ -171,6 +257,9 @@ struct LocalSocket {
 mut:
 	conn &net.UdpConn = unsafe { nil }
 	base netaddr.SocketAddr
+	// leased_port is the port a PortPool handed out for this socket, so closing
+	// it can give the port back. None when the kernel chose it.
+	leased_port ?u16
 	// relay is set for a socket that reaches peers through a TURN allocation.
 	// Sending then means asking the relay to forward, and receiving means
 	// unwrapping what the relay forwarded back; the check list above does not

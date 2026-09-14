@@ -134,24 +134,13 @@ pub fn (mut a Agent) gather() ! {
 // add_host_candidate binds a socket to a local address and records the
 // resulting host candidate.
 fn (mut a Agent) add_host_candidate(address netaddr.IpAddr, announce bool) ! {
-	// Binding to port 0 lets the kernel choose; the candidate cannot be
-	// described until we read back which port it picked.
-	bind_target := if address.family == .ipv6 {
-		'[${address}]:0'
-	} else {
-		'${address}:0'
-	}
-	mut conn := net.listen_udp(bind_target) or {
-		return AgentError{
-			reason: .transport
-			detail: 'binding ${bind_target}: ${err.msg()}'
-		}
-	}
+	mut conn, leased := a.bind_host_socket(address)!
 	bound := transport.local_addr(conn) or {
+		a.release_port(leased)
 		conn.close() or {}
 		return AgentError{
 			reason: .transport
-			detail: 'reading the bound address of ${bind_target}: ${err.msg()}'
+			detail: 'reading the bound address of ${address}: ${err.msg()}'
 		}
 	}
 	// The kernel reports the address it bound, but for a socket bound to a
@@ -170,8 +159,9 @@ fn (mut a Agent) add_host_candidate(address netaddr.IpAddr, announce bool) ! {
 
 	a.mu.lock()
 	a.sockets << &LocalSocket{
-		conn: conn
-		base: base
+		conn:        conn
+		base:        base
+		leased_port: leased
 	}
 	index := a.sockets.len - 1
 	a.socket_for[base.str()] = index
@@ -181,6 +171,45 @@ fn (mut a Agent) add_host_candidate(address netaddr.IpAddr, announce bool) ! {
 		a.add_local_candidate(candidate)
 	}
 	return
+}
+
+// bind_host_socket opens the UDP socket a host candidate is gathered on, and
+// reports which port the pool handed out so it can be given back later.
+//
+// Without a pool the kernel picks the port, which is the normal case. With one,
+// the port has to come from the pool rather than from a bind attempt: sockets
+// are opened with SO_REUSEADDR, so binding a port somebody else already holds
+// succeeds and then quietly splits their traffic.
+fn (mut a Agent) bind_host_socket(address netaddr.IpAddr) !(&net.UdpConn, ?u16) {
+	mut pool := a.config.port_pool or { return bind_udp(address, 0)!, none }
+
+	port := pool.lease() or {
+		return AgentError{
+			reason: .transport
+			detail: 'every port in the configured range is already in use'
+		}
+	}
+	conn := bind_udp(address, port) or {
+		pool.release(port)
+		return err
+	}
+	return conn, port
+}
+
+fn bind_udp(address netaddr.IpAddr, port u16) !&net.UdpConn {
+	// Binding to port 0 lets the kernel choose; the candidate cannot be
+	// described until we read back which port it picked.
+	bind_target := if address.family == .ipv6 {
+		'[${address}]:${port}'
+	} else {
+		'${address}:${port}'
+	}
+	return net.listen_udp(bind_target) or {
+		AgentError{
+			reason: .transport
+			detail: 'binding ${bind_target}: ${err.msg()}'
+		}
+	}
 }
 
 // gather_reflexive asks a STUN server what address it sees each local socket
@@ -422,4 +451,11 @@ fn (a &Agent) find_pair(local netaddr.SocketAddr, remote netaddr.SocketAddr) int
 		}
 	}
 	return -1
+}
+
+// release_port gives a leased port back to the pool, if there was one.
+fn (mut a Agent) release_port(leased ?u16) {
+	port := leased or { return }
+	mut pool := a.config.port_pool or { return }
+	pool.release(port)
 }
