@@ -1,6 +1,7 @@
 module ice
 
 import time
+import webrtc.internal.testrelay
 import webrtc.netaddr
 import webrtc.stun
 
@@ -764,4 +765,67 @@ fn test_data_from_an_unchecked_address_is_dropped() {
 	if _ := agent.recv(100 * time.millisecond) {
 		assert false, 'data from an unchecked address reached the application'
 	}
+}
+
+fn test_two_ice_agents_connect_over_relayed_candidates_only() {
+	// The whole integration: the agents gather nothing but relayed candidates,
+	// so every connectivity check and every byte of data goes through the relay.
+	mut server := testrelay.FakeRelay.start()!
+	defer {
+		server.stop()
+	}
+
+	relay := TurnServer{
+		url:      server.address()
+		username: 'user'
+		password: 'pass'
+	}
+	mut caller := Agent.new(
+		role:           .controlling
+		turn_servers:   [relay]
+		gather_policy:  .relay_only
+		check_interval: 20 * time.millisecond
+	)!
+	mut callee := Agent.new(
+		role:           .controlled
+		turn_servers:   [relay]
+		gather_policy:  .relay_only
+		check_interval: 20 * time.millisecond
+	)!
+	defer {
+		caller.close()
+		callee.close()
+	}
+
+	caller_ufrag, caller_pwd := caller.local_credentials()
+	callee_ufrag, callee_pwd := callee.local_credentials()
+	caller.set_remote_credentials(callee_ufrag, callee_pwd)!
+	callee.set_remote_credentials(caller_ufrag, caller_pwd)!
+
+	caller.gather()!
+	callee.gather()!
+
+	for candidate in caller.local_candidates() {
+		assert candidate.typ == .relayed, 'the relay-only policy must gather nothing else'
+		callee.add_remote_candidate(candidate)!
+	}
+	for candidate in callee.local_candidates() {
+		assert candidate.typ == .relayed
+		caller.add_remote_candidate(candidate)!
+	}
+
+	caller.connect(20 * time.second)!
+	callee.connect(20 * time.second)!
+
+	pair := caller.selected_pair() or {
+		assert false, 'a connected agent has a selected pair'
+		return
+	}
+	assert pair.local.typ == .relayed
+	assert pair.remote.typ == .relayed
+
+	caller.send('through the relay'.bytes())!
+	assert callee.recv(5 * time.second)!.bytestr() == 'through the relay'
+	callee.send('and back'.bytes())!
+	assert caller.recv(5 * time.second)!.bytestr() == 'and back'
 }
