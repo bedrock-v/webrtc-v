@@ -74,6 +74,17 @@ browser's privacy-preserving candidates still produce a local-network path.
 Registering such a name for this end's own candidates is not implemented, so
 this end's offers carry addresses.
 
+**Large messages.** `sctp` carries user data in classic DATA chunks and doesn't
+support message interleaving (RFC 8260). A message too large for one packet is
+split into fragments that have to go out back to back, and every other message,
+on every data channel, waits behind it until its last fragment is sent. RFC 8831
+section 6.6 recommends keeping messages to 16 KiB for as long as interleaving is
+missing which bounds how long one message can hold the rest up. Larger messages
+still work: this end accepts up to `max_message_size`, 256 KiB by default and a
+peer's `a=max-message-size` states what that peer will take. Neither limit changes
+the blocking. Interleaving is tracked in
+[#9](https://github.com/bedrock-v/webrtc-v/issues/9).
+
 **Platforms.** Linux, macOS, the BSDs and Windows are supported. Local addresses
 are gathered from every active network interface on each platform.
 
