@@ -205,7 +205,7 @@ fn bind_udp(address netaddr.IpAddr, port u16) !&net.UdpConn {
 		'${address}:${port}'
 	}
 	return net.listen_udp(bind_target) or {
-		AgentError{
+		return AgentError{
 			reason: .transport
 			detail: 'binding ${bind_target}: ${err.msg()}'
 		}
