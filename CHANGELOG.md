@@ -11,6 +11,44 @@ breaking changes are listed under **Changed** with a migration note.
 
 Nothing yet.
 
+## [0.1.3] - 2026-09-17
+
+Host candidates within a fixed port range, every interface on Windows, and the
+negotiated parameters of a data channel.
+
+### Added
+
+- **`ice`**, **`webrtc`**: host candidates can be bound from a fixed port range
+  through `ice.PortPool`, set with `Configuration.ice_port_pool` or
+  `AgentConfig.port_pool`. Leaving it unset keeps letting the kernel choose,
+  which suits a client; a server behind a firewall needs ports an operator can
+  write a rule for. Every agent that should stay inside one range has to share
+  one pool: sockets are opened with `SO_REUSEADDR`, so two agents binding the
+  same port would both succeed and split each other's traffic. A port goes back
+  to the pool when its agent closes, and gathering fails with a transport error
+  once every port in the range is in use.
+- **`webrtc`**: `DataChannel.negotiated()` and `DataChannel.protocol()` report
+  whether a channel was declared by both applications rather than opened
+  through DCEP and the subprotocol it was opened with, on the side that
+  created it and on the side that received it.
+
+### Fixed
+
+- **`ice`**: Windows found local addresses by probing the routing table,
+  giving one address per family, so a path over a secondary interface was never
+  discovered. Addresses now come from every unicast address on every active
+  adapter, IPv6 link-local addresses keep their zone and an interface filter
+  matches either the friendly name or the adapter name.
+
+### Changed
+
+- **`README`**: documents that `sctp` does not support message interleaving
+  (RFC 8260). A large message holds up every other message on every data
+  channel until its last fragment is sent and RFC 8831's 16 KiB guidance.
+- CI builds the V it tests against from a pinned source checkout instead of the
+  latest release and the fake TURN relay the tests use moved to
+  `internal/testrelay`. The turn tests no longer import `ice`.
+
 ## [0.1.2] - 2026-09-09
 
 Two data channel defects that only appear under load and a build fix.
@@ -229,7 +267,8 @@ has no track layer above it, and the public API may still change before 1.0.
   completes with the zero value. Callers dereferenced it and crashed on
   shutdown.
 
-[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/bedrock-v/webrtc-v/releases/tag/v0.1.0
