@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+env:
+  VFLAGS: -no-parallel
+  V_REF: 316db75a07afe50a17c5e273a18d10af8e8068d1
+  VC_REF: d31eceeb33b7356676c7fba0a80736d370923c34
+
 jobs:
   verify:
     name: Verify the tag
@@ -57,17 +62,37 @@ jobs:
     name: Test (${{ matrix.os }})
     needs: verify
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: webrtc-v
     strategy:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v7
-      - uses: vlang/setup-v@v1.7
+      - name: Checkout V
+        uses: actions/checkout@v7
         with:
-          check-latest: true
+          repository: vlang/v
+          ref: ${{ env.V_REF }}
+      - name: Checkout VC
+        uses: actions/checkout@v7
+        with:
+          repository: vlang/vc
+          ref: ${{ env.VC_REF }}
+          path: vc
+      - name: Checkout webrtc-v
+        uses: actions/checkout@v7
+        with:
+          path: webrtc-v
+      - name: Build V
+        working-directory: .
+        run: |
+          make latest_tcc
+          make local=1
+          echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: make link
       - name: Verify formatting
         run: make fmt-check
       - name: Run the test suite
