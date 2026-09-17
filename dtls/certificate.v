@@ -221,7 +221,7 @@ pub fn Certificate.from_key(private_key ecdsa.PrivateKey, public_key ecdsa.Publi
 
 	algorithm := der_sequence_of(der_oid(oid_ecdsa_with_sha256)!)
 	subject_public_key_info := der_sequence_of(der_sequence_of(der_oid(oid_ec_public_key)!,
-		der_oid(oid_prime256v1)!), der_bit_string(point))
+		der_oid(oid_prime256v1)!), der_bit_string_from_bytes(point))
 	name := encode_common_name(common_name)!
 	validity := der_sequence_of(encode_time(not_before), encode_time(not_after))
 
@@ -237,7 +237,7 @@ pub fn Certificate.from_key(private_key ecdsa.PrivateKey, public_key ecdsa.Publi
 		}
 	}
 
-	der := der_sequence_of(tbs, algorithm, der_bit_string(signature))
+	der := der_sequence_of(tbs, algorithm, der_bit_string_from_bytes(signature))
 	return Certificate{
 		der:         der
 		private_key: private_key

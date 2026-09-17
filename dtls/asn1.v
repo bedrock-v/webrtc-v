@@ -102,9 +102,9 @@ fn der_integer_from_bytes(value []u8) []u8 {
 	return der_tlv(der_integer, body)
 }
 
-// der_bit_string encodes a bit string with no unused trailing bits, which is
+// der_bit_string_from_bytes encodes a bit string with no unused trailing bits, which is
 // the only form X.509 uses for keys and signatures.
-fn der_bit_string(value []u8) []u8 {
+fn der_bit_string_from_bytes(value []u8) []u8 {
 	mut body := []u8{cap: 1 + value.len}
 	body << 0 // unused bits
 	body << value
