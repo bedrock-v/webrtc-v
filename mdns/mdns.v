@@ -258,7 +258,8 @@ fn answer_for(datagram []u8, name string) ?netaddr.IpAddr {
 fn read_name(mut r codec.Reader) ?string {
 	mut labels := []string{}
 	mut hops := 0
-	mut cursor := r
+	mut cursor := codec.Reader.new(r.data)
+	cursor.pos = r.pos
 	mut jumped := false
 
 	for _ in 0 .. max_name_labels {

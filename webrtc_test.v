@@ -378,8 +378,16 @@ fn test_a_data_channel_carries_messages_over_real_sockets() {
 	} else {
 		assert false, 'a finished handshake must have the peer certificate'
 	}
-	assert caller.current_local_description()!.typ == .offer
-	assert callee.current_local_description()!.typ == .answer
+	offer := caller.current_local_description() or {
+		assert false, 'the caller must have a local description'
+		return
+	}
+	assert offer.typ == .offer
+	answer := callee.current_local_description() or {
+		assert false, 'the callee must have a local description'
+		return
+	}
+	assert answer.typ == .answer
 }
 
 fn test_media_keys_are_established_over_real_sockets() {

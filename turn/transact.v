@@ -216,11 +216,12 @@ fn (mut c Client) transact(mut request stun.Message, opts stun.EncodeOptions) !s
 				return response
 			}
 			rto {
-				c.log.debug('${request.typ.method} attempt ${attempt + 1} timed out, retrying in ${(rto * 2).milliseconds()}ms')
+				// RFC 8489 section 6.2.1: double the timeout after each
+				// retransmission.
+				rto = rto * 2
+				c.log.debug('${request.typ.method} attempt ${attempt + 1} timed out, retrying in ${rto.milliseconds()}ms')
 			}
 		}
-		// RFC 8489 section 6.2.1: double the timeout after each retransmission.
-		rto = rto * 2
 	}
 
 	return TurnError{

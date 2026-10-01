@@ -96,7 +96,7 @@ pub fn (a IpAddr) with_zone(zone string) IpAddr {
 // zero-value IpAddr is not valid, which makes an uninitialised field detectable.
 @[inline]
 pub fn (a IpAddr) is_valid() bool {
-	return a.octets.len == a.family.octet_len()
+	return a.family.octet_len() > 0 && a.octets.len == a.family.octet_len()
 }
 
 // is_unspecified reports whether the address is all zeros (0.0.0.0 or ::).
