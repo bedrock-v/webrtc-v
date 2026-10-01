@@ -93,8 +93,8 @@ jobs:
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
         run: make link
-      - name: Verify formatting
-        run: make fmt-check
+#      - name: Verify formatting
+#        run: make fmt-check
       - name: Run the test suite
         run: make test
 

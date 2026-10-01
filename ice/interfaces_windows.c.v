@@ -67,6 +67,7 @@ pub fn local_interface_addresses(opts InterfaceOptions) ![]netaddr.IpAddr {
 			windows_af_inet6 { netaddr.Family.ipv6 }
 			else { continue }
 		}
+
 		mut octets := []u8{len: family.octet_len()}
 		unsafe { vmemcpy(octets.data, C.webrtc_v_interface_bytes(addresses, i), octets.len) }
 		mut addr := netaddr.IpAddr.from_octets(family, octets) or { continue }
