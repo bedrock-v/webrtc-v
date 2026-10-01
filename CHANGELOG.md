@@ -11,6 +11,32 @@ breaking changes are listed under **Changed** with a migration note.
 
 Nothing yet.
 
+## [0.1.4] - 2026-10-01
+
+An mDNS answer that was never read, an address that could take a process down
+from a log line and a module that no longer compiled.
+
+### Fixed
+
+- **`mdns`**: an answer was never matched to the name it carried, so a `.local`
+  name never resolved and every query timed out. `read_name` copied its reader
+  by assigning the parameter to a new variable, which a current compiler turns
+  into a copy of the reference rather than of the value when the type comes from
+  another module. The copy began past the end of the datagram, the first label
+  read failed and a failed name discards the record it belongs to. The cursor
+  is now built from the reader's buffer and position explicitly.
+- **`netaddr`**: `IpAddr.is_valid()` reported an address with no family as
+  valid, and `str()` then read octets it did not have. `Family` starts at four,
+  a zero valued address answers zero to `octet_len()` and passed a check that
+  only compared the two; formatting one indexed an empty array and ended the
+  process. In `ice` that happened inside a debug line about an arriving
+  datagram, so an agent could die while logging one. Such an address now reports
+  invalid and formats as `<invalid>`.
+- **`turn`**: the module did not compile. The retransmission log asked a doubled
+  `time.Duration` for its milliseconds and `Duration` arithmetic yields a plain
+  integer on a current compiler, which has no such method. The timeout is
+  doubled before it is logged, where the schedule advanced anyway.
+
 ## [0.1.3] - 2026-09-17
 
 Host candidates within a fixed port range, every interface on Windows, and the
@@ -267,7 +293,8 @@ has no track layer above it, and the public API may still change before 1.0.
   completes with the zero value. Callers dereferenced it and crashed on
   shutdown.
 
-[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.0...v0.1.1
