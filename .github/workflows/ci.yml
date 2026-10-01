@@ -52,7 +52,9 @@ jobs:
           make local=1
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: |
+          mkdir -p "$HOME/.vmodules"
+          ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Verify formatting
         run: make fmt-check
 
@@ -85,7 +87,9 @@ jobs:
           make local=1
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: |
+          mkdir -p "$HOME/.vmodules"
+          ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Vet
         run: make vet
 
@@ -122,7 +126,9 @@ jobs:
           make local=1
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: |
+          mkdir -p "$HOME/.vmodules"
+          ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Run the test suite
         run: make test
       # The suite includes tests that open loopback sockets and drive two ICE
@@ -225,7 +231,9 @@ jobs:
           make local=1
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: |
+          mkdir -p "$HOME/.vmodules"
+          ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Build every module as a shared library
         run: |
           set -euo pipefail
@@ -269,7 +277,9 @@ jobs:
           make local=1
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: |
+          mkdir -p "$HOME/.vmodules"
+          ln -s "$PWD" "$HOME/.vmodules/webrtc"
       - name: Build every example
         run: |
           set -euo pipefail
@@ -318,7 +328,9 @@ jobs:
           make local=1
           echo "$GITHUB_WORKSPACE" >> "$GITHUB_PATH"
       - name: Link the module into V's module path
-        run: ln -s "$PWD" "$HOME/.vmodules/webrtc"
+        run: |
+          mkdir -p "$HOME/.vmodules"
+          ln -s "$PWD" "$HOME/.vmodules/webrtc"
       # The decoders take attacker-controlled input, and their tests feed them
       # thousands of structured-random byte strings. Running those under stricter
       # C warnings, without the garbage collector, and with optimisation on
