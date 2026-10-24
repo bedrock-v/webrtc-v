@@ -365,6 +365,14 @@ fn (mut m UdpMux) read(index int) {
 }
 
 fn (mut m UdpMux) route(index int, from netaddr.SocketAddr, data []u8) {
+	// Route STUN by credentials first. Reconnecting peers may still have
+	// their address claimed by an old agent.
+	// Decode before locking to minimize time spent holding the shared lock.
+	mut message := ?stun.Message(none)
+	if stun.is_message(data) {
+		message = stun.Message.decode(data) or { return }
+	}
+
 	m.mu.lock()
 	defer {
 		m.mu.unlock()
@@ -372,39 +380,39 @@ fn (mut m UdpMux) route(index int, from netaddr.SocketAddr, data []u8) {
 	if m.closed {
 		return
 	}
+	if msg := message {
+		key := msg.transaction_id[..].hex()
+		match msg.typ.class {
+			.request {
+				if msg.typ.method == .binding {
+					if username := msg.username() {
+						if route := m.routes[username.all_before(':')] {
+							m.deliver(route, index, from, data)
+							return
+						}
+					}
+				}
+			}
+			.success_response, .error_response {
+				if responses := m.lookups[key] {
+					select {
+						responses <- data {}
+						else {}
+					}
+					return
+				}
+				if route := m.checks[key] {
+					m.deliver(route, index, from, data)
+					return
+				}
+			}
+			.indication {}
+		}
+	}
+	// Everything else only follows a claim, which an agent makes only for a
+	// path that authenticated.
 	if route := m.claimed['${index}|${from}'] {
 		m.deliver(route, index, from, data)
-		return
-	}
-	if !stun.is_message(data) {
-		return
-	}
-	message := stun.Message.decode(data) or { return }
-	key := message.transaction_id[..].hex()
-	match message.typ.class {
-		.request {
-			if message.typ.method != .binding {
-				return
-			}
-			username := message.username() or { return }
-			ufrag := username.all_before(':')
-			if route := m.routes[ufrag] {
-				m.deliver(route, index, from, data)
-			}
-		}
-		.success_response, .error_response {
-			if responses := m.lookups[key] {
-				select {
-					responses <- data {}
-					else {}
-				}
-				return
-			}
-			if route := m.checks[key] {
-				m.deliver(route, index, from, data)
-			}
-		}
-		.indication {}
 	}
 }
 

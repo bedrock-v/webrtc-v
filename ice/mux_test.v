@@ -23,7 +23,7 @@ fn new_mux() !&UdpMux {
 	return UdpMux.new(port: free_udp_port(), interfaces: mux_loopback)!
 }
 
-fn connect_through_mux(mut mux UdpMux) !(&Agent, &Agent) {
+fn connect_through_mux(mut mux UdpMux, peer_ports ?&PortPool) !(&Agent, &Agent) {
 	mut served := Agent.new(
 		role:           .controlled
 		udp_mux:        mux
@@ -32,6 +32,7 @@ fn connect_through_mux(mut mux UdpMux) !(&Agent, &Agent) {
 	mut peer := Agent.new(
 		role:           .controlling
 		interfaces:     mux_loopback
+		port_pool:      peer_ports
 		check_interval: 10 * time.millisecond
 	)!
 	s_ufrag, s_pwd := served.local_credentials()
@@ -66,8 +67,8 @@ fn test_mux_serves_two_agents_on_one_port() {
 	defer {
 		mux.close()
 	}
-	mut a, mut a_peer := connect_through_mux(mut mux)!
-	mut b, mut b_peer := connect_through_mux(mut mux)!
+	mut a, mut a_peer := connect_through_mux(mut mux, none)!
+	mut b, mut b_peer := connect_through_mux(mut mux, none)!
 	defer {
 		a.close()
 		a_peer.close()
@@ -89,8 +90,8 @@ fn test_closing_one_agent_leaves_the_other_on_the_mux() {
 	defer {
 		mux.close()
 	}
-	mut a, mut a_peer := connect_through_mux(mut mux)!
-	mut b, mut b_peer := connect_through_mux(mut mux)!
+	mut a, mut a_peer := connect_through_mux(mut mux, none)!
+	mut b, mut b_peer := connect_through_mux(mut mux, none)!
 	defer {
 		a_peer.close()
 		b.close()
@@ -212,4 +213,28 @@ fn test_reflexive_lookups_through_the_mux_reach_their_agent() {
 		assert agent.local_candidates().any(it.typ == .server_reflexive
 			&& it.address.str() == '203.0.113.5:4000')
 	}
+}
+
+fn test_reconnect_from_a_claimed_addr_reaches_the_new_agent() {
+	$if !linux {
+		return
+	}
+	mut mux := new_mux()!
+	defer {
+		mux.close()
+	}
+	port := free_udp_port()
+	pool := PortPool.new(port, port)!
+	mut old, mut old_peer := connect_through_mux(mut mux, pool)!
+	defer {
+		old.close()
+	}
+	old_peer.close()
+
+	mut fresh, mut fresh_peer := connect_through_mux(mut mux, pool)!
+	defer {
+		fresh.close()
+		fresh_peer.close()
+	}
+	exchange(mut fresh, mut fresh_peer, 'back again')!
 }
