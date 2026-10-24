@@ -192,6 +192,24 @@ addresses off the wire while still trying a direct path, use `.no_host`.
 permissions, binds channels, and sends and receives, with the allocation kept
 alive for you.
 
+### Serve every connection on one port
+
+A server normally opens new sockets for each peer. Behind a firewall, an
+`ice.UdpMux` lets every connection share one UDP port, thus, it needs one rule:
+
+```v
+mut mux := ice.UdpMux.new(port: 19133)!
+defer { mux.close() }
+
+mut pc := webrtc.PeerConnection.new(ice_udp_mux: mux)!
+```
+
+The mux binds the port on every local address and fails if anybody already holds
+it. It sends each datagram to the connection that proved, with an authenticated
+check, that it owns that address, and a forged packet can't redirect traffic. Close
+the mux after the connections using it. It can't be combined with
+`ice_port_pool`. The mux has only been tested on Linux so far.
+
 ### Connect two peers with ICE
 
 The ICE agent gathers candidates, exchanges them through whatever signalling you

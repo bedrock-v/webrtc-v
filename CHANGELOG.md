@@ -9,7 +9,28 @@ breaking changes are listed under **Changed** with a migration note.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **`ice`**, **`webrtc`**: `ice.UdpMux` lets every agent share one UDP port, set
+  with `Configuration.ice_udp_mux` or `AgentConfig.udp_mux`. The mux binds the port
+  on every local address and refuses a port somebody already holds. A Binding
+  request is routed by the ufrag in its USERNAME, a response by its transaction
+  ID, and anything else only to the agent that claimed the address it came from.
+  An agent claims an address only once a check from it authenticated, so a
+  forged packet can't take over a route. Server-reflexive lookups go out
+  through the mux socket. A mux can't be combined with `port_pool`. The caller
+  owns the mux and closes it after the agents using it. It has only been tested
+  on Linux. On Windows, `SO_REUSEADDR` means something different and the check
+  that the port is free hasn't been run there.
+
+### Fixed
+
+- **`ice`**: a server-reflexive lookup took the first response with its
+  transaction ID, from any address. Both lookup paths, through a mux and on an
+  agent's own socket, now accept a response only from the STUN server they asked.
+- **`ice`**: closing a `UdpMux` left a reflexive lookup through it waiting
+  until its next retransmission, up to the 2 s gather timeout. Closing it now
+  ends the lookup at once with a `.closed` error.
 
 ## [0.1.4] - 2026-10-01
 

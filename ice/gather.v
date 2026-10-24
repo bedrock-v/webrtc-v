@@ -348,7 +348,11 @@ fn (mut a Agent) reflexive_lookup(socket &LocalSocket, server netaddr.SocketAddr
 			remaining := attempt_deadline - time.now()
 			conn.set_read_timeout(remaining)
 			mut buf := []u8{len: max_datagram}
-			n, _ := conn.read(mut buf) or { break }
+			n, peer := conn.read(mut buf) or { break }
+			from := transport.socket_addr_from_net(peer) or { continue }
+			if from.unmap() != server.unmap() {
+				continue
+			}
 
 			response := stun.Message.decode(buf[..n]) or { continue }
 			if response.transaction_id != request.transaction_id {

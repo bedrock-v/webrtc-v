@@ -157,6 +157,7 @@ struct StunResponder {
 mut:
 	conn   &net.UdpConn
 	mapped netaddr.SocketAddr
+	forger ?&net.UdpConn
 	done   bool
 }
 
@@ -166,6 +167,13 @@ fn (mut r StunResponder) run() {
 		mut buf := []u8{len: 2048}
 		n, from := r.conn.read(mut buf) or { continue }
 		request := stun.Message.decode(buf[..n]) or { continue }
+		if mut forger := r.forger {
+			mut forged := stun.Message.response(request, .success_response)
+			forged.add_xor_mapped_address(netaddr.SocketAddr.parse('198.51.100.1:1') or {
+				continue
+			}) or { continue }
+			forger.write_to(from, forged.encode(fingerprint: true) or { continue }) or {}
+		}
 		mut response := stun.Message.response(request, .success_response)
 		response.add_xor_mapped_address(r.mapped) or { continue }
 		raw := response.encode(fingerprint: true) or { continue }
@@ -237,4 +245,89 @@ fn test_reconnect_from_a_claimed_addr_reaches_the_new_agent() {
 		fresh_peer.close()
 	}
 	exchange(mut fresh, mut fresh_peer, 'back again')!
+}
+
+fn test_lookup_ignores_a_response_from_another_address() {
+	$if !linux {
+		return
+	}
+	mut mux := new_mux()!
+	defer {
+		mux.close()
+	}
+	mut responder := &StunResponder{
+		conn:   net.listen_udp('127.0.0.1:0')!
+		mapped: netaddr.SocketAddr.parse('203.0.113.5:4000')!
+		forger: net.listen_udp('127.0.0.1:0')!
+	}
+	server := transport.local_addr(responder.conn)!
+	worker := spawn responder.run()
+	defer {
+		responder.done = true
+		worker.wait()
+		responder.conn.close() or {}
+		if mut forger := responder.forger {
+			forger.close() or {}
+		}
+	}
+
+	mapped := mux.lookup(0, server)!
+	assert mapped.str() == '203.0.113.5:4000'
+}
+
+fn test_close_wakes_a_waiting_lookup() {
+	$if !linux {
+		return
+	}
+	mut mux := new_mux()!
+	mut silent := net.listen_udp('127.0.0.1:0')!
+	defer {
+		silent.close() or {}
+	}
+	server := transport.local_addr(silent)!
+
+	waiting := spawn mux.lookup(0, server)
+	time.sleep(800 * time.millisecond)
+	closed_at := time.now()
+	mux.close()
+	if _ := waiting.wait() {
+		assert false, 'a lookup to a silent server succeeded'
+	} else {
+		assert time.since(closed_at) < 300 * time.millisecond
+		if err is AgentError {
+			assert err.reason == .closed
+		} else {
+			assert false, 'unexpected error: ${err}'
+		}
+	}
+}
+
+fn test_own_socket_lookup_ignores_a_response_from_another_addr() {
+	$if !linux {
+		return
+	}
+	mut responder := &StunResponder{
+		conn:   net.listen_udp('127.0.0.1:0')!
+		mapped: netaddr.SocketAddr.parse('203.0.113.5:4000')!
+		forger: net.listen_udp('127.0.0.1:0')!
+	}
+	server := transport.local_addr(responder.conn)!
+	worker := spawn responder.run()
+	defer {
+		responder.done = true
+		worker.wait()
+		responder.conn.close() or {}
+		if mut forger := responder.forger {
+			forger.close() or {}
+		}
+	}
+
+	mut agent := Agent.new(interfaces: mux_loopback, stun_servers: [server.str()])!
+	defer {
+		agent.close()
+	}
+	agent.gather()!
+	reflexive := agent.local_candidates().filter(it.typ == .server_reflexive)
+	assert reflexive.len == 1
+	assert reflexive[0].address.str() == '203.0.113.5:4000'
 }

@@ -47,9 +47,18 @@ mut:
 	// checks maps a transaction ID to the agent that sent the request.
 	checks map[string]&MuxRoute
 	// lookups maps a transaction ID to a reflexive lookup waiting on it.
-	lookups map[string]chan []u8
+	lookups map[string]MuxLookup
 	closed  bool
+	// done is closed by close, waking the lookups still waiting.
+	done    chan bool = chan bool{}
 	threads []thread
+}
+
+// MuxLookup is a reflexive lookup waiting for its response.
+struct MuxLookup {
+	socket    int
+	server    netaddr.SocketAddr
+	responses chan []u8
 }
 
 struct MuxConn {
@@ -159,6 +168,7 @@ pub fn (mut m UdpMux) close() {
 	m.routes.clear()
 	m.claimed.clear()
 	m.checks.clear()
+	m.done.close()
 	mut sockets := m.sockets.clone()
 	m.mu.unlock()
 
@@ -313,7 +323,11 @@ fn (mut m UdpMux) lookup(socket int, server netaddr.SocketAddr) !netaddr.SocketA
 	responses := chan []u8{cap: 1}
 
 	m.mu.lock()
-	m.lookups[key] = responses
+	m.lookups[key] = MuxLookup{
+		socket:    socket
+		server:    server.unmap()
+		responses: responses
+	}
 	m.mu.unlock()
 	defer {
 		m.mu.lock()
@@ -341,6 +355,12 @@ fn (mut m UdpMux) lookup(socket int, server netaddr.SocketAddr) !netaddr.SocketA
 					}
 				}
 				return response.reflexive_address()!
+			}
+			_ := <-m.done {
+				return AgentError{
+					reason: .closed
+					detail: 'the UDP mux is closed'
+				}
 			}
 			wait {
 			}
@@ -400,14 +420,16 @@ fn (mut m UdpMux) route(index int, from netaddr.SocketAddr, data []u8) {
 				}
 			}
 			.success_response, .error_response {
-				if responses := m.lookups[key] {
-					select {
-						responses <- data {
+				if lookup := m.lookups[key] {
+					if lookup.socket == index && lookup.server == from {
+						select {
+							lookup.responses <- data {
+							}
+							else {
+							}
 						}
-						else {
-						}
+						return
 					}
-					return
 				}
 				if route := m.checks[key] {
 					m.deliver(route, index, from, data)
