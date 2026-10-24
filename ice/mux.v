@@ -108,7 +108,12 @@ pub fn UdpMux.new(config UdpMuxConfig) !&UdpMux {
 	return m
 }
 
-// ensure_port_free fails when anybody holds the port.
+// ensure_port_free fails when anybody holds the port. It exists because
+// net.listen_udp always sets SO_REUSEADDR which lets a second bind of a held
+// port succeed and split its traffic.
+//
+// Another process can take the port between it and the real bind.
+// Binding the mux socket itself without SO_REUSEADDR would close that window but needs a raw socket path.
 fn ensure_port_free(address netaddr.IpAddr, port u16) ! {
 	target := if address.family == .ipv6 { '[${address}]:${port}' } else { '${address}:${port}' }
 	family := if address.family == .ipv6 { net.AddrFamily.ip6 } else { net.AddrFamily.ip }
