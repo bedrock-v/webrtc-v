@@ -266,9 +266,7 @@ fn reverse_nibble(i int) int {
 
 @[direct_array_access; inline]
 fn load_u64(b []u8, offset int) u64 {
-	return (u64(b[offset]) << 56) | (u64(b[offset + 1]) << 48) | (u64(b[offset + 2]) << 40) | (u64(b[
-		offset + 3]) << 32) | (u64(b[offset + 4]) << 24) | (u64(b[offset + 5]) << 16) | (u64(b[
-		offset + 6]) << 8) | u64(b[offset + 7])
+	return (u64(b[offset]) << 56) | (u64(b[offset + 1]) << 48) | (u64(b[offset + 2]) << 40) | (u64(b[offset + 3]) << 32) | (u64(b[offset + 4]) << 24) | (u64(b[offset + 5]) << 16) | (u64(b[offset + 6]) << 8) | u64(b[offset + 7])
 }
 
 @[direct_array_access; inline]

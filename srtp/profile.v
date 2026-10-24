@@ -23,9 +23,9 @@ pub enum Profile as u16 {
 	aes128_cm_hmac_sha1_32 = 0x0002
 	// aead_aes_128_gcm authenticates and encrypts in one pass and is what
 	// modern endpoints negotiate.
-	aead_aes_128_gcm = 0x0007
+	aead_aes_128_gcm       = 0x0007
 	// aead_aes_256_gcm is the 256-bit key variant.
-	aead_aes_256_gcm = 0x0008
+	aead_aes_256_gcm       = 0x0008
 }
 
 pub fn (p Profile) str() string {

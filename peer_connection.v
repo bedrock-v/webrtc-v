@@ -325,7 +325,7 @@ pub fn (mut pc PeerConnection) create_offer() !SessionDescription {
 		fingerprint: pc.certificate.fingerprint(.sha256)
 		// An offer says actpass: the answerer picks, which avoids both ends
 		// trying to be the DTLS client.
-		setup: .actpass
+		setup:       .actpass
 	}, pc.session_id, pc.version, pc.config.max_message_size)!
 
 	return SessionDescription{

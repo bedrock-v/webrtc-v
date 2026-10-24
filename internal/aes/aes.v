@@ -85,12 +85,9 @@ fn (c &Cipher) encrypt_words(in0 u32, in1 u32, in2 u32, in3 u32) (u32, u32, u32,
 	mut offset := 4
 	for _ in 1 .. c.rounds {
 		t0 := te0[s0 >> 24] ^ te1[(s1 >> 16) & 0xff] ^ te2[(s2 >> 8) & 0xff] ^ te3[s3 & 0xff] ^ rk[offset]
-		t1 := te0[s1 >> 24] ^ te1[(s2 >> 16) & 0xff] ^ te2[(s3 >> 8) & 0xff] ^ te3[s0 & 0xff] ^ rk[
-			offset + 1]
-		t2 := te0[s2 >> 24] ^ te1[(s3 >> 16) & 0xff] ^ te2[(s0 >> 8) & 0xff] ^ te3[s1 & 0xff] ^ rk[
-			offset + 2]
-		t3 := te0[s3 >> 24] ^ te1[(s0 >> 16) & 0xff] ^ te2[(s1 >> 8) & 0xff] ^ te3[s2 & 0xff] ^ rk[
-			offset + 3]
+		t1 := te0[s1 >> 24] ^ te1[(s2 >> 16) & 0xff] ^ te2[(s3 >> 8) & 0xff] ^ te3[s0 & 0xff] ^ rk[offset + 1]
+		t2 := te0[s2 >> 24] ^ te1[(s3 >> 16) & 0xff] ^ te2[(s0 >> 8) & 0xff] ^ te3[s1 & 0xff] ^ rk[offset + 2]
+		t3 := te0[s3 >> 24] ^ te1[(s0 >> 16) & 0xff] ^ te2[(s1 >> 8) & 0xff] ^ te3[s2 & 0xff] ^ rk[offset + 3]
 		s0, s1, s2, s3 = t0, t1, t2, t3
 		offset += 4
 	}
@@ -141,8 +138,7 @@ fn sub_word(w u32) u32 {
 
 @[direct_array_access; inline]
 fn load_u32(b []u8, offset int) u32 {
-	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
-		offset + 3])
+	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[offset + 3])
 }
 
 @[direct_array_access; inline]

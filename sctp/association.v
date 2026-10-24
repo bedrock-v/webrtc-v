@@ -337,13 +337,13 @@ pub fn Association.new(transport Transport, config Config) !&Association {
 	initial_window := u32(4 * link.max_write())
 
 	return &Association{
-		transport:           transport
-		config:              config
-		log:                 config.logger.with_scope('sctp')
-		is_client:           config.role == .client
-		my_verification_tag: verification_tag
-		my_next_tsn:         initial_tsn
-		my_receive_window:   config.receive_window
+		transport:            transport
+		config:               config
+		log:                  config.logger.with_scope('sctp')
+		is_client:            config.role == .client
+		my_verification_tag:  verification_tag
+		my_next_tsn:          initial_tsn
+		my_receive_window:    config.receive_window
 		// The acknowledgement point starts one below the first TSN we will
 		// send. Leaving it at zero would be wrong for any initial TSN in the
 		// upper half of the space: every acknowledgement the peer sent would

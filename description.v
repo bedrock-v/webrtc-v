@@ -86,7 +86,7 @@ fn build_section(section Section, parameters TransportParameters, max_message_si
 		// Port 9 is the discard port. The real address comes from ICE, and a
 		// section is offered with a placeholder; zero is reserved for rejecting
 		// it, which is why it cannot double as "not applicable".
-		port: if section.rejected { 0 } else { 9 }
+		port:  if section.rejected { 0 } else { 9 }
 	}
 	media.connection = sdp.ConnectionData{
 		network_type: 'IN'

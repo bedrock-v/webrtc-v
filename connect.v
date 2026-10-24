@@ -80,10 +80,12 @@ fn (mut pc PeerConnection) connect_ice() ! {
 	timeout := pc.config.ice_timeout
 	pc.mu.unlock()
 
-	agent.connect(timeout) or { return PeerError{
-		reason: .timed_out
-		detail: err.msg()
-	} }
+	agent.connect(timeout) or {
+		return PeerError{
+			reason: .timed_out
+			detail: err.msg()
+		}
+	}
 	pc.log.debug('ICE connected')
 }
 
@@ -256,7 +258,8 @@ fn (mut pc PeerConnection) accept_channels() {
 		pc.mu.unlock()
 
 		select {
-			pc.incoming <- wrapper {}
+			pc.incoming <- wrapper {
+			}
 			else {
 				pc.log.warn('the incoming channel queue is full; "${channel.label}" was dropped')
 				wrapper.close()

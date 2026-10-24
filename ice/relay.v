@@ -65,8 +65,8 @@ fn (mut a Agent) gather_relayed() {
 			// The base of a relayed candidate is the relayed address itself:
 			// that is where traffic to us arrives, and there is no local socket
 			// address a peer could use instead.
-			related: client.mapped_address() or { netaddr.SocketAddr{} }
-			typ:     .relayed
+			related:    client.mapped_address() or { netaddr.SocketAddr{} }
+			typ:        .relayed
 		}
 		a.add_local_candidate(candidate)
 		a.log.info('relayed candidate ${relayed} via ${server.url}')

@@ -500,7 +500,8 @@ fn (mut p PipeTransport) write(data []u8) !int {
 	// when the expression in a select-send is a call.
 	copy := data.clone()
 	select {
-		peer.inbound <- copy {}
+		peer.inbound <- copy {
+		}
 		else {
 			return error('peer queue full')
 		}

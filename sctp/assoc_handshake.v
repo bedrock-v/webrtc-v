@@ -97,7 +97,7 @@ fn (mut a Association) send_init() ! {
 		// Advertising partial reliability up front is what lets a data channel
 		// later use maxRetransmits; a peer that does not answer in kind simply
 		// gets reliable delivery.
-		parameters: a.negotiated_parameters()
+		parameters:                 a.negotiated_parameters()
 	}
 	a.set_state(.cookie_wait)
 	a.mu.unlock()

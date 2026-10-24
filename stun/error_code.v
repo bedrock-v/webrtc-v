@@ -69,9 +69,11 @@ pub fn default_reason(code int) string {
 // hundreds digit in its low three bits, and the last holds the remainder
 // (RFC 8489 section 14.8).
 pub fn (m &Message) error_code() !ErrorCode {
-	attr := m.get(attr_error_code) or { return AttributeNotFoundError{
-		typ: attr_error_code
-	} }
+	attr := m.get(attr_error_code) or {
+		return AttributeNotFoundError{
+			typ: attr_error_code
+		}
+	}
 	if attr.value.len < 4 {
 		return DecodeError{
 			reason: .bad_value

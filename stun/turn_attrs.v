@@ -25,9 +25,11 @@ pub const transport_udp = u8(17)
 // lifetime returns the LIFETIME attribute in seconds: how long the server will
 // keep an allocation without a refresh.
 pub fn (m &Message) lifetime() !u32 {
-	attr := m.get(attr_lifetime) or { return AttributeNotFoundError{
-		typ: attr_lifetime
-	} }
+	attr := m.get(attr_lifetime) or {
+		return AttributeNotFoundError{
+			typ: attr_lifetime
+		}
+	}
 	if attr.value.len != 4 {
 		return DecodeError{
 			reason: .bad_value
@@ -70,9 +72,11 @@ pub fn (mut m Message) add_requested_transport(protocol u8) {
 
 // data returns the DATA attribute: the payload a peer sent through the relay.
 pub fn (m &Message) data() ![]u8 {
-	attr := m.get(attr_data) or { return AttributeNotFoundError{
-		typ: attr_data
-	} }
+	attr := m.get(attr_data) or {
+		return AttributeNotFoundError{
+			typ: attr_data
+		}
+	}
 	if attr.value.len > max_turn_data {
 		return DecodeError{
 			reason: .bad_value

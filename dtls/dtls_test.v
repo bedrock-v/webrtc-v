@@ -81,7 +81,8 @@ fn (mut p PipeTransport) send(data []u8) !int {
 	// data.clone()` would silently deliver an empty datagram.
 	copy := payload
 	select {
-		peer.inbound <- copy {}
+		peer.inbound <- copy {
+		}
 		else {
 			return error('peer queue full')
 		}

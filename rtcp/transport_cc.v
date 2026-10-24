@@ -30,7 +30,7 @@ pub const max_transport_cc_packets = 4096
 // PacketStatus is the per-packet symbol in a feedback message.
 pub enum PacketStatus as u8 {
 	// not_received: the packet never arrived.
-	not_received = 0
+	not_received         = 0
 	// received_small_delta: arrived, with a delta that fits one unsigned byte.
 	received_small_delta = 1
 	// received_large_delta: arrived, with a delta that needs a signed 16-bit
@@ -38,7 +38,7 @@ pub enum PacketStatus as u8 {
 	received_large_delta = 2
 	// reserved is not assigned. A peer that sends it is either buggy or
 	// probing; the packet is rejected rather than guessed at.
-	reserved = 3
+	reserved             = 3
 }
 
 // PacketFeedback is the report for one transport sequence number.

@@ -463,8 +463,7 @@ fn (c &Context) rtcp_auth_tag(body []u8) []u8 {
 
 @[inline]
 fn read_u32(b []u8, offset int) u32 {
-	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[
-		offset + 3])
+	return (u32(b[offset]) << 24) | (u32(b[offset + 1]) << 16) | (u32(b[offset + 2]) << 8) | u32(b[offset + 3])
 }
 
 @[inline]

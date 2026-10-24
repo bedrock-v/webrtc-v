@@ -71,8 +71,7 @@ pub fn Packet.decode(data []u8, max_chunks int) !Packet {
 	source_port := r.u16('source port')!
 	destination_port := r.u16('destination port')!
 	verification_tag := r.u32('verification tag')!
-	received := (u32(data[checksum_offset]) | (u32(data[checksum_offset + 1]) << 8) | (u32(data[
-		checksum_offset + 2]) << 16) | (u32(data[checksum_offset + 3]) << 24))
+	received := (u32(data[checksum_offset]) | (u32(data[checksum_offset + 1]) << 8) | (u32(data[checksum_offset + 2]) << 16) | (u32(data[checksum_offset + 3]) << 24))
 	r.skip(4, 'checksum')!
 
 	// Recompute over a copy with the checksum zeroed, which is how the sender

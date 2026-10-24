@@ -171,14 +171,18 @@ fn (mut c Client) attach_credentials(mut message stun.Message, realm string, non
 			detail: err.msg()
 		}
 	}
-	message.add_realm(realm) or { return TurnError{
-		reason: .bad_message
-		detail: err.msg()
-	} }
-	message.add_nonce(nonce) or { return TurnError{
-		reason: .bad_message
-		detail: err.msg()
-	} }
+	message.add_realm(realm) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
+	message.add_nonce(nonce) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
 }
 
 // transact sends a request and waits for its response, retransmitting on the
@@ -317,14 +321,17 @@ fn (mut c Client) handle_stun(datagram []u8) {
 	c.mu.unlock()
 
 	select {
-		waiting <- message {}
-		else {}
+		waiting <- message {
+		}
+		else {
+		}
 	}
 }
 
 fn (mut c Client) deliver(packet Packet) {
 	select {
-		c.inbound <- packet {}
+		c.inbound <- packet {
+		}
 		else {
 			// The application is not reading. Dropping is what a relayed
 			// datagram would suffer on any congested path, and blocking here

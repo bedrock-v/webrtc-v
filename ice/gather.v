@@ -127,7 +127,9 @@ pub fn (mut a Agent) gather() ! {
 		return AgentError{
 			reason: .no_candidates
 			detail: match policy {
-				.no_host { 'the no-host policy gathered nothing; a reachable STUN or TURN server is required' }
+				.no_host {
+					'the no-host policy gathered nothing; a reachable STUN or TURN server is required'
+				}
 				.relay_only { 'no relay would allocate an address' }
 				.all { 'no candidates could be gathered' }
 			}

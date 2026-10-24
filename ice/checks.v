@@ -77,7 +77,8 @@ fn (mut a Agent) read_socket(index int) {
 		// guarantee to violate: a lost check is retransmitted, and lost media
 		// is lost either way.
 		select {
-			a.inbound <- packet {}
+			a.inbound <- packet {
+			}
 			else {
 				a.log.warn('inbound queue full, dropped ${n} bytes from ${from}')
 			}
@@ -104,7 +105,8 @@ fn (mut a Agent) read_relay(index int, mut relay turn.Client) {
 			data:   packet.data
 		}
 		select {
-			a.inbound <- inbound {}
+			a.inbound <- inbound {
+			}
 			else {
 				a.log.warn('inbound queue full, dropped ${packet.data.len} relayed bytes from ${packet.from}')
 			}
@@ -407,7 +409,8 @@ fn (mut a Agent) deliver_application_data(packet InboundPacket) {
 		return
 	}
 	select {
-		a.data <- packet.data {}
+		a.data <- packet.data {
+		}
 		else {
 			a.log.warn('application queue full, dropped ${packet.data.len} bytes')
 		}

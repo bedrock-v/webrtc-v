@@ -153,7 +153,8 @@ fn (mut p PipeTransport) write(data []u8) !int {
 	mut peer := p.peer
 	copy := data.clone()
 	select {
-		peer.inbound <- copy {}
+		peer.inbound <- copy {
+		}
 		else {
 			return error('peer queue full')
 		}

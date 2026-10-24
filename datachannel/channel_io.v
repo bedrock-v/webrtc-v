@@ -277,7 +277,8 @@ fn (mut m Manager) handle_dcep(message sctp.Message) {
 	m.log.debug('peer opened channel "${open.label}" on stream ${message.stream_identifier}')
 
 	select {
-		m.incoming <- channel {}
+		m.incoming <- channel {
+		}
 		else {
 			m.log.warn('the incoming channel queue is full; channel "${open.label}" was dropped')
 			channel.mark_closed()

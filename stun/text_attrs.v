@@ -94,34 +94,42 @@ fn is_valid_utf8(b []u8) bool {
 // username returns the USERNAME attribute. For ICE this is the concatenation
 // "remote-ufrag:local-ufrag" as seen by the sender.
 pub fn (m &Message) username() !string {
-	attr := m.get(attr_username) or { return AttributeNotFoundError{
-		typ: attr_username
-	} }
+	attr := m.get(attr_username) or {
+		return AttributeNotFoundError{
+			typ: attr_username
+		}
+	}
 	return decode_text(attr, max_username_bytes)!
 }
 
 // realm returns the REALM attribute used by long-term credentials.
 pub fn (m &Message) realm() !string {
-	attr := m.get(attr_realm) or { return AttributeNotFoundError{
-		typ: attr_realm
-	} }
+	attr := m.get(attr_realm) or {
+		return AttributeNotFoundError{
+			typ: attr_realm
+		}
+	}
 	return decode_text(attr, max_realm_bytes)!
 }
 
 // nonce returns the NONCE attribute used by long-term credentials.
 pub fn (m &Message) nonce() !string {
-	attr := m.get(attr_nonce) or { return AttributeNotFoundError{
-		typ: attr_nonce
-	} }
+	attr := m.get(attr_nonce) or {
+		return AttributeNotFoundError{
+			typ: attr_nonce
+		}
+	}
 	return decode_text(attr, max_nonce_bytes)!
 }
 
 // software returns the SOFTWARE attribute, a free-form description of the
 // sending implementation.
 pub fn (m &Message) software() !string {
-	attr := m.get(attr_software) or { return AttributeNotFoundError{
-		typ: attr_software
-	} }
+	attr := m.get(attr_software) or {
+		return AttributeNotFoundError{
+			typ: attr_software
+		}
+	}
 	return decode_text(attr, max_software_bytes)!
 }
 

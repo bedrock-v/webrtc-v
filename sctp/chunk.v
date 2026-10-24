@@ -32,11 +32,11 @@ pub enum ChunkType as u8 {
 	shutdown_complete = 14
 	// reconfig re-negotiates streams (RFC 6525). WebRTC uses it to close an
 	// individual data channel without tearing down the association.
-	reconfig = 130
+	reconfig          = 130
 	// forward_tsn skips over messages abandoned by partial reliability
 	// (RFC 3758). Without it, a receiver waiting for an abandoned message would
 	// stall the stream forever.
-	forward_tsn = 192
+	forward_tsn       = 192
 }
 
 pub fn (t ChunkType) str() string {

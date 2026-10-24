@@ -62,7 +62,7 @@ mut:
 struct MuxRoute {
 	ufrag   string
 	inbound chan InboundPacket
-	first int
+	first   int
 mut:
 	claimed      []string
 	transactions []string
@@ -342,7 +342,8 @@ fn (mut m UdpMux) lookup(socket int, server netaddr.SocketAddr) !netaddr.SocketA
 				}
 				return response.reflexive_address()!
 			}
-			wait {}
+			wait {
+			}
 		}
 	}
 	return AgentError{
@@ -401,8 +402,10 @@ fn (mut m UdpMux) route(index int, from netaddr.SocketAddr, data []u8) {
 			.success_response, .error_response {
 				if responses := m.lookups[key] {
 					select {
-						responses <- data {}
-						else {}
+						responses <- data {
+						}
+						else {
+						}
 					}
 					return
 				}
@@ -429,7 +432,8 @@ fn (mut m UdpMux) deliver(route &MuxRoute, index int, from netaddr.SocketAddr, d
 		data:   data
 	}
 	select {
-		route.inbound <- packet {}
+		route.inbound <- packet {
+		}
 		else {
 			m.log.warn('inbound queue full, dropped ${data.len} bytes from ${from}')
 		}

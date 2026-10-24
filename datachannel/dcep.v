@@ -28,10 +28,10 @@ pub const max_protocol_bytes = 8192
 pub enum ChannelType as u8 {
 	// reliable: every message arrives, in order. The default, and what a
 	// browser gives you when you pass no options.
-	reliable = 0x00
+	reliable                          = 0x00
 	// partial_reliable_rexmit: a message is abandoned after a number of
 	// retransmissions. This is `maxRetransmits`.
-	partial_reliable_rexmit = 0x01
+	partial_reliable_rexmit           = 0x01
 	// partial_reliable_timed: a message is abandoned after a time. This is
 	// `maxPacketLifeTime`.
 	partial_reliable_timed            = 0x02

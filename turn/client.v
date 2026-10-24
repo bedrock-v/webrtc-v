@@ -365,10 +365,12 @@ pub fn (mut c Client) send_to(peer netaddr.SocketAddr, data []u8) !int {
 			detail: err.msg()
 		}
 	}
-	indication.add_data(data) or { return TurnError{
-		reason: .bad_message
-		detail: err.msg()
-	} }
+	indication.add_data(data) or {
+		return TurnError{
+			reason: .bad_message
+			detail: err.msg()
+		}
+	}
 	// An indication carries no MESSAGE-INTEGRITY: it is not a transaction, and
 	// RFC 8656 section 11.1 says the server accepts it on the strength of the
 	// allocation the five-tuple belongs to.

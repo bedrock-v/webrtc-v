@@ -7,9 +7,11 @@ module stun
 // priority returns the PRIORITY attribute: the priority the sender would assign
 // to a peer-reflexive candidate learned from this check.
 pub fn (m &Message) priority() !u32 {
-	attr := m.get(attr_priority) or { return AttributeNotFoundError{
-		typ: attr_priority
-	} }
+	attr := m.get(attr_priority) or {
+		return AttributeNotFoundError{
+			typ: attr_priority
+		}
+	}
 	if attr.value.len != 4 {
 		return DecodeError{
 			reason: .bad_value
@@ -45,9 +47,11 @@ pub fn (m &Message) ice_controlled() !u64 {
 }
 
 fn (m &Message) tiebreaker(typ u16) !u64 {
-	attr := m.get(typ) or { return AttributeNotFoundError{
-		typ: typ
-	} }
+	attr := m.get(typ) or {
+		return AttributeNotFoundError{
+			typ: typ
+		}
+	}
 	if attr.value.len != 8 {
 		return DecodeError{
 			reason: .bad_value

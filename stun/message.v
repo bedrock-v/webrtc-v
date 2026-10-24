@@ -494,10 +494,12 @@ fn (m &Message) check_integrity(typ u16, digest_len int, algorithm IntegrityAlgo
 			detail: 'empty integrity key'
 		}
 	}
-	attr := m.get(typ) or { return IntegrityError{
-		reason: .missing
-		detail: attr_name(typ)
-	} }
+	attr := m.get(typ) or {
+		return IntegrityError{
+			reason: .missing
+			detail: attr_name(typ)
+		}
+	}
 	if attr.value.len != digest_len {
 		return IntegrityError{
 			reason: .malformed

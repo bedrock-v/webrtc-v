@@ -136,19 +136,23 @@ fn (mut m MediaTransport) offer_to(queue chan []u8, datagram []u8) {
 		queue <- datagram {
 			return
 		}
-		else {}
+		else {
+		}
 	}
 	// The queue is full. Discard one packet from the front and try once more;
 	// if that also fails the reader is gone and the packet is dropped.
 	select {
-		_ := <-queue {}
+		_ := <-queue {
+		}
 		else {
 			return
 		}
 	}
 	select {
-		queue <- datagram {}
-		else {}
+		queue <- datagram {
+		}
+		else {
+		}
 	}
 }
 
@@ -202,10 +206,12 @@ fn (mut m MediaTransport) send_rtp_raw(raw []u8) ! {
 		}
 	}
 	mut agent := m.agent
-	agent.send(protected) or { return PeerError{
-		reason: .transport
-		detail: err.msg()
-	} }
+	agent.send(protected) or {
+		return PeerError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
 }
 
 // send_rtcp protects and sends a compound RTCP packet.
@@ -239,10 +245,12 @@ fn (mut m MediaTransport) send_rtcp(packets []rtcp.Packet) ! {
 		}
 	}
 	mut agent := m.agent
-	agent.send(protected) or { return PeerError{
-		reason: .transport
-		detail: err.msg()
-	} }
+	agent.send(protected) or {
+		return PeerError{
+			reason: .transport
+			detail: err.msg()
+		}
+	}
 }
 
 // recv_rtp returns the next RTP packet, decrypted.

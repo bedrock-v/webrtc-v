@@ -31,8 +31,8 @@ fn test_derived_keys_differ_per_label() {
 	// Each label must produce a distinct key: sharing one between RTP and RTCP,
 	// or between encryption and authentication, would let a weakness in one use
 	// compromise the other.
-	all := [keys.rtp_key.hex(), keys.rtp_salt.hex(), keys.rtp_auth.hex(),
-		keys.rtcp_key.hex(), keys.rtcp_salt.hex(), keys.rtcp_auth.hex()]
+	all := [keys.rtp_key.hex(), keys.rtp_salt.hex(), keys.rtp_auth.hex(), keys.rtcp_key.hex(),
+		keys.rtcp_salt.hex(), keys.rtcp_auth.hex()]
 	mut seen := map[string]bool{}
 	for k in all {
 		assert k !in seen, 'two derived keys are identical'

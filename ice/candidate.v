@@ -190,8 +190,8 @@ pub fn compute_foundation(typ CandidateType, base netaddr.IpAddr, server string,
 // (RFC 8839 section 5.1).
 pub fn (c Candidate) str() string {
 	host := if c.hostname != '' { c.hostname } else { c.address.ip.str() }
-	mut parts := [c.foundation, c.component.str(), c.transport.str(),
-		c.priority.str(), host, c.address.port.str(), 'typ', c.typ.str()]
+	mut parts := [c.foundation, c.component.str(), c.transport.str(), c.priority.str(), host,
+		c.address.port.str(), 'typ', c.typ.str()]
 	if related := c.related {
 		parts << ['raddr', related.ip.str(), 'rport', related.port.str()]
 	}
