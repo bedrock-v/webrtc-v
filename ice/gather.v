@@ -67,16 +67,23 @@ pub fn (mut a Agent) gather() ! {
 		}
 	}
 
-	// A socket is bound for every address whatever the policy: the policy
+	// A socket exists for every address whatever the policy: the policy
 	// controls what is disclosed to the peer, not what this end can send from.
 	// Without a socket there would be nothing for a server-reflexive candidate
 	// to be reflexive of, and nothing to reach the relay over.
-	for address in addresses {
-		a.add_host_candidate(address, policy == .all) or {
-			// One unusable interface must not abort gathering: a machine with a
-			// half-configured adapter should still connect over the others.
-			a.log.warn('skipping ${address}: ${err.msg()}')
-			continue
+	if mut mux := a.config.udp_mux {
+		a.add_mux_candidates(mut mux, policy == .all) or {
+			a.mu.lock()
+			a.set_state(.failed)
+			a.mu.unlock()
+			return err
+		}
+	} else {
+		for address in addresses {
+			a.add_host_candidate(address, policy == .all) or {
+				a.log.warn('skipping ${address}: ${err.msg()}')
+				continue
+			}
 		}
 	}
 
@@ -148,29 +155,60 @@ fn (mut a Agent) add_host_candidate(address netaddr.IpAddr, announce bool) ! {
 	// zone identifier, which the textual round trip drops.
 	base := netaddr.SocketAddr.new(address, bound.port)
 
-	candidate := Candidate{
-		foundation: compute_foundation(.host, address, '', .udp)
-		component:  component_rtp
-		transport:  .udp
-		priority:   compute_priority(.host, default_local_preference(address), component_rtp)
-		address:    base
-		typ:        .host
-	}
-
 	a.mu.lock()
 	a.sockets << &LocalSocket{
-		conn:        conn
-		base:        base
-		leased_port: leased
+		base: base
+		kind: UdpSocket{
+			conn:        conn
+			leased_port: leased
+		}
 	}
 	index := a.sockets.len - 1
 	a.socket_for[base.str()] = index
 	a.mu.unlock()
 
 	if announce {
-		a.add_local_candidate(candidate)
+		a.add_local_candidate(host_candidate(base))
 	}
 	return
+}
+
+// add_mux_candidates registers the agent with a mux and records a host
+// candidate for each of the mux's sockets.
+fn (mut a Agent) add_mux_candidates(mut mux UdpMux, announce bool) ! {
+	a.mu.lock()
+	first := a.sockets.len
+	ufrag := a.local_ufrag
+	a.mu.unlock()
+
+	mux.register(ufrag, a.inbound, first)!
+	for index, base in mux.bases() {
+		a.mu.lock()
+		a.sockets << &LocalSocket{
+			base: base
+			kind: MuxSocket{
+				mux:   mux
+				index: index
+			}
+		}
+		a.socket_for[base.str()] = first + index
+		a.mu.unlock()
+
+		if announce {
+			a.add_local_candidate(host_candidate(base))
+		}
+	}
+}
+
+fn host_candidate(base netaddr.SocketAddr) Candidate {
+	return Candidate{
+		foundation: compute_foundation(.host, base.ip, '', .udp)
+		component:  component_rtp
+		transport:  .udp
+		priority:   compute_priority(.host, default_local_preference(base.ip), component_rtp)
+		address:    base
+		typ:        .host
+	}
 }
 
 // bind_host_socket opens the UDP socket a host candidate is gathered on, and
@@ -233,12 +271,15 @@ fn (mut a Agent) gather_reflexive(server string) ! {
 	}
 
 	for index, socket in sockets {
+		if socket.kind is RelaySocket {
+			continue
+		}
 		if socket.base.family() != server_addr.family() {
 			// A request to an IPv4 server out of an IPv6 socket cannot be
 			// routed, and the reverse is equally hopeless.
 			continue
 		}
-		mapped := a.reflexive_lookup(socket, destination) or {
+		mapped := a.reflexive_lookup(socket, server_addr, destination) or {
 			a.log.debug('no reflexive address for ${socket.base} via ${server}: ${err.msg()}')
 			continue
 		}
@@ -272,11 +313,21 @@ fn (mut a Agent) gather_reflexive(server string) ! {
 //
 // This is deliberately not the stunclient package: that one owns its socket,
 // and the whole point here is to reuse the socket a host candidate is bound to.
-fn (mut a Agent) reflexive_lookup(socket &LocalSocket, destination net.Addr) !netaddr.SocketAddr {
+fn (mut a Agent) reflexive_lookup(socket &LocalSocket, server netaddr.SocketAddr, destination net.Addr) !netaddr.SocketAddr {
+	if socket.kind is MuxSocket {
+		mut mux := socket.kind.mux
+		return mux.lookup(socket.kind.index, server)!
+	}
+	if socket.kind !is UdpSocket {
+		return AgentError{
+			reason: .wrong_state
+			detail: 'a relay has no reflexive address'
+		}
+	}
 	mut request := stun.Message.new(.request, .binding)!
 	raw := request.encode(fingerprint: true)!
 
-	mut conn := socket.conn
+	mut conn := (socket.kind as UdpSocket).conn
 	deadline := time.now().add(gather_timeout)
 	mut attempt := 0
 	for time.now() < deadline {

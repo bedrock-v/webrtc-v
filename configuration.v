@@ -58,6 +58,7 @@ pub:
 	// wants a range somebody can actually write a rule for. Every connection
 	// that should stay inside one range has to share one pool.
 	ice_port_pool ?&ice.PortPool
+	ice_udp_mux ?&ice.UdpMux
 	// srtp_profiles are the SRTP protection profiles to offer, most preferred
 	// first.
 	srtp_profiles []srtp.Profile = [srtp.Profile.aead_aes_128_gcm, .aes128_cm_hmac_sha1_80]

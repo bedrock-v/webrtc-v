@@ -6,6 +6,7 @@ import time
 import webrtc.internal.randutil
 import webrtc.logging
 import webrtc.netaddr
+import webrtc.transport
 import webrtc.turn
 
 // Role decides which agent nominates a pair. RFC 8445 section 6.1.1 gives the
@@ -222,6 +223,11 @@ pub:
 	// let the kernel choose. Every agent that should stay inside one range has to
 	// be given the same pool.
 	port_pool ?&PortPool
+	// udp_mux serves this agent through a port shared with every other agent on
+	// it, instead of sockets of its own. The mux's sockets are the host
+	// candidates. Interfaces doesn't apply. It can't be combined with
+	// port_pool.
+	udp_mux ?&UdpMux
 	// turn_servers are relays to allocate an address on. A relayed candidate is
 	// the last resort and the only one that works when both peers are behind a
 	// NAT that will not hairpin.
@@ -252,20 +258,72 @@ pub:
 	on_state_change ?fn (ConnectionState)
 }
 
-// localSocket is one bound UDP socket and the base address it represents.
+// LocalSocket is one place this agent sends from and receives on and the base
+// address it represents.
 struct LocalSocket {
-mut:
-	conn &net.UdpConn = unsafe { nil }
 	base netaddr.SocketAddr
+	kind SocketKind
+mut:
+	closed bool
+}
+
+// SocketKind is how a local socket reaches the network.
+type SocketKind = MuxSocket | RelaySocket | UdpSocket
+
+// UdpSocket is a socket the agent bound and owns.
+struct UdpSocket {
+	conn &net.UdpConn = unsafe { nil }
 	// leased_port is the port a PortPool handed out for this socket, so closing
 	// it can give the port back. None when the kernel chose it.
 	leased_port ?u16
-	// relay is set for a socket that reaches peers through a TURN allocation.
-	// Sending then means asking the relay to forward, and receiving means
-	// unwrapping what the relay forwarded back; the check list above does not
-	// know the difference, which is the point.
-	relay  &turn.Client = unsafe { nil }
-	closed bool
+}
+
+// RelaySocket reaches peers through a TURN allocation. Sending means asking the
+// relay to forward and receiving means unwrapping what the relay forwarded
+// back. The check list doesn't know the difference.
+struct RelaySocket {
+	relay &turn.Client = unsafe { nil }
+}
+
+// MuxSocket is one of a UdpMux's sockets. The mux owns it: the agent sends
+// through it, receives what the mux routes here and never closes it.
+struct MuxSocket {
+	mux   &UdpMux = unsafe { nil }
+	index int
+}
+
+// write_to sends one datagram from this socket.
+fn (s &LocalSocket) write_to(to netaddr.SocketAddr, data []u8) !int {
+	match s.kind {
+		UdpSocket {
+			destination := transport.socket_addr_to_net(to) or {
+				return AgentError{
+					reason: .transport
+					detail: err.msg()
+				}
+			}
+			mut conn := s.kind.conn
+			return conn.write_to(destination, data) or {
+				return AgentError{
+					reason: .transport
+					detail: 'send to ${to}: ${err.msg()}'
+				}
+			}
+		}
+		RelaySocket {
+			mut relay := s.kind.relay
+			return relay.send_to(to, data) or {
+				return AgentError{
+					reason: .transport
+					detail: 'relaying to ${to}: ${err.msg()}'
+				}
+			}
+		}
+		MuxSocket {
+			mut mux := s.kind.mux
+			return mux.write_to(s.kind.index, to, data)!
+		}
+	}
 }
 
 // inboundPacket is a datagram handed from a socket reader to the agent loop.
@@ -336,6 +394,14 @@ pub fn Agent.new(config AgentConfig) !&Agent {
 		return AgentError{
 			reason: .bad_credentials
 			detail: 'max_binding_requests must be at least 1'
+		}
+	}
+	if _ := config.udp_mux {
+		if _ := config.port_pool {
+			return AgentError{
+				reason: .transport
+				detail: 'udp_mux and port_pool cannot be combined'
+			}
 		}
 	}
 	ufrag := if config.local_ufrag != '' {

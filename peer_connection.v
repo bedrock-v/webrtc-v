@@ -690,6 +690,7 @@ fn (mut pc PeerConnection) ensure_agent() !&ice.Agent {
 		interfaces:    pc.config.interfaces
 		gather_policy: pc.config.ice_gather_policy
 		port_pool:     pc.config.ice_port_pool
+		udp_mux:       pc.config.ice_udp_mux
 		logger:        pc.config.logger
 	) or {
 		return PeerError{
