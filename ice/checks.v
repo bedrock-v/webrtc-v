@@ -19,11 +19,13 @@ fn (mut a Agent) start() {
 	// before gathering finishes when the peer does not trickle. Counting those
 	// would leave the agent loop unstarted and no check ever sent.
 	a.started = true
-	count := a.sockets.len
+	sockets := a.sockets.clone()
 	a.mu.unlock()
 
-	for i in 0 .. count {
-		a.threads << spawn a.read_socket(i)
+	for i, socket in sockets {
+		if socket.kind !is MuxSocket {
+			a.threads << spawn a.read_socket(i)
+		}
 	}
 	a.threads << spawn a.run()
 }
@@ -39,15 +41,18 @@ fn (mut a Agent) read_socket(index int) {
 		a.mu.unlock()
 		return
 	}
-	mut socket := a.sockets[index]
+	socket := a.sockets[index]
 	a.mu.unlock()
 
-	if socket.relay != unsafe { nil } {
-		a.read_relay(index, mut socket.relay)
+	if socket.kind is RelaySocket {
+		mut relay := socket.kind.relay
+		a.read_relay(index, mut relay)
 		return
 	}
-
-	mut conn := socket.conn
+	if socket.kind !is UdpSocket {
+		return
+	}
+	mut conn := (socket.kind as UdpSocket).conn
 	for {
 		if a.is_closed() {
 			return
@@ -173,6 +178,7 @@ fn (mut a Agent) expire_checks() {
 	}
 	for key in expired {
 		a.pending.delete(key)
+		a.forget_check(key)
 	}
 	if expired.len > 0 {
 		a.unfreeze_by_foundation()
@@ -248,16 +254,23 @@ fn (mut a Agent) send_check(index int, nominate bool) {
 	key := stun.short_term_key(a.remote_pwd) or { return }
 	raw := request.encode(integrity_key: key, fingerprint: true) or { return }
 
+	transaction := request.transaction_id[..].hex()
+	socket := a.sockets[socket_index]
+	if socket.kind is MuxSocket {
+		mut mux := socket.kind.mux
+		mux.expect(a.local_ufrag, transaction)
+	}
 	a.transmit(socket_index, pair.remote.address, raw) or {
 		a.log.debug('sending a check to ${pair.remote.address} failed: ${err.msg()}')
 		a.pairs[index].state = .failed
+		a.forget_check(transaction)
 		return
 	}
 
 	a.pairs[index].state = .in_progress
 	a.pairs[index].binding_requests++
 	a.pairs[index].last_sent = time.now()
-	a.pending[request.transaction_id[..].hex()] = PendingCheck{
+	a.pending[transaction] = PendingCheck{
 		pair_index: index
 		sent_at:    time.now()
 		nominating: nominate
@@ -428,6 +441,7 @@ fn (mut a Agent) handle_binding_request(message stun.Message, packet InboundPack
 		a.send_error_response(message, packet, stun.code_unauthenticated, '')
 		return
 	}
+	a.claim(packet)
 
 	if a.resolve_role_conflict(message, packet) {
 		return
@@ -581,6 +595,8 @@ fn (mut a Agent) handle_binding_response(message stun.Message, packet InboundPac
 		return
 	}
 	a.pending.delete(key)
+	a.forget_check(key)
+	a.claim(packet)
 
 	if message.typ.class == .error_response {
 		code := message.error_code() or {
@@ -682,6 +698,27 @@ fn (mut a Agent) send_error_response(request stun.Message, packet InboundPacket,
 	a.send_raw(packet.socket, packet.from, raw)
 }
 
+// claim tells the mux that the path a packet arrived on belongs to this agent.
+// It is called only once the packet authenticated. The caller must hold the
+// mutex.
+fn (mut a Agent) claim(packet InboundPacket) {
+	if packet.socket < 0 || packet.socket >= a.sockets.len {
+		return
+	}
+	socket := a.sockets[packet.socket]
+	if socket.kind is MuxSocket {
+		mut mux := socket.kind.mux
+		mux.claim(a.local_ufrag, socket.kind.index, packet.from)
+	}
+}
+
+// forget_check tells the mux this agent no longer waits on a response.
+fn (mut a Agent) forget_check(transaction string) {
+	if mut mux := a.config.udp_mux {
+		mux.forget(a.local_ufrag, transaction)
+	}
+}
+
 fn (mut a Agent) send_raw(socket_index int, to netaddr.SocketAddr, raw []u8) {
 	a.transmit(socket_index, to, raw) or { a.log.debug('send to ${to} failed: ${err.msg()}') }
 }
@@ -695,28 +732,5 @@ fn (mut a Agent) transmit(socket_index int, to netaddr.SocketAddr, raw []u8) ! {
 			detail: 'no socket ${socket_index}'
 		}
 	}
-	mut socket := a.sockets[socket_index]
-	if socket.relay != unsafe { nil } {
-		mut relay := socket.relay
-		relay.send_to(to, raw) or {
-			return AgentError{
-				reason: .transport
-				detail: err.msg()
-			}
-		}
-		return
-	}
-	destination := transport.socket_addr_to_net(to) or {
-		return AgentError{
-			reason: .transport
-			detail: err.msg()
-		}
-	}
-	mut conn := socket.conn
-	conn.write_to(destination, raw) or {
-		return AgentError{
-			reason: .transport
-			detail: err.msg()
-		}
-	}
+	a.sockets[socket_index].write_to(to, raw)!
 }

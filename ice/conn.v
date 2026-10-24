@@ -1,7 +1,6 @@
 module ice
 
 import time
-import webrtc.transport
 
 // The application-facing side of an agent: wait for connectivity, then send and
 // receive datagrams over whichever pair ICE selected.
@@ -72,33 +71,9 @@ pub fn (mut a Agent) send(data []u8) !int {
 			detail: 'the selected pair has no socket'
 		}
 	}
-	mut socket := a.sockets[socket_index]
+	socket := a.sockets[socket_index]
 	a.mu.unlock()
-
-	if socket.relay != unsafe { nil } {
-		mut relay := socket.relay
-		return relay.send_to(pair.remote.address, data) or {
-			return AgentError{
-				reason: .transport
-				detail: 'relaying to ${pair.remote.address}: ${err.msg()}'
-			}
-		}
-	}
-
-	mut conn := socket.conn
-	destination := transport.socket_addr_to_net(pair.remote.address) or {
-		return AgentError{
-			reason: .transport
-			detail: err.msg()
-		}
-	}
-	sent := conn.write_to(destination, data) or {
-		return AgentError{
-			reason: .transport
-			detail: 'send to ${pair.remote.address}: ${err.msg()}'
-		}
-	}
-	return sent
+	return socket.write_to(pair.remote.address, data)!
 }
 
 // recv returns the next application datagram, waiting up to timeout.
@@ -165,6 +140,7 @@ pub fn (mut a Agent) close() {
 	a.closed = true
 	a.set_state(.closed)
 	mut sockets := a.sockets.clone()
+	ufrag := a.local_ufrag
 	a.mu.unlock()
 
 	for mut socket in sockets {
@@ -172,15 +148,21 @@ pub fn (mut a Agent) close() {
 			continue
 		}
 		socket.closed = true
-		a.release_port(socket.leased_port)
-		if socket.relay != unsafe { nil } {
-			// Closing a relay releases the allocation, which frees the relay's
-			// port and quota now rather than when the lifetime runs out.
-			mut relay := socket.relay
-			relay.close()
-			continue
+		match socket.kind {
+			UdpSocket {
+				a.release_port(socket.kind.leased_port)
+				mut conn := socket.kind.conn
+				conn.close() or {}
+			}
+			RelaySocket {
+				mut relay := socket.kind.relay
+				relay.close()
+			}
+			MuxSocket {}
 		}
-		socket.conn.close() or {}
+	}
+	if mut mux := a.config.udp_mux {
+		mux.unregister(ufrag)
 	}
 
 	// Closing the channels releases anything blocked on them. The reader

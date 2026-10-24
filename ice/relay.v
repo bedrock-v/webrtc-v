@@ -46,8 +46,10 @@ fn (mut a Agent) gather_relayed() {
 
 		a.mu.lock()
 		a.sockets << &LocalSocket{
-			base:  relayed
-			relay: client
+			base: relayed
+			kind: RelaySocket{
+				relay: client
+			}
 		}
 		index := a.sockets.len - 1
 		a.socket_for[relayed.str()] = index
@@ -100,8 +102,8 @@ fn (mut a Agent) permit_on_relays(address netaddr.SocketAddr) {
 	a.mu.lock()
 	mut clients := []&turn.Client{}
 	for socket in a.sockets {
-		if socket.relay != unsafe { nil } {
-			clients << socket.relay
+		if socket.kind is RelaySocket {
+			clients << socket.kind.relay
 		}
 	}
 	a.mu.unlock()
@@ -127,7 +129,7 @@ fn (mut a Agent) permit_on_relays(address netaddr.SocketAddr) {
 // mutex.
 fn (a &Agent) has_relays() bool {
 	for socket in a.sockets {
-		if socket.relay != unsafe { nil } {
+		if socket.kind is RelaySocket {
 			return true
 		}
 	}
