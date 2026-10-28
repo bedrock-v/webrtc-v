@@ -252,6 +252,8 @@ mut:
 	// Outbound queues.
 	pending  []Data
 	inflight map[u32]InflightChunk
+	// pending_bytes is how many bytes of user data each stream has in pending.
+	pending_bytes map[u16]u64
 
 	// Congestion control (RFC 4960 section 7).
 	congestion_window    u32

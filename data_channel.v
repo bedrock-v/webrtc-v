@@ -134,6 +134,17 @@ pub fn (mut d DataChannel) send_binary(data []u8) ! {
 	d.send(data, false)!
 }
 
+// buffered_amount is how many bytes sent on the channel have not gone out yet
+// as RTCDataChannel.bufferedAmount. It only grows while the network or the peer
+// can't keep up and nothing else caps it.
+pub fn (mut d DataChannel) buffered_amount() u64 {
+	mut channel := d.channel
+	if channel == unsafe { nil } {
+		return 0
+	}
+	return channel.buffered_amount()
+}
+
 // send delivers a message.
 pub fn (mut d DataChannel) send(data []u8, is_string bool) ! {
 	mut channel := d.channel
