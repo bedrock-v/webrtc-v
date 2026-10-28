@@ -15,6 +15,18 @@ pub fn (mut c Channel) send_binary(data []u8) ! {
 	c.send(data, false)!
 }
 
+// buffered_amount is how many bytes sent on the channel have not gone out yet.
+pub fn (mut c Channel) buffered_amount() u64 {
+	c.mu.lock()
+	mut manager := c.manager
+	c.mu.unlock()
+	if manager == unsafe { nil } {
+		return 0
+	}
+	mut association := manager.association
+	return association.buffered_amount(c.stream_identifier)
+}
+
 // send delivers a message on the channel.
 //
 // The payload protocol identifier is what carries the string-or-binary

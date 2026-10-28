@@ -83,6 +83,7 @@ pub fn (mut a Association) send(stream_identifier u16, payload_protocol_identifi
 		if chunk > limit {
 			chunk = limit
 		}
+		a.pending_bytes[stream_identifier] += u64(chunk)
 		a.pending << Data{
 			tsn:                         a.my_next_tsn
 			stream_identifier:           stream_identifier
@@ -193,6 +194,7 @@ fn (mut a Association) fill_congestion_window() {
 		}
 
 		a.pending.delete(0)
+		a.pending_bytes[next.stream_identifier] -= u64(size)
 		policy := a.reliability[next.stream_identifier] or { Reliability{} }
 		// The lifetime is measured from when the application handed the message
 		// over, not from when it first went out. A message that spent its
@@ -216,6 +218,19 @@ fn (mut a Association) fill_congestion_window() {
 		}
 		outstanding += size
 	}
+}
+
+// buffered_amount is how many bytes of messages sent on a stream are still
+// queued, waiting for the congestion window or the peer's receive window to let
+// them out. Nothing caps the queue: a peer that stops reading but keeps
+// acknowledging holds its window shut and the queue grows for as long as the
+// application keeps sending. This is what a sender watches to stop.
+pub fn (mut a Association) buffered_amount(stream_identifier u16) u64 {
+	a.mu.lock()
+	defer {
+		a.mu.unlock()
+	}
+	return a.pending_bytes[stream_identifier] or { 0 }
 }
 
 // bytes_in_flight is how much unacknowledged data is outstanding.

@@ -1208,3 +1208,29 @@ fn test_sender_that_never_leaves_a_gap_is_still_held_to_window() {
 	}
 	assert a.receive_buffered <= window, 'retained ${a.receive_buffered} bytes against a ${window} byte window'
 }
+
+fn test_buffered_amount_counts_what_is_still_queued() {
+	mut pair := connect_pair(Config{})!
+	defer {
+		pair.client.close()
+		pair.server.close()
+	}
+	assert pair.client.buffered_amount(0) == 0
+
+	payload := []u8{len: 64 * 1024, init: u8(index)}
+	pair.client.send(0, ppid_binary, payload, true)!
+	queued := pair.client.buffered_amount(0)
+	assert queued > 0, 'a message larger than the congestion window left nothing queued'
+	assert queued <= u64(payload.len)
+	assert pair.client.buffered_amount(1) == 0, 'another stream was charged for it'
+
+	message := pair.server.recv(10 * time.second)!
+	assert message.data == payload
+	for _ in 0 .. 200 {
+		if pair.client.buffered_amount(0) == 0 {
+			break
+		}
+		time.sleep(10 * time.millisecond)
+	}
+	assert pair.client.buffered_amount(0) == 0, 'bytes that were delivered are still counted'
+}

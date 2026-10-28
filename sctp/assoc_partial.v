@@ -206,6 +206,7 @@ fn (mut a Association) abandon_chunk(tsn u32) {
 	for index, pending in a.pending {
 		if pending.tsn == tsn {
 			a.pending.delete(index)
+			a.pending_bytes[pending.stream_identifier] -= u64(pending.user_data.len)
 			break
 		}
 	}
