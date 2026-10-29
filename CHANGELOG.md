@@ -9,6 +9,11 @@ breaking changes are listed under **Changed** with a migration note.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-29
+
+Every agent can share one UDP port and a sender can see how much it has queued
+that hasn't gone out. Nothing in the public API was removed or changed.
+
 ### Added
 
 - **`ice`**, **`webrtc`**: `ice.UdpMux` lets every agent share one UDP port, set
@@ -22,6 +27,14 @@ breaking changes are listed under **Changed** with a migration note.
   owns the mux and closes it after the agents using it. It has only been tested
   on Linux. On Windows, `SO_REUSEADDR` means something different and the check
   that the port is free hasn't been run there.
+- **`sctp`**, **`datachannel`**, **`webrtc`**: `buffered_amount()` reports how
+  many bytes sent on a stream are still queued, waiting for the congestion
+  window or the peer's receive window as `RTCDataChannel.bufferedAmount` does.
+  It is on `sctp.Association` (per stream), `datachannel.Channel` and
+  `DataChannel`. Sending never waits for the peer and nothing caps the queue, so
+  a peer that keeps acknowledging while advertising a zero window makes it grow
+  for as long as the application sends. This is what an application watches to
+  stop.
 
 ### Fixed
 
@@ -314,7 +327,8 @@ has no track layer above it, and the public API may still change before 1.0.
   completes with the zero value. Callers dereferenced it and crashed on
   shutdown.
 
-[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/bedrock-v/webrtc-v/compare/v0.1.1...v0.1.2
